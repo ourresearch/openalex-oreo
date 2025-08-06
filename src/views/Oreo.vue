@@ -601,8 +601,8 @@ const defaultFields  = ref(null);
 
 const prodUrl      = `https://api.openalex.org/`;
 const waldenUrl    = `https://api.openalex.org/v2/`;
-//const metricsUrl   = `https://metrics-api.openalex.org/`;
-const metricsUrl   = `http://localhost:5006/`;
+const metricsUrl   = `https://metrics-api.openalex.org/`;
+//const metricsUrl   = `http://localhost:5006/`;
 const axiosConfig  = {headers: {Authorization: "Bearer YWMKSvdNwfrknsOPtdqCPz"}};
 
 const { mode } = toRefs(props);
