@@ -11,6 +11,39 @@
               {{ titles[mode].subtitle }}
             </div>
           </div>
+
+          <!-- Works Filters -->
+          <div v-if="mode === 'works' && filterFailing.length > 0" class="pt-0 pb-4">
+            <v-chip v-for="filter in filterFailing" :key="filter" class="mr-1" variant="tonal" rounded="pill" color="blue-darken-1">
+              Failing: <code class="ml-1">{{ filter }}</code>
+              <v-icon icon="mdi-close" class="ml-1" @click="filterFailing = filterFailing.filter((key) => key !== filter)"></v-icon>
+            </v-chip>
+          </div>
+
+          <!-- Summary Sort -->
+          <div v-if="mode === 'summary'" class="pt-0 pb-4">
+            <v-menu>
+              <template v-slot:activator="{ props }">
+                <v-btn v-bind="props" rounded="pill" color="blue-darken-1" variant="tonal">
+                  Sort:
+                  {{ summarySort === 'alphabetical' ? 'Alphabetical' : 'Pass %' }}
+                  <v-icon icon="mdi-menu-down"></v-icon>
+                </v-btn>
+              </template>
+              <v-list>
+                <v-list-item @click="summarySort = 'alphabetical'">
+                  <v-icon icon="mdi-check" :color="summarySort === 'alphabetical' ? 'grey-darken-2' : 'white'"></v-icon>
+                  Alphabetical
+                </v-list-item>
+                <v-list-item @click="summarySort = 'passRate'">
+                  <v-icon icon="mdi-check" :color="summarySort === 'passRate' ? 'grey-darken-2' : 'white'"></v-icon>
+                  Pass %
+                </v-list-item>
+              </v-list>
+            </v-menu>
+          </div>
+
+
           <v-card flat class="pt-2 pb-0 px-4 rounded-o">
 
             <!-- Skeleton Loader -->
@@ -25,12 +58,7 @@
 
               <!-- Works -->
               <div v-if="mode == 'works'" ref="tableScrollRef" class="table-scroll">
-                <div class="px-3 pt-2 pb-0 d-flex align-end text-grey-darken-2">
-                  <v-chip v-for="filter in filterFailing" :key="filter" class="mr-1" variant="tonal" rounded="pill" color="blue-darken-1">
-                    Failing: <code class="ml-1">{{ filter }}</code>
-                    <v-icon icon="mdi-close" class="ml-1" @click="filterFailing = filterFailing.filter((key) => key !== filter)"></v-icon>
-                  </v-chip>
-                  <v-spacer></v-spacer>
+                <div class="px-4 pt-2 pb-0 text-grey-darken-2">
                   <div v-if="resultsMeta" class="text-caption">
                     {{ resultsMeta.count.toLocaleString() }} results 
                     ({{ Math.round(resultsMeta.count / resultsMeta.sample_size * 100) }}%)
@@ -225,28 +253,6 @@
                   </v-col>
                 </v-row>
                 -->
-
-                <div class="pt-4 pb-2 px-6">
-                  <v-menu>
-                    <template v-slot:activator="{ props }">
-                      <v-btn v-bind="props" rounded="pill" color="blue-darken-1" variant="tonal">
-                        Sort:
-                        {{ summarySort === 'alphabetical' ? 'Alphabetical' : 'Pass %' }}
-                        <v-icon icon="mdi-menu-down"></v-icon>
-                      </v-btn>
-                    </template>
-                    <v-list>
-                      <v-list-item @click="summarySort = 'alphabetical'">
-                        <v-icon icon="mdi-check" :color="summarySort === 'alphabetical' ? 'grey-darken-2' : 'white'"></v-icon>
-                        Alphabetical
-                      </v-list-item>
-                      <v-list-item @click="summarySort = 'passRate'">
-                        <v-icon icon="mdi-check" :color="summarySort === 'passRate' ? 'grey-darken-2' : 'white'"></v-icon>
-                        Pass %
-                      </v-list-item>
-                    </v-list>
-                  </v-menu>
-                </div>
 
                 <v-row class="pa-4">
                   <template v-if="summaryItems">
