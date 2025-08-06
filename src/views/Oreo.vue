@@ -60,6 +60,7 @@
               <div v-if="mode == 'works'" ref="tableScrollRef" class="table-scroll">
                 <div class="px-4 pt-2 pb-0 text-grey-darken-2">
                   <div v-if="resultsMeta" class="text-caption">
+                    {{ ((page-1)*pageSize+1).toLocaleString() }}-{{ Math.min(page*pageSize, resultsMeta.count).toLocaleString() }} of 
                     {{ resultsMeta.count.toLocaleString() }} results 
                     ({{ Math.round(resultsMeta.count / resultsMeta.sample_size * 100) }}%)
                   </div>
