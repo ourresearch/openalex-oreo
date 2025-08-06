@@ -11,7 +11,7 @@
               {{ titles[source].subtitle }}
             </div>
           </div>
-          <v-card flat class="rounded-o pt-4 pb-4 px-10">
+          <v-card flat class="rounded-o pt-8 pb-4 px-10">
 
             <template v-if="!isLoading">
               <v-row v-for="id in idsWithData" :key="id" class="mb-3 pb-3" style="line-height: 1.3; border-bottom: 1px solid #f5f5f5;">

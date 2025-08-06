@@ -26,7 +26,7 @@
               <!-- Works -->
               <div v-if="mode == 'works'" ref="tableScrollRef" class="table-scroll">
                 <div class="px-3 pt-2 pb-0 d-flex align-end text-grey-darken-2">
-                  <v-chip v-for="filter in filterFailing" :key="filter" class="mr-1" variant="tonal" rounded="pill" color="blue">
+                  <v-chip v-for="filter in filterFailing" :key="filter" class="mr-1" variant="tonal" rounded="pill" color="blue-darken-1">
                     Failing: <code class="ml-1">{{ filter }}</code>
                     <v-icon icon="mdi-close" class="ml-1" @click="filterFailing = filterFailing.filter((key) => key !== filter)"></v-icon>
                   </v-chip>
@@ -62,7 +62,7 @@
                                   <v-icon size="default" class="mr-1" color="grey-darken-1" :icon="fieldIcons[column.key]"></v-icon>
                                   <div>
                                     <code>{{ column.key }}</code>
-                                    <v-chip class="mx-1" size="small" color="grey">{{ testOnField(column.key) }}</v-chip>
+                                    <v-chip class="mx-1" size="small" color="grey-darken-1">{{ testOnField(column.key) }}</v-chip>
                                     <div class="text-grey-darken-1 text-caption">Pass rate: {{ fieldMatchRates["rates"][column.key] }}%</div>
                                   </div>
                                 </div>
@@ -229,7 +229,7 @@
                 <div class="pt-4 pb-2 px-6">
                   <v-menu>
                     <template v-slot:activator="{ props }">
-                      <v-btn v-bind="props" rounded="pill" color="blue" variant="tonal">
+                      <v-btn v-bind="props" rounded="pill" color="blue-darken-1" variant="tonal">
                         Sort:
                         {{ summarySort === 'alphabetical' ? 'Alphabetical' : 'Pass %' }}
                         <v-icon icon="mdi-menu-down"></v-icon>
@@ -251,12 +251,12 @@
                 <v-row class="pa-4">
                   <template v-if="summaryItems">
                     
-                    <v-col cols="12" md="6" lg="4" v-for="summaryCard in sortedSummaryItems" :key="summaryCard.fieldName">
+                    <v-col cols="12" md="6" lg="4" xl="3" v-for="summaryCard in sortedSummaryItems" :key="summaryCard.fieldName">
                       <v-card flat color="grey-lighten-4 pa-3" rounded="xl" class="fill-height">
                         <RouterLink :to="`/works?filterFailing=${summaryCard.fieldName}`" custom v-slot="{ navigate }">
                           <div class="d-flex cursor-pointer" @click="navigate">
                             <div class="flex-shrink-0 mr-2 d-flex align-center">
-                              <v-progress-circular size="40" width="8" color="blue-lighten-1" :model-value="summaryCard.passRate"></v-progress-circular>
+                              <v-progress-circular size="40" width="8" color="blue-grey" :model-value="summaryCard.passRate"></v-progress-circular>
                             </div>
                             <div>
                               <v-tooltip v-if="summaryCard.fieldName !== centerEllipsis(summaryCard.fieldName)" :text="`${summaryCard.fieldName}`" location="bottom">
@@ -415,7 +415,7 @@
                         <v-icon size="default" class="mr-1" color="grey-darken-1" :icon="fieldIcons[column.key]"></v-icon>
                         <div>
                           <code>{{ column.key }}</code>
-                          <v-chip class="mx-1" size="small" color="grey">{{ testOnField(column.key) }}</v-chip>
+                          <v-chip class="mx-1" size="small" color="grey-darken-1">{{ testOnField(column.key) }}</v-chip>
                           <div class="text-grey-darken-1 text-caption">Pass rate: {{ fieldMatchRates["rates"][column.key] }}%</div>
                         </div>
                       </div>
@@ -641,7 +641,7 @@ const { smAndDown } = useDisplay();
 const titles = {
   "works": {
     "title": "Works",
-    "subtitle": "Compare works from Production and Walden with key tests"
+    "subtitle": "Compare works from production and Walden with key tests"
   },
   "summary": {
     "title": "Summary",
@@ -1054,7 +1054,7 @@ async function fetchSchema() {
   const response = await axios.get(apiUrl);
   schema.value = response.data.schema;
   defaultFields.value = response.data.testFields;
-  fieldsToShow.value = [...response.data.testFields[entityType.value]];
+  fieldsToShow.value = fieldsToShow.value.length > 0 ? fieldsToShow.value : [...response.data.testFields[entityType.value]];
 }
 
 async function fetchFieldMatches() {

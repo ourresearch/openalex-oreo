@@ -14,7 +14,7 @@
           src="@/assets/openalex-logo-icon-black-and-white.png"
           class="logo-icon mr-0 colorizable"
         />
-        <span class="text-h4 ml-2" style="color: #000">OREO</span>
+        <span class="text-h5 ml-2" style="color: #000">OREO</span>
       </router-link>
     </v-app-bar>
     <div>

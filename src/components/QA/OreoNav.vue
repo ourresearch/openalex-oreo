@@ -29,8 +29,8 @@ const route = useRoute();
 
 const sections = [
   { title: 'Works', to: '/works', icon: "mdi-file-document-multiple-outline"},
-  { title: 'Summary', to: '/summary', icon: "mdi-poll" },
-  { title: 'Coverage', to: '/coverage', icon: "mdi-chart-donut" },
+  { title: 'Summary', to: '/summary', icon: "mdi-chart-donut" },
+  { title: 'Coverage', to: '/coverage', icon: "mdi-poll" },
   { title: 'Xpac', to: '/xpac?source=xpac', icon: "mdi-file-document-plus-outline", source: 'xpac' },
   { title: 'Prod Only', to: '/xpac?source=prod-only', icon: "mdi-factory", source: 'prod-only' },
 ];
