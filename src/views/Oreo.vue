@@ -1,0 +1,1225 @@
+<template>
+  <div :class="['bg-color py-0 py-sm-12', mode]" style="min-height: 70vh;">
+    <v-container :fluid="smAndDown" :class="['pa-0', 'pa-sm-4']">
+      <v-row>
+        <v-col cols="12">
+          <div class="ml-2">
+            <div class="text-h3 mb-3">
+              {{ titles[mode].title }}
+            </div>
+            <div class="text-grey-darken-3 text-subtitle-1 mb-8">
+              {{ titles[mode].subtitle }}
+            </div>
+          </div>
+          <v-card flat class="pt-2 pb-0 px-4 rounded-o">
+
+            <!-- Skeleton Loader -->
+            <v-skeleton-loader 
+              v-if="matchedIds.length === 0" 
+              :type="mode === 'works' ? 'table' : 'list-item-three-line@12'" 
+              class="mt-8"
+            />
+
+            <!-- Results -->
+            <div v-else-if="matchedIds.length > 0" class="mx-n4 results-section">
+
+              <!-- Works -->
+              <div v-if="mode == 'works'" ref="tableScrollRef" class="table-scroll">
+                <div class="px-3 pt-2 pb-0 d-flex align-end text-grey-darken-2">
+                  <v-chip v-for="filter in filterFailing" :key="filter" class="mr-1" variant="tonal" rounded="pill" color="blue">
+                    Failing: <code class="ml-1">{{ filter }}</code>
+                    <v-icon icon="mdi-close" class="ml-1" @click="filterFailing = filterFailing.filter((key) => key !== filter)"></v-icon>
+                  </v-chip>
+                  <v-spacer></v-spacer>
+                  <div v-if="resultsMeta" class="text-caption">
+                    {{ resultsMeta.count.toLocaleString() }} results 
+                    ({{ Math.round(resultsMeta.count / resultsMeta.sample_size * 100) }}%)
+                  </div>
+                </div>
+                
+                <v-data-table
+                  ref="vDataTableRef"
+                  class="results-table fixed-table"
+                  :headers="headers"
+                  :items="rows"
+                  :items-per-page="-1"
+                  flat
+                  hide-default-footer
+                  density="compact"
+                  item-value="name"
+                >
+                  <template v-slot:headers="{ columns }">
+                    <tr>
+                      <th v-for="column in columns" :key="column.key" :style="{width: column.width}" :class="{'icon-column': column.key in fieldIcons, 'spacer-column': column.key === 'spacer'}">
+                        <span v-if="fieldIcons[column.key]">
+                          <v-menu location="bottom left">
+                            <template #activator="{ props: menuProps }">
+                              <v-icon size="default" :color="filterFailing.includes(column.key) ? 'red-lighten-2' : 'grey-darken-2'" v-bind="menuProps" :icon="fieldIcons[column.key]"></v-icon>
+                            </template>
+                            <v-card class="pa-0">
+                              <v-list-item>
+                                <div class="d-flex">
+                                  <v-icon size="default" class="mr-1" color="grey-darken-1" :icon="fieldIcons[column.key]"></v-icon>
+                                  <div>
+                                    <code>{{ column.key }}</code>
+                                    <v-chip class="mx-1" size="small" color="grey">{{ testOnField(column.key) }}</v-chip>
+                                    <div class="text-grey-darken-1 text-caption">Pass rate: {{ fieldMatchRates["rates"][column.key] }}%</div>
+                                  </div>
+                                </div>
+                              </v-list-item>
+                              <v-divider class="my-2"></v-divider>
+                              <v-list-item @click="filterFailing = filterFailing.filter((key) => key !== column.key)">
+                                <v-icon :color="filterFailing.includes(column.key) ? 'white' : 'grey'" icon="mdi-check" class="mr-1"></v-icon>
+                                No filter
+                              </v-list-item>
+                              <v-list-item @click="filterFailing = [...new Set([...filterFailing, column.key])]">
+                                <v-icon :color="filterFailing.includes(column.key) ? 'grey' : 'white'" icon="mdi-check" class="mr-1"></v-icon>
+                                Filter by failing
+                              </v-list-item>
+                              <v-divider class="my-2"></v-divider>
+                              <v-list-item @click="fieldsToShow = fieldsToShow.filter((key) => key !== column.key)">
+                                <v-icon color="grey-darken-1" icon="mdi-eye-off" class="mr-1"></v-icon>
+                                Hide column
+                              </v-list-item>
+                            </v-card>
+                          </v-menu>
+                        </span>
+                        <span v-else-if="column.key === 'spacer'">
+                          <!-- Tests Menu -->
+                          <v-dialog max-width="900" v-model="showTestsDialog">
+                            <template #activator="{ props }">
+                              <v-btn icon size="x-small" color="grey-lighten-2" class="my-2" v-bind="props">
+                                <v-icon icon="mdi-plus"></v-icon>
+                              </v-btn>
+                            </template>
+                            <v-card rounded="xl" class="pa-4">
+                              <v-card-title class="d-flex justify-space-between align-start w-100">
+                                <div style="flex: 1; min-width: 0; margin-right: 16px;">
+                                  Tests to show
+                                </div>
+                                <v-btn icon variant="text" class="mr-n4 mt-n2" style="flex-shrink: 0;" @click="showTestsDialog = false">
+                                  <v-icon color="grey-darken-2">mdi-close</v-icon>
+                                </v-btn>
+                              </v-card-title>
+                              <v-card-text>
+                              <div>
+                                <v-chip 
+                                  v-for="field in defaultFields[entityType]" 
+                                  :key="field"
+                                  :variant="fieldsToShow.includes(field) ? 'tonal' : 'flat'"
+                                  :color="fieldsToShow.includes(field) ? 'blue-darken-3' : 'white'"
+                                  :style="fieldsToShow.includes(field) ? '' : 'border: 1px solid #DCE4ED;'"
+                                  class="mr-2 mb-3"
+                                  @click="toggleField(field)"
+                                >
+                                  {{ field }}
+                                  <v-icon v-if="fieldsToShow.includes(field)" icon="mdi-close" class="mr-n1" end></v-icon>
+                                </v-chip>
+                              </div>
+                              <div class="mt-2">
+                                <span class="text-caption text-grey-darken-2 mr-1">Reset:</span>
+                                <v-btn
+                                  variant="flat"
+                                  color="grey-lighten-2"
+                                  size="default"
+                                  class="mr-2"
+                                  rounded
+                                  @click="fieldsToShow = [...defaultFields[entityType]]"
+                                >
+                                  <v-icon icon="mdi-select-group"></v-icon>
+                                  All
+                                </v-btn>                      
+                                
+                                <v-btn
+                                  variant="flat"
+                                  color="grey-lighten-2"
+                                  size="default"
+                                  rounded
+                                  @click="fieldsToShow = []"
+                                >
+                                  <v-icon icon="mdi-select"></v-icon>
+                                  None
+                                </v-btn>
+                              </div>
+                              <div>
+                                <v-switch
+                                  v-model="showProdColumn"
+                                  label="Show production column"
+                                  color="blue"
+                                  hide-details
+                                  class="mt-2"
+                                ></v-switch>
+                              </div>
+                            </v-card-text>
+                            </v-card>
+                          </v-dialog>
+                        </span>
+                        <span v-else>{{ column.title }}</span>
+                      </th>
+                    </tr>
+                  </template>
+
+                  <!-- Table Rows -->
+                  <template v-slot:item="{ item, columns }">
+                    <tr>
+                      <td v-for="column in columns" :key="column.key" :class="{'icon-column': column.key in fieldIcons}" :style="getCellStyle(item, column)">
+                        
+                        <div v-if="column.key === 'prod'" class="py-7 px-0" style="width: 370px;">
+                          <google-scholar-view 
+                            :id="item._id" 
+                            :data="prodResults[item._id]"
+                            @title-click="compareId = item._id" />
+                        </div>
+
+                        <div v-else-if="column.key === 'walden'" class="py-7 px-0" style="width: 370px;">
+                          <google-scholar-view 
+                            :id="item._id" 
+                            :data="waldenResults[item._id]"
+                            :matches="matches[item._id]"
+                            :compare-data="prodResults[item._id]" 
+                            @title-click="compareId = item._id"/>
+                        </div>
+
+                        <v-tooltip v-else open-delay="300" :text="column.key">
+                          <template v-slot:activator="{ props }">
+                            <div class="test-cell" @click="openCompareFieldDialog(item._id, column.key)" style="width: 100%; height: 100%; cursor: pointer;" v-bind="props"></div>
+                          </template>
+                        </v-tooltip>
+      
+                      </td>
+                    </tr>
+                  </template>
+                </v-data-table>
+              </div>
+
+              <!-- Summary  -->
+              <div v-else-if="mode == 'summary'">
+
+                <!-- Stats 
+                <v-row :dense="smAndDown" class="px-2 px-sm-6 pt-6 pb-4">
+                  <v-col cols="3" class="py-2">
+                    <v-card color="" rounded class="text-center fill-height">
+                      <v-card-title class="text-h6 font-weight-bold">{{ fieldMatchRates["rates"]["testsPassed"] }}%</v-card-title>
+                      <v-card-text class="text-caption text-uppercase text-grey-darken-2">Work Pass Rate</v-card-text>
+                    </v-card>
+                  </v-col>
+                  <v-col cols="3">
+                    <v-card color="" rounded class="text-center fill-height">
+                      <v-card-title class="text-h6 font-weight-bold">{{ recall["works"]["recall"] }}%</v-card-title>
+                      <v-card-text class="text-caption text-uppercase text-grey-darken-2">Recall Rate</v-card-text>
+                    </v-card>
+                  </v-col>
+                  <v-col cols="3">
+                    <v-card color="" rounded class="text-center fill-height">
+                      <v-card-title class="text-h6 font-weight-bold">{{ fieldMatchRateAverage }}%</v-card-title>
+                      <v-card-text class="text-caption text-uppercase text-grey-darken-2">Test Pass Rate</v-card-text>
+                    </v-card>
+                  </v-col>
+                  <v-col cols="3">
+                    <v-card color="" rounded class="text-center fill-height" style="position: relative;">
+                      <v-card-title class="text-h6 font-weight-bold">10,000</v-card-title>
+                      <v-card-text class="text-caption text-uppercase text-grey-darken-2">
+                        Sample Size
+                      </v-card-text>
+                    </v-card>
+                  </v-col>
+                </v-row>
+                -->
+
+                <div class="pt-4 pb-2 px-6">
+                  <v-menu>
+                    <template v-slot:activator="{ props }">
+                      <v-btn v-bind="props" rounded="pill" color="blue" variant="tonal">
+                        Sort:
+                        {{ summarySort === 'alphabetical' ? 'Alphabetical' : 'Pass %' }}
+                        <v-icon icon="mdi-menu-down"></v-icon>
+                      </v-btn>
+                    </template>
+                    <v-list>
+                      <v-list-item @click="summarySort = 'alphabetical'">
+                        <v-icon icon="mdi-check" :color="summarySort === 'alphabetical' ? 'grey-darken-2' : 'white'"></v-icon>
+                        Alphabetical
+                      </v-list-item>
+                      <v-list-item @click="summarySort = 'passRate'">
+                        <v-icon icon="mdi-check" :color="summarySort === 'passRate' ? 'grey-darken-2' : 'white'"></v-icon>
+                        Pass %
+                      </v-list-item>
+                    </v-list>
+                  </v-menu>
+                </div>
+
+                <v-row class="pa-4">
+                  <template v-if="summaryItems">
+                    
+                    <v-col cols="12" md="6" lg="4" v-for="summaryCard in sortedSummaryItems" :key="summaryCard.fieldName">
+                      <v-card flat color="grey-lighten-4 pa-3" rounded="xl" class="fill-height">
+                        <RouterLink :to="`/works?filterFailing=${summaryCard.fieldName}`" custom v-slot="{ navigate }">
+                          <div class="d-flex cursor-pointer" @click="navigate">
+                            <div class="flex-shrink-0 mr-2 d-flex align-center">
+                              <v-progress-circular size="40" width="8" color="blue-lighten-1" :model-value="summaryCard.passRate"></v-progress-circular>
+                            </div>
+                            <div>
+                              <v-tooltip v-if="summaryCard.fieldName !== centerEllipsis(summaryCard.fieldName)" :text="`${summaryCard.fieldName}`" location="bottom">
+                                <template v-slot:activator="{ props }">
+                                  <code class="d-block" v-bind="props">{{ centerEllipsis(summaryCard.fieldName) }}</code>
+                                </template>
+                              </v-tooltip>
+                              <code v-else class="d-block">{{ summaryCard.fieldName }}</code>
+                              <span class="ml-1 text-grey-darken-1" size="x-small">{{ summaryCard.passRate }}%</span>
+                              <v-chip v-if="testOnField(summaryCard.fieldName)" class="ml-1" size="x-small" color="grey-darken-2">{{ testOnField(summaryCard.fieldName) }}</v-chip>
+                            </div>
+                          </div>
+                        </RouterLink>
+                      </v-card>
+                    </v-col>
+                  </template>
+                  <template v-else>
+                    <v-skeleton-loader type="list-item-three-line@12"></v-skeleton-loader>
+                  </template>
+
+
+                  <!--
+                  <v-col cols="12">
+                    <v-card class="">
+                      <v-data-table
+                        :headers="summaryHeaders"
+                        :items="summaryItems"
+                        :sort-by="[{ key: 'matchRate', order: 'desc' }]"
+                        :items-per-page="-1"
+                        :hide-default-footer="true"
+                        flat
+                        class="metrics-table"
+                      >
+                        <template v-slot:item="{ item, columns }">
+                          <tr>
+                            <td v-for="column in columns" :key="column.key">
+                              <template v-if="column.key === 'fieldName'">
+                                <code>{{ item.fieldName }}</code>
+                                <v-chip v-if="testOnField(item.fieldName)" class="ml-1" size="x-small" color="grey-darken-2">{{ testOnField(item.fieldName) }}</v-chip>
+                              </template>
+                              <template v-else-if="column.key === 'matchRate'">
+                                <cell-bar :percent="item.matchRate" />
+                              </template>
+                            </td>
+                          </tr>
+                        </template>
+                      </v-data-table>
+                    </v-card>
+                  </v-col>
+                  -->
+
+                  <!-- Sum Cards 
+                  <v-col cols="5">
+                    <v-card class="sum-card mb-6 mr-6" v-for="sumCard in sumCards" :key="sumCard.field">
+                      <v-card-title class="">{{ sumCard.title }}</v-card-title>
+                      <v-card-text class="">
+                        <div class="d-flex">
+                          <div class="stat d-flex flex-column mr-12">
+                            <div class="font-weight-bold" style="font-size: 16px;">{{ fieldMatchRates["sums"][sumCard.field]?.prod.toLocaleString() || '0' }}</div>
+                            <div class="text-caption text-uppercase text-grey-darken-2">Prod Sum</div>
+                          </div>
+                          <div class="stat d-flex flex-column mr-12">
+                            <div class="font-weight-bold" style="font-size: 16px;">{{ fieldMatchRates["sums"][sumCard.field]?.walden.toLocaleString() || '0' }}</div>
+                            <div class="text-caption text-uppercase text-grey-darken-2">Walden Sum</div>
+                          </div>
+                          <div class="">
+                            <div class="percent-stat d-flex flex-column">
+                              <span class="font-weight-bold mr-1" style="font-size: 16px;">{{ fieldMatchRates["rates"][sumCard.field] }}%</span>
+                              <span class="text-caption text-uppercase text-grey-darken-2">Passing</span>
+                            </div>
+                          </div>
+                        </div>  
+                      </v-card-text>
+                    </v-card>
+                  </v-col>
+                  -->
+                </v-row>  
+              </div>
+
+              <!-- Coverage -->
+              <div v-if="mode === 'coverage'">
+                <template v-if="recallItems">
+                  <v-data-table
+                    :headers="recallHeaders"
+                    :items="recallItems"
+                    :items-per-page="-1"
+                    :hide-default-footer="true"
+                    :sort-by="[{ key: 'recall', order: 'desc' }]"
+                    flat
+                    class="metrics-table"
+                  >
+                    <template v-slot:item="{ item, columns }">
+                      <tr>
+                        <td v-for="column in columns" :key="column.key">
+                          <template v-if="column.key === 'type'">
+                            <code><a :href="`https://api.openalex.org/v2/${item.type}`" target="_blank" style="text-decoration: none; color: #000;">/{{ item.type }}</a></code>
+                          </template>
+                          <template v-else-if="column.key === 'recall'">
+                            <cell-bar :percent="item.recall" />
+                          </template>
+                          <template v-else-if="column.key === 'canonicalId'">
+                            <div v-if="item.canonicalId === '-'">-</div>
+                            <div v-else>
+                              <cell-bar :percent="item.canonicalId" />
+                            </div>
+                          </template>
+                          <template v-else-if="column.key === 'sampleSize'">
+                            <div class="text-right"><code>{{ item.sampleSize.toLocaleString() }}</code></div>
+                          </template>
+                          <template v-else>
+                            {{ item[column.key] }}
+                          </template>
+                        </td>
+                      </tr>
+                    </template>
+                  </v-data-table>
+                </template>
+                <v-skeleton-loader v-else type="list-item-three-line@12"></v-skeleton-loader>
+              </div>
+
+              <!-- Pagination -->
+              <v-pagination
+                v-model="page"
+                v-if="mode === 'works'"
+                :length="resultsMeta ? Math.ceil(resultsMeta.count / pageSize) : 0"
+                :total-visible="10"
+                rounded
+                class="py-4"
+              ></v-pagination>
+
+            </div>
+          </v-card>
+        </v-col>
+      </v-row>
+    </v-container>
+    
+    <!-- Fixed Table Header -->
+    <div
+      v-if="headers.length > 0 && mode === 'works'"
+      ref="fixedHeaderRef"
+      class="fixed-header"
+      v-show="showFixedHeader"
+    >
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th v-for="column in headers" :key="column.key" :style="{width: column.width}" :class="{'icon-column': column.key in fieldIcons, 'spacer-column': column.key === 'spacer'}">
+              <span v-if="fieldIcons[column.key]">
+                <v-menu location="bottom left">
+                  <template #activator="{ props: menuProps }">
+                    <v-icon size="default" :color="filterFailing.includes(column.key) ? 'red-lighten-2' : 'grey-darken-2'" v-bind="menuProps" :icon="fieldIcons[column.key]"></v-icon>
+                  </template>
+                  <v-card class="pa-0">
+                    <v-list-item>
+                      <div class="d-flex">
+                        <v-icon size="default" class="mr-1" color="grey-darken-1" :icon="fieldIcons[column.key]"></v-icon>
+                        <div>
+                          <code>{{ column.key }}</code>
+                          <v-chip class="mx-1" size="small" color="grey">{{ testOnField(column.key) }}</v-chip>
+                          <div class="text-grey-darken-1 text-caption">Pass rate: {{ fieldMatchRates["rates"][column.key] }}%</div>
+                        </div>
+                      </div>
+                    </v-list-item>
+                    <v-divider class="my-2"></v-divider>
+                    <v-list-item @click="filterFailing = filterFailing.filter((key) => key !== column.key)">
+                      <v-icon :color="filterFailing.includes(column.key) ? 'white' : 'grey'" icon="mdi-check" class="mr-1"></v-icon>
+                      No filter
+                    </v-list-item>
+                    <v-list-item @click="filterFailing = [...new Set([...filterFailing, column.key])]">
+                      <v-icon :color="filterFailing.includes(column.key) ? 'grey' : 'white'" icon="mdi-check" class="mr-1"></v-icon>
+                      Filter by failing
+                    </v-list-item>
+                    <v-divider class="my-2"></v-divider>
+                    <v-list-item @click="fieldsToShow = fieldsToShow.filter((key) => key !== column.key)">
+                      <v-icon color="grey-darken-1" icon="mdi-eye-off" class="mr-1"></v-icon>
+                      Hide column
+                    </v-list-item>
+                  </v-card>
+                </v-menu>
+              </span>
+              <span v-else-if="column.key === 'spacer'">
+                <!-- Tests Menu -->
+                <v-dialog max-width="900" v-model="showTestsDialog">
+                  <template #activator="{ props }">
+                    <v-btn icon size="x-small" color="grey-lighten-2" class="my-2" v-bind="props">
+                      <v-icon icon="mdi-plus"></v-icon>
+                    </v-btn>
+                  </template>
+                  <v-card rounded="xl" class="pa-4">
+                    <v-card-title class="d-flex justify-space-between align-start w-100">
+                      <div style="flex: 1; min-width: 0; margin-right: 16px;">
+                        Tests to show
+                      </div>
+                      <v-btn icon variant="text" class="mr-n4 mt-n2" style="flex-shrink: 0;" @click="showTestsDialog = false">
+                        <v-icon color="grey-darken-2">mdi-close</v-icon>
+                      </v-btn>
+                    </v-card-title>
+                    <v-card-text>
+                    <div>
+                      <v-chip 
+                        v-for="field in defaultFields[entityType]" 
+                        :key="field"
+                        :variant="fieldsToShow.includes(field) ? 'tonal' : 'flat'"
+                        :color="fieldsToShow.includes(field) ? 'blue-darken-3' : 'white'"
+                        :style="fieldsToShow.includes(field) ? '' : 'border: 1px solid #DCE4ED;'"
+                        class="mr-2 mb-3"
+                        @click="toggleField(field)"
+                      >
+                        {{ field }}
+                        <v-icon v-if="fieldsToShow.includes(field)" icon="mdi-close" class="mr-n1" end></v-icon>
+                      </v-chip>
+                    </div>
+                    <div class="mt-2">
+                      <span class="text-caption text-grey-darken-2 mr-1">Reset:</span>
+                      <v-btn
+                        variant="flat"
+                        color="grey-lighten-2"
+                        size="default"
+                        class="mr-2"
+                        rounded
+                        @click="fieldsToShow = [...defaultFields[entityType]]"
+                      >
+                        <v-icon icon="mdi-select-group"></v-icon>
+                        All
+                      </v-btn>                      
+                      
+                      <v-btn
+                        variant="flat"
+                        color="grey-lighten-2"
+                        size="default"
+                        rounded
+                        @click="fieldsToShow = []"
+                      >
+                        <v-icon icon="mdi-select"></v-icon>
+                        None
+                      </v-btn>
+                    </div>
+                    <div>
+                      <v-switch
+                        v-model="showProdColumn"
+                        label="Show production column"
+                        color="blue"
+                        hide-details
+                        class="mt-2"
+                      ></v-switch>
+                    </div>
+                  </v-card-text>
+                  </v-card>
+                </v-dialog>
+              </span>
+              <span v-else>{{ column.title }}</span>
+            </th>
+          </tr>
+        </thead>
+      </table>
+    </div>
+
+    <!-- Compare Field Dialog -->
+    <v-dialog 
+      max-width="70vw" 
+      max-height="70vh"
+      width="auto"
+      v-model="showCompareFieldDialog"
+      @update:model-value="(val) => { if (!val) closeCompareFieldDialog() }"
+    >
+      <compare-field
+        v-if="showCompareFieldDialog"
+        :id="compareFieldId"
+        :field="compareFieldField"
+        :match="matches[compareFieldId][compareFieldField]"
+        :type="schema[entityType][compareFieldField]"
+        :prod-value="getFieldOrTestValue(compareFieldId, compareFieldField, 'prod')"
+        :walden-value="waldenResults[compareFieldId] ? getFieldOrTestValue(compareFieldId, compareFieldField, 'walden') : '[404]'"
+        @close="closeCompareFieldDialog"
+        @show-comparison="onShowComparison(compareFieldId, compareFieldField, $event)"
+      />
+    </v-dialog>
+
+    <!-- Compare Work Dialog -->
+    <v-dialog 
+      max-width="80vw" 
+      max-height="80vh"
+      :model-value="!!compareId"
+      scroll-strategy="block"
+      class="rounded-o"
+      @update:model-value="(val) => { if (!val) compareId = null }"
+    >
+      <compare-work
+        v-if="compareId"
+        :id="compareId"
+        :schema="schema"
+        :matches="matches[compareId]"
+        :prod-results="prodResults[compareId]"
+        :walden-results="waldenResults[compareId]"
+        :compare-view="compareView"
+        @close="compareId = null"
+        @update:compare-view="compareView = $event"
+      />
+    </v-dialog>
+
+    <!-- Work Details Drawer -->  
+    <work-drawer 
+      v-model:isDrawerOpen="isDrawerOpen" 
+      :workId="zoomId" 
+      :workData="zoomData"
+      :isV2="zoomSource === 'walden'"
+      @close="onDrawerClose"
+    />
+
+    <oreo-nav />
+
+  </div>
+</template>
+
+<script setup>
+import { ref, reactive, computed, watch, onMounted, toRefs, nextTick, mergeProps } from 'vue';
+import { useDisplay } from 'vuetify';
+import axios from 'axios';
+
+import { samples } from '@/qa/samples';
+import filters from '@/filters';
+import { fieldIcons } from '@/qa/apiComparison';
+import { useParams } from '@/composables/useStorage';
+import WorkDrawer from '@/components/QA/WorkDrawer.vue';
+import CompareField from '@/components/QA/CompareField.vue';
+import CompareWork from '@/components/QA/CompareWork.vue';
+import GoogleScholarView from '@/components/QA/googleScholarView.vue';
+import CellBar from '@/components/QA/CellBar.vue';
+import OreoNav from '@/components/QA/OreoNav.vue';
+
+defineOptions({ name: 'Oreo' });
+
+const props = defineProps({
+    mode: {
+        type: String,
+        default: 'works',
+    },
+});
+
+const schema         = ref(null);
+const defaultFields  = ref(null);
+
+const prodUrl      = `https://api.openalex.org/`;
+const waldenUrl    = `https://api.openalex.org/v2/`;
+//const metricsUrl   = `https://metrics-api.openalex.org/`;
+const metricsUrl   = `http://localhost:5006/`;
+const axiosConfig  = {headers: {Authorization: "Bearer YWMKSvdNwfrknsOPtdqCPz"}};
+
+const { mode } = toRefs(props);
+
+const entityType        = ref('works');
+const fieldsToShow      = useParams('fieldsToShow', 'array', []);
+const zoomId            = useParams('zoomId', 'string', null);
+const zoomSource        = useParams('zoomSource', 'string', 'prod');
+const compareId         = useParams('compareId', 'string', null);
+const compareView       = useParams('compareView', 'string', 'diff');
+const pageSize          = useParams('pageSize', 'number', 20);
+const page              = useParams('page', 'number', 1);
+const filterFailing     = useParams('filterFailing', 'array', []);
+const showProdColumn    = useParams('showProdColumn', 'boolean', true);
+const summarySort       = useParams('summarySort', 'string', 'alphabetical');
+const compareFieldId    = useParams('compareFieldId', 'string', null);
+const compareFieldField = useParams('compareFieldField', 'string', null);
+const showTestsDialog   = ref(false);
+
+const prodResults          = reactive({});
+const waldenResults        = reactive({});
+const matches              = reactive({});
+const resultsMeta          = ref(null);
+const fieldMatchRates      = reactive({});
+const recall               = reactive({});
+const searchStarted        = ref(false);
+const errorMessage         = ref('');
+
+const tableScrollRef       = ref(null);
+const fixedHeaderRef       = ref(null);
+const vDataTableRef        = ref(null);
+const showFixedHeader      = ref(false);
+
+const { smAndDown } = useDisplay();
+
+const titles = {
+  "works": {
+    "title": "Works",
+    "subtitle": "Compare works from Production and Walden with key tests"
+  },
+  "summary": {
+    "title": "Summary",
+    "subtitle": "Total pass rates of key tests across full sample set"
+  },
+  "coverage": {
+    "title": "Coverage",
+    "subtitle": "Coverage rates of Walden across all endpoint samples"
+  },
+}
+
+const getFieldOrTestValue = (id, field, source) => {
+  if (field in matches[id]["_test_values"]) {
+    return matches[id]["_test_values"][field][source];
+  }
+  const obj = source === "prod" ? prodResults[id] : waldenResults[id];
+  return getFieldValue(obj, field);
+};
+
+const getFieldValue = (obj, field) => {
+  if (!obj) { return undefined; }
+
+  const id = extractID(obj.id);
+
+  const keys = field.split(".");
+  let value = obj;
+  for (let i = 0; i < keys.length; i++) {
+    value = value !== null && typeof value === "object" ? value[keys[i]] : undefined;
+    if (value === undefined) {
+      return undefined;
+    }
+  }
+  return value;
+};
+
+/*
+const fieldMatchRateAverage = computed(() => {
+  
+  if (!fieldMatchRates) { return 0; }
+  let sum = 0;
+  let count = 0;
+  fieldsToShow.value.forEach(field => {
+    if (fieldMatchRates["rates"][field] !== undefined) {
+      sum += fieldMatchRates["rates"][field];
+      count++;
+    }
+  });
+  return count > 0 ? Math.round(sum / count) : 0;
+});
+*/
+
+const matchedIds = computed(() => {
+  return matches ? Object.keys(matches) : [];
+});
+
+const testOnField = (field) => {
+  if (!schema.value) { return null; }
+  const type = schema.value[entityType.value][field];
+  const typeParts = type.split("|");
+  if (typeParts.length > 1) {
+    return typeParts[1];
+  }
+  return "=";
+};
+
+const fieldWithTest = (field) => {
+  const test = testOnField(field);
+  return test ? field + " " + test : field;
+};
+
+const headers = computed(() => {
+  console.log("headers - start");
+  const fields = fieldsToShow.value.map(field => {
+    return { title: fieldWithTest(field), key: field, width: "30px", align: "center" };
+  });
+  fields.unshift({title: "Walden", key: "walden", width: "400px", align: "left"});
+  if (showProdColumn.value) { fields.unshift({title: "Prod", key: "prod", width: "400px", align: "left"}); }
+  fields.push({title: " ", key: "spacer", width: "50px", align: "center"});
+  console.log("headers - end");
+  return fields;
+});
+
+const rows = computed(() => {
+  console.log("rows - start");
+  const rows = [];
+
+  matchedIds.value.forEach(id => {
+    const prod = prodResults[id];
+    const walden = waldenResults[id];
+    //console.log(id, prod, walden);
+    if (prod !== undefined && walden !== undefined) {
+      rows.push(makeRow(id));
+    }
+  });
+  console.log("rows - end");
+  return rows;
+});
+
+const makeRow = (id) => {
+  const row = {};
+  row._id = id;
+  row.prodUrl = `https://api.openalex.org/${entityType.value}/${id}`;
+  row.waldenUrl = `https://api.openalex.org/v2/${entityType.value}/${id}`;
+
+  fieldsToShow.value.map(field => {    
+    row[field] = " ";
+  });
+  //console.log(row);
+  return row;
+};
+
+const getCellStyle = (item, column) => {  
+  if (!item || ["prod", "walden", "spacer"].includes(column.key)) { return {}; }
+
+  let passed = false;
+
+  if (matches && matches[item._id] && matches[item._id][column.key]) {
+    passed = true;
+  }
+
+  const styles = {width: column.width};
+
+  styles.backgroundColor = passed ? "#DCEDC8" : "#FFCDD2";
+
+  if (iconFields.includes(column.key)) {
+    styles.padding = '0px';
+  }
+
+  return styles;
+}
+
+const iconFields = [
+  "doi",
+  "authorships",
+  "locations",
+  "primary_topic.id",
+  "institutions_distinct_count",
+  "referenced_works_count",
+  "cited_by_count",
+];
+
+const summaryHeaders = computed(() => {
+  return [
+    { 
+      title: 'Test',
+      key: 'fieldName',
+      align: 'right',
+      width: "300px",
+      sortable: true,
+    },
+    { 
+      title: 'Passing', 
+      key: 'passRate',
+      align: 'right',
+      sortable: true,
+    },
+  ];
+});
+
+const summaryItems = computed(() => {
+  if (!defaultFields.value || !fieldMatchRates.rates) { return null; }
+
+  const rows = []; 
+  defaultFields.value[entityType.value].forEach(key => {
+    rows.push({
+      fieldName: key,
+      passRate: fieldMatchRates["rates"][key],
+    });
+  });
+  return rows;
+});
+
+const sortedSummaryItems = computed(() => {
+  const items = [...summaryItems.value];
+  return items.sort((a, b) => {
+    if (summarySort.value === 'alphabetical') {
+      return a.fieldName.localeCompare(b.fieldName);
+    } else {
+      return b.passRate - a.passRate;
+    }
+  });
+});
+
+const centerEllipsis = (str) => {
+  const maxLen = 26;
+  if (str.length <= maxLen) { return str; }
+  
+  // If there's a dot, prioritize showing text after the last dot
+  if (str.includes('.')) {
+    const lastDotIndex = str.lastIndexOf('.');
+    const rightSide = str.slice(lastDotIndex); // includes the dot
+    const remainingLength = maxLen - rightSide.length - 2; // subtract 3 for ".."
+    
+    if (remainingLength > 0) {
+      const leftSide = str.slice(0, remainingLength);
+      return leftSide + ".." + rightSide;
+    } else {
+      // If right side is too long, fall back to original logic
+      const half = Math.floor(maxLen / 2);
+      return str.slice(0, half) + ".." + str.slice(-half);
+    }
+  }
+  
+  // Original logic for strings without dots
+  const half = Math.floor(maxLen / 2);
+  return str.slice(0, half) + "..." + str.slice(-half);
+}
+
+const sumCards = [
+  {title:"Citations", field:"referenced_works"},
+  {title:"Locations", field:"locations"}
+]
+
+const openCompareFieldDialog = (itemId, columnKey) => {
+  compareFieldId.value = itemId;
+  compareFieldField.value = columnKey;
+}
+
+const closeCompareFieldDialog = () => {
+  compareFieldId.value = null;
+  compareFieldField.value = null;
+}
+
+const showCompareFieldDialog = computed(() => {
+  return compareFieldId.value !== null && compareFieldField.value !== null;
+});
+  
+
+const onShowComparison = (itemId, columnKey, event) => {
+  compareFieldId.value = null;
+  compareFieldField.value = null;
+  compareId.value = event;
+}
+
+async function fetchResponses(ids, type, waldenOnly = false) {
+  searchStarted.value = true;
+  errorMessage.value = '';
+  const getResults = async (url, store) => {
+    let newIds = [];
+    let missingIds = [...ids];
+    ids.forEach(id => {
+      if (!(id in store)) {
+        newIds.push(id);
+      }
+    });
+    if (newIds.length > 0) {
+      const apiUrl = `${url}${type}?filter=${idFilterField(type)}:${newIds.join('|')}&per_page=100`;
+      try {
+      const response = await axios.get(apiUrl, axiosConfig);
+      response.data.results.forEach(result => {
+        store[extractID(result.id)] = result;
+        missingIds.splice(missingIds.indexOf(extractID(result.id)), 1);
+      });
+      } catch (error) {
+        console.error(`Error fetching ${type}: ${error}`);
+      }
+      missingIds.forEach(id => {
+        store[id] = null;
+      });
+    }
+  }
+  const promises = [getResults(waldenUrl, waldenResults)]
+  if (!waldenOnly) {
+    promises.push(getResults(prodUrl, prodResults));
+  }
+  await Promise.all(promises);
+}
+
+function idFilterField(type) {
+  const usesId = ["keywords", "domains", "continents", "countries", "languages", "licenses", "sdgs", "work-types"];  
+  return usesId.includes(type) ? "id" : "ids.openalex";
+}
+
+async function fetchResponsesUpTo(count, ids, type, waldenOnly = false) {
+  const nCalls = Math.ceil(count / pageSize.value);
+  let startIndex = 0;
+
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+  for (let i = 0; i < nCalls; i++) {
+    const idsToFetch = ids.slice(startIndex, startIndex + 100);
+    fetchResponses(idsToFetch, type, waldenOnly);
+    startIndex += 100;
+    await delay(100);
+  }
+}
+
+async function fetchRecallResponses() {
+  const promises = [];
+  recallTypes.forEach(type => {
+    promises.push(fetchResponsesUpTo(500, type.ids, type.type));
+  });
+  await Promise.all(promises);
+}
+
+const recallHeaders = computed(() => {
+  return [
+    { 
+      title: 'Entity',
+      key: 'type',
+      align: 'right',
+      width: "200px",
+      sortable: true,
+    },
+    { 
+      title: 'Coverage', 
+      key: 'recall',
+      sortable: true,
+    },
+    { 
+      title: 'Sample Size', 
+      key: 'sampleSize',
+      align: 'end',
+      width: "200px",
+      sortable: true,
+    },
+  ];
+});
+
+const recallItems = computed(() => {
+  if (!Object.keys(recall).length) { return null; }
+  const rows = []; 
+  Object.keys(recall).forEach(key => {
+    rows.push({
+      type: key,
+      recall: recall[key]["recall"],
+      canonicalId: recall[key]["canonicalId"],
+      sampleSize: recall[key]["sampleSize"],
+    });
+  });
+  return rows;
+});
+
+const toggleField = (field) => {
+  if (fieldsToShow.value.includes(field)) {
+    fieldsToShow.value = fieldsToShow.value.filter(f => f !== field);
+  } else {
+    fieldsToShow.value = [...fieldsToShow.value, field];
+  }
+}
+
+const isDrawerOpen = computed(() => {
+  return Boolean(zoomId.value);
+});
+
+const zoomData = computed(() => {
+  if (!zoomId.value) { return null; }
+
+  return zoomSource.value === "prod" ? prodResults[zoomId.value] : waldenResults[zoomId.value];
+});
+
+function onDrawerClose() {
+  zoomId.value = null;
+}
+
+const extractID = (input) => {
+  const orgIndex = input.indexOf('.org/');
+  return orgIndex !== -1 ? input.substring(orgIndex + 5) : input;
+}
+
+async function syncFixedHeader() {
+  // Synchronize the fixed header's horizontal scroll, position, and column widths with the real table
+  await nextTick();
+  const scroll = tableScrollRef.value;
+  const fixed = fixedHeaderRef.value;
+  
+  if (!scroll || !fixed) return;
+
+  const left = scroll.getBoundingClientRect().left;
+  fixed.style.left = `${left}px`;
+  fixed.style.width = `${scroll.clientWidth}px`;
+  fixed.style.overflow = 'hidden';
+
+  const realThs = scroll.querySelectorAll('thead tr:first-child th');
+  const fixedThs = fixed.querySelectorAll('thead tr:first-child th');
+  if (realThs.length === fixedThs.length) {
+    for (let i = 0; i < realThs.length; i++) {
+      const w = realThs[i].offsetWidth;
+      fixedThs[i].style.width = w + 'px';
+      fixedThs[i].style.minWidth = w + 'px';
+      fixedThs[i].style.maxWidth = w + 'px';
+    }
+  }
+}
+
+async function fetchMetricsResponses() {
+  // Clear existing data safely
+  prodResults && Object.keys(prodResults).forEach(key => delete prodResults[key]);
+  waldenResults && Object.keys(waldenResults).forEach(key => delete waldenResults[key]);
+  matches && Object.keys(matches).forEach(key => delete matches[key]);
+  resultsMeta.value = null;
+  
+  let failingFilter = "";
+  if (filterFailing.value.length > 0) {
+    failingFilter = `&filterFailing=${filterFailing.value.join(",")}`;
+  }
+
+  const apiUrl = `${metricsUrl}/responses?page=${page.value}${failingFilter}&per_page=${pageSize.value}`;
+  const response = await axios.get(apiUrl);
+  response.data.results.forEach((item) => {
+    prodResults[item.id] = item.prod;
+    waldenResults[item.id] = item.walden;
+    matches[item.id] = item.match;
+  });
+  resultsMeta.value = response.data.meta;
+}
+
+async function fetchSchema() {
+  const apiUrl = `${metricsUrl}/schema`;
+  const response = await axios.get(apiUrl);
+  schema.value = response.data.schema;
+  defaultFields.value = response.data.testFields;
+  fieldsToShow.value = [...response.data.testFields[entityType.value]];
+}
+
+async function fetchFieldMatches() {
+  const apiUrl = `${metricsUrl}/field-match/works`;
+  const response = await axios.get(apiUrl);
+  Object.keys(response.data.data).forEach(key => {
+    fieldMatchRates[key] = response.data.data[key];
+  });
+}
+
+async function fetchRecall() {
+  const apiUrl = `${metricsUrl}/recall`;
+  const response = await axios.get(apiUrl);
+  Object.keys(response.data.data).forEach(key => {
+    recall[key] = response.data.data[key];
+  });
+}
+
+onMounted(async () => {
+  window.addEventListener('resize', () => {
+    syncFixedHeader();
+  });
+  await fetchSchema();
+  fetchMetricsResponses();
+  fetchFieldMatches();
+  fetchRecall();
+});
+
+watch(page, async () => {
+  await fetchMetricsResponses();
+});
+
+watch(filterFailing, async () => {
+  console.log("filterFailing changed");
+  await fetchMetricsResponses();
+});
+
+const handleWindowScroll = () => {
+  // Fixed header visibility logic based on window scroll
+  const wrapper = document.querySelector('.v-table__wrapper');
+  if (!wrapper) return;
+
+  const wrapperRect = wrapper.getBoundingClientRect();
+  showFixedHeader.value = wrapperRect.top < 0;
+};
+
+watch(() => Object.keys(matches).length, async (count) => {
+  if (count > 0) {
+    // Setup syncing fixed header with data table
+    await nextTick();
+    const scroll = document.querySelector('.v-table__wrapper');
+    const fixed = fixedHeaderRef.value;
+    if (scroll && fixed) {
+      const scrollHandler = () => {
+        fixed.scrollLeft = scroll.scrollLeft;
+      };
+      scroll.addEventListener('scroll', scrollHandler);
+      fixed.scrollLeft = scroll.scrollLeft;
+      syncFixedHeader();
+      window.addEventListener('scroll', handleWindowScroll);
+      handleWindowScroll(); // Call immediately to set showFixedHeader initially
+    }
+  }
+});
+
+watch([tableScrollRef, fixedHeaderRef], () => {
+  syncFixedHeader();
+  handleWindowScroll();
+});
+</script>
+
+
+<style scoped>
+.square-btn {
+  min-width: 40px !important;
+  width: 40px !important;
+  height: 40px !important;
+  padding: 0 !important;
+}
+:deep(.v-number-input input) {
+  text-align: center;
+}
+.results-section {
+}
+:deep(.results-table thead tr th) {
+  border-bottom: 1px solid #E0E0E0 !important;
+  white-space: nowrap;
+}
+.results-table td a {
+  color: #555;
+  text-decoration: none;
+}
+.results-table td a:hover {
+  color: #555;
+  text-decoration: underline;
+}
+.results-table .test-cell:hover {
+ border: 1px solid #BDBDBD;
+ background-color: white;
+ opacity: 0.4;
+}
+.fixed-table >>> table {
+  table-layout: fixed;
+}
+.results-table .icon-column {
+  cursor: pointer;
+  width: 40px;
+  padding: 0;
+  text-align: center;
+}
+.menu-item {
+  cursor: pointer;
+  padding: 12px 16px;
+  margin-right: -16px;
+  margin-left: -16px;
+}
+.menu-item:hover {
+  background-color: #E0E0E0;
+}
+.results-table .spacer-column {
+  text-align: center;
+  padding: 0;
+}
+.table-scroll {
+  position: relative;
+  overflow-x: auto;
+}
+.fields-card {
+  border-color: #BDBDBD;
+}
+.fixed-header {
+  position: fixed;
+  top: 0px;
+  left: 0;
+  width: auto;
+  background: white;
+  border-collapse: collapse;
+  z-index: 1000;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+  pointer-events: auto;
+}
+.fixed-header::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+.fixed-header table {
+  min-width: max-content;
+  width: max-content;
+  border-collapse: collapse;
+}
+.fixed-header th {
+  padding: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border-bottom: 2px solid #ccc;
+  white-space: nowrap;
+  text-align: left;
+}
+.sticky-controls {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: white;
+}
+.v-card, .v-overlay {
+  overflow: visible !important;
+}
+</style>
