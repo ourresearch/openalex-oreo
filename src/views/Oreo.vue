@@ -568,8 +568,8 @@ const currentRoute = ref(route.path)
 const schema         = ref(null);
 const defaultFields  = ref(null);
 
-//const metricsUrl   = `https://metrics-api.openalex.org/`;
-const metricsUrl   = `http://localhost:5006/`;
+const metricsUrl   = `https://metrics-api.openalex.org/`;
+//const metricsUrl   = `http://localhost:5006/`;
 const axiosConfig  = {headers: {Authorization: "Bearer YWMKSvdNwfrknsOPtdqCPz"}};
 
 const { mode, entityType } = toRefs(props);
