@@ -134,6 +134,11 @@ export function useParams(name, type, defaultValue = null) {
         if (parsedValue !== null && JSON.stringify(parsedValue) !== JSON.stringify(value.value)) {
           value.value = parsedValue;
         }
+      } else {
+        // Param absent on the new route: reset to default
+        if (JSON.stringify(value.value) !== JSON.stringify(defaultValue)) {
+          value.value = defaultValue;
+        }
       }
     });
   });
@@ -270,6 +275,11 @@ export function useParamsAndLocalStorage(nameOrOptions, type, defaultValue = nul
         const parsedValue = parseUrlParam(newParamValue, type);
         if (parsedValue !== null && JSON.stringify(parsedValue) !== JSON.stringify(value.value)) {
           value.value = parsedValue;
+        }
+      } else {
+        // Param absent on the new route: reset to default
+        if (JSON.stringify(value.value) !== JSON.stringify(defaultValue)) {
+          value.value = defaultValue;
         }
       }
     });

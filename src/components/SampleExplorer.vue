@@ -1,42 +1,50 @@
 <template>
-  <div class="pa-8">
+  <div class="px-8 py-4">
     <template v-if="!isLoading">
-    <v-row v-for="id in idsWithData" :key="id" class="mb-3 pb-3" style="line-height: 1.3; border-bottom: 1px solid #f5f5f5;">
-      <v-col cols="12" sm="9">
 
-        <google-scholar-view :id="id" :data="apiData[id]" @title-click="zoomId = $event"/>
-
-      </v-col>
-
-      <v-col cols="12" sm="2" offset-sm="1">
-
-        <div v-if="source === 'xpac'" class="text-caption text-right">
-          <v-chip
-            v-if="!(id in titleMatches) && apiData[id].title"
-            color="grey"
-            size="x-small"
-            class="display-inline-block mb-1"
-            :href="`https://openalex.org/works?filter=display_name.search:${encodeTitle(apiData[id].title)}`" 
-            target="_blank"
-          >
-            Checking...
-          </v-chip>
-
-          <v-chip
-            v-if="titleMatches[id]"
-            :href="`https://openalex.org/works?filter=display_name.search:${encodeTitle(apiData[id].title)}`" 
-            target="_blank"
-            color="blue"
-            size="x-small"
-            class="display-inline-block flex-grow-0 mb-1"
-            style="text-decoration: none;"
-          >
-            {{ titleMatches[id].toLocaleString() }} {{ titleMatches[id] === 1 ? 'match' : 'matches' }}
-            <v-icon class="ml-0" icon="mdi-chevron-right"></v-icon>
-          </v-chip>
+      <div class="pb-6 text-grey-darken-2">
+        <div style="font-size: 14px;">
+          {{ ((page-1)*pageSize+1).toLocaleString() }}-{{ page*pageSize.toLocaleString() }} of 
+          {{ sampleIds.length.toLocaleString() }} results 
         </div>
-      </v-col>
-    </v-row>
+      </div>
+
+      <v-row v-for="id in idsWithData" :key="id" class="mb-3 pb-3" style="line-height: 1.3; border-bottom: 1px solid #f5f5f5;">
+        <v-col cols="12" sm="9">
+
+          <google-scholar-view :id="id" :data="apiData[id]" @title-click="zoomId = $event"/>
+
+        </v-col>
+
+        <v-col cols="12" sm="2" offset-sm="1">
+
+          <div v-if="source === 'xpac'" class="text-caption text-right">
+            <v-chip
+              v-if="!(id in titleMatches) && apiData[id].title"
+              color="grey"
+              size="x-small"
+              class="display-inline-block mb-1"
+              :href="`https://openalex.org/works?filter=display_name.search:${encodeTitle(apiData[id].title)}`" 
+              target="_blank"
+            >
+              Checking...
+            </v-chip>
+
+            <v-chip
+              v-if="titleMatches[id]"
+              :href="`https://openalex.org/works?filter=display_name.search:${encodeTitle(apiData[id].title)}`" 
+              target="_blank"
+              color="blue"
+              size="x-small"
+              class="display-inline-block flex-grow-0 mb-1"
+              style="text-decoration: none;"
+            >
+              {{ titleMatches[id].toLocaleString() }} {{ titleMatches[id] === 1 ? 'match' : 'matches' }}
+              <v-icon class="ml-0" icon="mdi-chevron-right"></v-icon>
+            </v-chip>
+          </div>
+        </v-col>
+      </v-row>
     </template>
 
     <v-skeleton-loader v-if="isLoading" type="list-item-three-line@12"></v-skeleton-loader>
@@ -65,7 +73,7 @@
 
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, toRefs } from 'vue';
 import axios from 'axios';
 
 import { samples } from '@/qa/samples';
@@ -74,7 +82,7 @@ import WorkDrawer from '@/components/QA/WorkDrawer.vue';
 import GoogleScholarView from '@/components/QA/googleScholarView.vue';
 
 
-const { source } = defineProps({
+const props = defineProps({
   source: {
     type: String,
     default: 'xpac'
@@ -87,9 +95,11 @@ const entityType = 'works';
 const apiData       = ref({});
 const titleMatches  = ref({});
 const isLoading     = ref(false);
-const pageSize      = ref(100);
+const pageSize      = ref(20);
 const page          = useParams('page', 'number', 1);
 const zoomId        = useParams('zoomId', 'string', null);
+
+const { source } = toRefs(props);
 
 const sample    = computed(() => source.value === 'xpac' ? samples.xpac3 : samples.prodOnly1);
 const sampleIds = computed(() => sample.value.ids);
@@ -115,7 +125,7 @@ async function fetchResponses() {
     }
   });
   if (newIds.length > 0) {
-    const versionStr = source === 'xpac' ? '&data-version=2' : '';
+    const versionStr = source.value === 'xpac' ? '&data-version=2' : '';
     const url = `https://api.openalex.org/${entityType}?filter=ids.openalex:${newIds.join('|')}&per_page=100${versionStr}`;
     const response = await axios.get(url, axiosConfig);
     response.data.results.forEach(result => {

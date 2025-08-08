@@ -3,38 +3,91 @@
     <v-container :fluid="smAndDown" :class="['pa-0', 'pa-sm-4']">
       <v-row>
         <v-col cols="12">
-          <div class="ml-2">
+          <div>
             <v-breadcrumbs v-if="breadcrumbs" :items="breadcrumbs" divider="›" class="px-0 mt-n10" />
             <div class="text-h3 mb-3">
               {{ titles[mode].title }}
-              <template v-if="mode === 'works'">
-                <v-btn-toggle v-model="entityView" class="ml-2" color="grey-lighten-5" density="compact" rounded="pill">
-                  <v-btn value="prod">Prod-only</v-btn>
-                  <v-btn value="both">Both</v-btn>
-                  <v-btn value="walden">Walden-only</v-btn>
-                </v-btn-toggle>
-              </template>
             </div>
             <div class="text-grey-darken-3 text-subtitle-1 mb-8">
               {{ titles[mode].subtitle }}
             </div>
           </div>
 
-          <!-- Works Filters -->
-          <div v-if="mode === 'works' && filterFailing.length > 0 && entityView === 'both'" class="pt-0 pb-4">
-            <v-chip v-for="filter in filterFailing" :key="filter" class="mr-1" variant="tonal" rounded="pill" color="blue-darken-1">
-              Failing: <code class="ml-1">{{ filter }}</code>
-              <v-icon icon="mdi-close" class="ml-1" @click="filterFailing = filterFailing.filter((key) => key !== filter)"></v-icon>
-            </v-chip>
+          <!-- List Filters -->
+          <div v-if="mode === 'list'" class="pt-0 pb-4 d-flex">
+            <v-menu width="200">
+              <template v-slot:activator="{ props }">
+                <v-chip v-bind="props" rounded="pill" color="blue-darken-1" variant="tonal" class="mr-1">
+                  Show: &nbsp;<b>{{ {prod: 'Prod Only', both: 'Both', walden: 'Walden Only'}[entityView] }}</b>
+                  <v-icon icon="mdi-menu-down"></v-icon>
+                </v-chip>
+              </template>
+              <v-list>
+                <v-list-item @click="entityView = 'prod'">
+                  <div class="d-flex align-center">
+                    <v-icon icon="mdi-check" class="mr-2" :color="entityView === 'prod' ? 'grey-darken-2' : 'white'"></v-icon>
+                    Prod Only
+                    <v-spacer></v-spacer>
+                    <span class="text-grey-darken-1" style="font-size: 14px;">{{ calcScaledCoverage(coverage[entityType]).prodOnly }}%</span>
+                  </div>
+                </v-list-item>
+                <v-list-item @click="entityView = 'both'">
+                  <div class="d-flex align-center">
+                    <v-icon icon="mdi-check" class="mr-2" :color="entityView === 'both' ? 'grey-darken-2' : 'white'"></v-icon>
+                    Both
+                    <v-spacer></v-spacer>
+                    <span class="text-grey-darken-1" style="font-size: 14px;">{{ calcScaledCoverage(coverage[entityType]).both }}%</span>
+                  </div>
+                </v-list-item>
+                <v-list-item @click="entityView = 'walden'">
+                  <div class="d-flex align-center">
+                    <v-icon icon="mdi-check" class="mr-2" :color="entityView === 'walden' ? 'grey-darken-2' : 'white'"></v-icon>
+                    Walden Only
+                    <v-spacer></v-spacer>
+                    <span class="text-grey-darken-1" style="font-size: 14px;">{{ calcScaledCoverage(coverage[entityType]).waldenOnly }}%</span>
+                  </div>
+                </v-list-item>
+              </v-list>
+            </v-menu>
+            
+            <template v-if="filterFailing.length > 0 && entityView === 'both'">
+              <v-chip v-for="filter in filterFailing" :key="filter" class="mr-1" variant="tonal" rounded="pill" color="red-lighten-1">
+                Failing: <code class="ml-1"><b>{{ filter }}</b></code>
+                <v-icon icon="mdi-close" class="ml-1" @click="filterFailing = filterFailing.filter((key) => key !== filter)"></v-icon>
+              </v-chip>
+            </template>
+            
+            <v-menu v-if="entityView === 'both'">
+              <template v-slot:activator="{ props }">
+                <v-chip v-bind="props" rounded="pill" color="red-lighten-1" variant="tonal" class="mr-1">
+                  <v-icon icon="mdi-plus"></v-icon>
+                  Filter failing
+                </v-chip>
+              </template>
+              <v-list style="max-height: 60vh" rounded="xl">
+                <v-list-item v-for="filter in defaultFields[entityType].filter(f => !filterFailing.includes(f))" :key="filter" @click="toggleFailingFilter(filter)">
+                  <div class="d-flex align-center">
+                    <v-icon :icon="fieldIcons[filter]" class="mr-2" color="grey-darken-2"></v-icon>
+                    {{ filter }}
+                    <v-spacer></v-spacer>
+                    <span class="text-grey-darken-1 ml-4" style="font-size: 14px;">{{ 100-matchRates[entityType][filter] }}%</span>
+                  </div>
+                </v-list-item>
+              </v-list>
+            </v-menu>
+
           </div>
 
-          <!-- Summary Sort -->
-          <div v-if="mode === 'summary'" class="pt-0 pb-4">
+          <!-- Tests Count / Sort -->
+          <div v-if="mode === 'tests' && dataLoaded" class="pt-0 pb-4 d-flex justify-space-between align-end">
+            <div class="text-h6">
+              {{ defaultFields[entityType].length }} tests • {{ 100 - matchRates[entityType]['_average'] }}% failing
+            </div>
             <v-menu>
               <template v-slot:activator="{ props }">
                 <v-btn v-bind="props" rounded="pill" color="blue-darken-1" variant="tonal">
                   Sort:
-                  {{ summarySort === 'alphabetical' ? 'Alphabetical' : 'Pass Rate' }}
+                  {{ summarySort === 'alphabetical' ? 'Alphabetical' : 'Fail Rate' }}
                   <v-icon icon="mdi-menu-down"></v-icon>
                 </v-btn>
               </template>
@@ -43,236 +96,180 @@
                   <v-icon icon="mdi-check" :color="summarySort === 'alphabetical' ? 'grey-darken-2' : 'white'"></v-icon>
                   Alphabetical
                 </v-list-item>
-                <v-list-item @click="summarySort = 'passRate'">
-                  <v-icon icon="mdi-check" :color="summarySort === 'passRate' ? 'grey-darken-2' : 'white'"></v-icon>
-                  Pass %
+                <v-list-item @click="summarySort = 'failRate'">
+                  <v-icon icon="mdi-check" :color="summarySort === 'failRate' ? 'grey-darken-2' : 'white'"></v-icon>
+                  Fail Rate
                 </v-list-item>
               </v-list>
             </v-menu>
           </div>
 
+          <!-- Entity -->
+          <v-row v-if="mode === 'entity'" class="px-2">
+            <v-col cols="12" md="6" lg="6" xl="4">
+              <v-hover>
+                <template v-slot:default="{ isHovering, props }">
+                  <div class="text-h6 mb-1">Tests</div>
+                  <v-card flat rounded="xl" fill-height v-bind="props" :class="[isHovering ? 'bg-grey-lighten-3' : '', 'cursor-pointer']" @click="router.push(`/entity/${entityType}/tests`)">
+                    <v-card-text>
+                      <div v-if="dataLoaded">
+                        <v-progress-circular :model-value="100 - matchRates[entityType]['_average']" determinate width="8" color="red-lighten-3"></v-progress-circular>
+                        <span class="ml-3">
+                          <b style="font-size: 18px;" >{{ defaultFields[entityType].length }}</b> tests
+                          <span style="font-size: 18px;" class="mx-2">•</span>
+                          <b style="font-size: 18px;" >{{ 100 - matchRates[entityType]['_average'] }}%</b> failing</span>
+                      </div>
+                      <v-skeleton-loader v-else type="list-item"></v-skeleton-loader>
+                    </v-card-text>
+                  </v-card>
+                </template>
+              </v-hover>
+            </v-col>
+            <v-col cols="12" md="6" lg="6" xl="4">
+              <v-hover>
+                <template v-slot:default="{ isHovering, props }">
+                  <div class="text-h6 mb-1">List</div>
+                  <v-card flat rounded="xl" fill-height v-bind="props" :class="[isHovering ? 'bg-grey-lighten-3' : '', 'cursor-pointer']" @click="router.push(`/entity/${entityType}/list`)">
+                    <v-card-text>
+                      <div v-if="dataLoaded" class="d-flex align-center">
+                        <v-icon icon="mdi-format-list-bulleted" size="32" color="grey-lighten-1"></v-icon>
+                        <span class="ml-3">
+                          <b style="font-size: 18px;" >{{ calcScaledCoverage(coverage[entityType]).prodOnly }}%</b> Prod Only 
+                          <span style="font-size: 18px;" class="mx-2">•</span>
+                          <b style="font-size: 18px;" >{{ calcScaledCoverage(coverage[entityType]).both }}%</b> Both 
+                          <span style="font-size: 18px;" class="mx-2">•</span>
+                          <b style="font-size: 18px;" >{{ calcScaledCoverage(coverage[entityType]).waldenOnly }}%</b> Walden Only
+                        </span>
+                      </div>
+                      <v-skeleton-loader v-else type="list-item"></v-skeleton-loader>
+                    </v-card-text>
+                  </v-card>
+                </template>
+              </v-hover>
+            </v-col>
+          </v-row>
 
-          <v-card flat class="pt-2 pb-0 px-4 rounded-o" style="overflow: hidden !important;">
+          <v-card v-else flat class="pt-2 pb-0 px-4 rounded-o" style="overflow: hidden !important;">
 
             <!-- Skeleton Loader -->
             <v-skeleton-loader 
               v-if="matchedIds.length === 0" 
-              :type="mode === 'works' ? 'table' : 'list-item-three-line@12'" 
+              :type="mode === 'list' ? 'table' : 'list-item-three-line@12'" 
               class="mt-8"
             />
 
             <!-- Results -->
             <div v-else-if="matchedIds.length > 0" class="mx-n4 results-section">
-              <v-tabs 
-                v-model="currentRoute"
-                v-if="(mode === 'works' && entityView === 'both') || mode === 'summary'" 
-                bg-color="grey-lighten-3"
-                class="mb-4 mt-n2">
-                <v-tab :to="`/entity/${entityType}/tests`" value="`/entity/${entityType}/tests`" class="text-uppercase text-grey-darken-2">Tests</v-tab>
-                <v-tab :to="`/entity/${entityType}/list`" value="`/entity/${entityType}/list`" class="text-uppercase text-grey-darken-2">List</v-tab>
-              </v-tabs>
 
-              <!-- Works -->
-              <div v-if="mode == 'works'" ref="tableScrollRef" class="table-scroll">
-                <div v-if="entityView === 'both'">
-                  
-                  <div class="px-4 pt-2 pb-0 text-grey-darken-2">
-                    <div v-if="resultsMeta" class="text-caption">
-                      {{ ((page-1)*pageSize+1).toLocaleString() }}-{{ Math.min(page*pageSize, resultsMeta.count).toLocaleString() }} of 
-                      {{ resultsMeta.count.toLocaleString() }} results 
-                      ({{ Math.round(resultsMeta.count / resultsMeta.sample_size * 100) }}%)
+              <!-- List -->
+              <div v-if="mode == 'list'" ref="tableScrollRef" class="table-scroll">
+                <v-col cols="12" lg="12" xl="8">
+                  <div v-if="entityView === 'both'">
+                    
+                    <div class="px-4 pt-2 pb-0 text-grey-darken-2">
+                      <div v-if="resultsMeta" style="font-size: 14px;">
+                        {{ ((page-1)*pageSize+1).toLocaleString() }}-{{ Math.min(page*pageSize, resultsMeta.count).toLocaleString() }} of 
+                        {{ resultsMeta.count.toLocaleString() }} results 
+                        ({{ Math.round(resultsMeta.count / resultsMeta.sample_size * 100) }}%)
+                      </div>
                     </div>
+                    
+                    <v-data-table
+                      ref="vDataTableRef"
+                      class="results-table fixed-table"
+                      :headers="headers"
+                      :items="rows"
+                      :items-per-page="-1"
+                      flat
+                      hide-default-footer
+                      density="compact"
+                      item-value="name"
+                    >
+                      <template v-slot:headers="{ columns }">
+                        <tr>
+                          <th v-for="column in columns" :key="column.key" :style="{width: column.width}">
+                            <span>{{ column.title }}</span>
+                          </th>
+                        </tr>
+                      </template>
+
+                      <!-- Table Rows -->
+                      <template v-slot:item="{ item, columns }">
+                        <tr>
+                          <td v-for="column in columns" :key="column.key">
+                            
+                            <div v-if="column.key === 'prod'" class="py-7 pr-4">
+                              <google-scholar-view 
+                                :id="item._id" 
+                                :data="prodResults[item._id]"
+                                @title-click="compareId = item._id" />
+                            </div>
+
+                            <div v-else-if="column.key === 'walden'" class="py-7 pr-4">
+                              <google-scholar-view 
+                                :id="item._id" 
+                                :data="waldenResults[item._id]"
+                                :matches="matches[item._id]"
+                                :compare-data="prodResults[item._id]" 
+                                @title-click="compareId = item._id"/>
+                            </div>
+
+                            <div v-else-if="column.key === 'tests'">
+                              <span v-for="test in item.failingTests" :key="test">
+                                <v-tooltip open-delay="300" :text="test" location="bottom">
+                                  <template v-slot:activator="{ props }">
+                                    <v-icon v-bind="props" class="ma-1" color="red-lighten-3" @click="openCompareFieldDialog(item._id, test)" :icon="fieldIcons[test]" />
+                                  </template>
+                                </v-tooltip>  
+                              </span>
+                            </div>
+          
+                          </td>
+                        </tr>
+                      </template>
+                    </v-data-table>
                   </div>
-                  
-                  <v-data-table
-                    ref="vDataTableRef"
-                    class="results-table fixed-table"
-                    :headers="headers"
-                    :items="rows"
-                    :items-per-page="-1"
-                    flat
-                    hide-default-footer
-                    density="compact"
-                    item-value="name"
-                  >
-                    <template v-slot:headers="{ columns }">
-                      <tr>
-                        <th v-for="column in columns" :key="column.key" :style="{width: column.width}" :class="{'icon-column': column.key in fieldIcons, 'spacer-column': column.key === 'spacer'}">
-                          <span v-if="fieldIcons[column.key]">
-                            <v-menu location="bottom left">
-                              <template #activator="{ props: menuProps }">
-                                <v-icon size="default" :color="filterFailing.includes(column.key) ? 'red-lighten-2' : 'grey-darken-2'" v-bind="menuProps" :icon="fieldIcons[column.key]"></v-icon>
-                              </template>
-                              <v-card class="pa-0">
-                                <v-list-item>
-                                  <div class="d-flex">
-                                    <v-icon size="default" class="mr-1" color="grey-darken-1" :icon="fieldIcons[column.key]"></v-icon>
-                                    <div>
-                                      <code>{{ column.key }}</code>
-                                      <v-chip class="mx-1" size="small" color="grey-darken-1">{{ testOnField(column.key) }}</v-chip>
-                                      <div class="text-grey-darken-1 text-caption">Pass rate: {{ matchRates[entityType][column.key] }}%</div>
-                                    </div>
-                                  </div>
-                                </v-list-item>
-                                <v-divider class="my-2"></v-divider>
-                                <v-list-item @click="filterFailing = filterFailing.filter((key) => key !== column.key)">
-                                  <v-icon :color="filterFailing.includes(column.key) ? 'white' : 'grey'" icon="mdi-check" class="mr-1"></v-icon>
-                                  No filter
-                                </v-list-item>
-                                <v-list-item @click="filterFailing = [...new Set([...filterFailing, column.key])]">
-                                  <v-icon :color="filterFailing.includes(column.key) ? 'grey' : 'white'" icon="mdi-check" class="mr-1"></v-icon>
-                                  Filter by failing
-                                </v-list-item>
-                                <v-divider class="my-2"></v-divider>
-                                <v-list-item @click="fieldsToShow = fieldsToShow.filter((key) => key !== column.key)">
-                                  <v-icon color="grey-darken-1" icon="mdi-eye-off" class="mr-1"></v-icon>
-                                  Hide column
-                                </v-list-item>
-                              </v-card>
-                            </v-menu>
-                          </span>
-                          <span v-else-if="column.key === 'spacer'">
-                            <!-- Tests Menu -->
-                            <v-dialog max-width="900" v-model="showTestsDialog">
-                              <template #activator="{ props }">
-                                <v-btn icon size="x-small" color="grey-lighten-2" class="my-2" v-bind="props">
-                                  <v-icon icon="mdi-plus"></v-icon>
-                                </v-btn>
-                              </template>
-                              <v-card rounded="xl" class="pa-4">
-                                <v-card-title class="d-flex justify-space-between align-start w-100">
-                                  <div style="flex: 1; min-width: 0; margin-right: 16px;">
-                                    Tests to show
-                                  </div>
-                                  <v-btn icon variant="text" class="mr-n4 mt-n2" style="flex-shrink: 0;" @click="showTestsDialog = false">
-                                    <v-icon color="grey-darken-2">mdi-close</v-icon>
-                                  </v-btn>
-                                </v-card-title>
-                                <v-card-text>
-                                <div>
-                                  <v-chip 
-                                    v-for="field in defaultFields[entityType]" 
-                                    :key="field"
-                                    :variant="fieldsToShow.includes(field) ? 'tonal' : 'flat'"
-                                    :color="fieldsToShow.includes(field) ? 'blue-darken-3' : 'white'"
-                                    :style="fieldsToShow.includes(field) ? '' : 'border: 1px solid #DCE4ED;'"
-                                    class="mr-2 mb-3"
-                                    @click="toggleField(field)"
-                                  >
-                                    {{ field }}
-                                    <v-icon v-if="fieldsToShow.includes(field)" icon="mdi-close" class="mr-n1" end></v-icon>
-                                  </v-chip>
-                                </div>
-                                <div class="mt-2">
-                                  <span class="text-caption text-grey-darken-2 mr-1">Reset:</span>
-                                  <v-btn
-                                    variant="flat"
-                                    color="grey-lighten-2"
-                                    size="default"
-                                    class="mr-2"
-                                    rounded
-                                    @click="fieldsToShow = [...defaultFields[entityType]]"
-                                  >
-                                    <v-icon icon="mdi-select-group"></v-icon>
-                                    All
-                                  </v-btn>                      
-                                  
-                                  <v-btn
-                                    variant="flat"
-                                    color="grey-lighten-2"
-                                    size="default"
-                                    rounded
-                                    @click="fieldsToShow = []"
-                                  >
-                                    <v-icon icon="mdi-select"></v-icon>
-                                    None
-                                  </v-btn>
-                                </div>
-                                <div>
-                                  <v-switch
-                                    v-model="showProdColumn"
-                                    label="Show production column"
-                                    color="blue"
-                                    hide-details
-                                    class="mt-2"
-                                  ></v-switch>
-                                </div>
-                              </v-card-text>
-                              </v-card>
-                            </v-dialog>
-                          </span>
-                          <span v-else>{{ column.title }}</span>
-                        </th>
-                      </tr>
-                    </template>
 
-                    <!-- Table Rows -->
-                    <template v-slot:item="{ item, columns }">
-                      <tr>
-                        <td v-for="column in columns" :key="column.key" :class="{'icon-column': column.key in fieldIcons}" :style="getCellStyle(item, column)">
-                          
-                          <div v-if="column.key === 'prod'" class="py-7 px-0" style="width: 370px;">
-                            <google-scholar-view 
-                              :id="item._id" 
-                              :data="prodResults[item._id]"
-                              @title-click="compareId = item._id" />
-                          </div>
+                  <div v-else-if="entityView === 'prod'">
+                    <sample-explorer source="prod-only" />
+                  </div>
 
-                          <div v-else-if="column.key === 'walden'" class="py-7 px-0" style="width: 370px;">
-                            <google-scholar-view 
-                              :id="item._id" 
-                              :data="waldenResults[item._id]"
-                              :matches="matches[item._id]"
-                              :compare-data="prodResults[item._id]" 
-                              @title-click="compareId = item._id"/>
-                          </div>
-
-                          <v-tooltip v-else open-delay="300" :text="column.key">
-                            <template v-slot:activator="{ props }">
-                              <div class="test-cell" @click="openCompareFieldDialog(item._id, column.key)" style="width: 100%; height: 100%; cursor: pointer;" v-bind="props"></div>
-                            </template>
-                          </v-tooltip>
-        
-                        </td>
-                      </tr>
-                    </template>
-                  </v-data-table>
-                </div>
-
-                <div v-else-if="entityView === 'prod'">
-                  <sample-explorer source="prod-only" />
-                </div>
-
-                <div v-else-if="entityView === 'walden'">
-                  <sample-explorer source="xpac" />
-                </div>
+                  <div v-else-if="entityView === 'walden'">
+                    <sample-explorer source="xpac" />
+                  </div>
+                </v-col>
               </div>
 
-              <!-- Summary  -->
-              <div v-else-if="mode == 'summary'">
+              <!-- Tests  -->
+              <div v-else-if="mode == 'tests'">
                 <v-row class="pa-4">
                   <template v-if="summaryItems">
                     
                     <v-col cols="12" md="6" lg="4" xl="3" v-for="summaryCard in sortedSummaryItems" :key="summaryCard.fieldName">
-                      <v-card flat color="grey-lighten-4 pa-3" rounded="xl" class="fill-height">
-                        <RouterLink :to="`/entity/${entityType}/list?filterFailing=${summaryCard.fieldName}&entityView=both`" custom v-slot="{ navigate }">
-                          <div class="d-flex cursor-pointer" @click="navigate">
-                            <div class="flex-shrink-0 mr-2 d-flex align-center">
-                              <v-progress-circular size="40" width="8" color="blue-grey" :model-value="summaryCard.passRate"></v-progress-circular>
-                            </div>
-                            <div>
-                              <v-tooltip v-if="summaryCard.fieldName !== centerEllipsis(summaryCard.fieldName)" :text="`${summaryCard.fieldName}`" location="bottom">
-                                <template v-slot:activator="{ props }">
-                                  <code class="d-block" v-bind="props">{{ centerEllipsis(summaryCard.fieldName) }}</code>
-                                </template>
-                              </v-tooltip>
-                              <code v-else class="d-block">{{ summaryCard.fieldName }}</code>
-                              <span class="ml-1 text-grey-darken-1" size="x-small">{{ summaryCard.passRate }}%</span>
-                              <v-chip v-if="testOnField(summaryCard.fieldName)" class="ml-1" size="x-small" color="grey-darken-2">{{ testOnField(summaryCard.fieldName) }}</v-chip>
-                            </div>
-                          </div>
-                        </RouterLink>
-                      </v-card>
+                      <v-hover>
+                        <template v-slot:default="{ isHovering, props }">
+                          <v-card flat v-ripple v-bind="props" :class="[isHovering ? 'bg-grey-lighten-2' : 'bg-grey-lighten-3', 'cursor-pointer']"   color="grey-lighten-4 pa-3" rounded="xl" class="fill-height">
+                            <RouterLink :to="`/entity/${entityType}/list?filterFailing=${summaryCard.fieldName}&entityView=both`" custom v-slot="{ navigate }">
+                              <div class="d-flex cursor-pointer" @click="navigate">
+                                <div class="flex-shrink-0 mr-2 d-flex align-center">
+                                  <v-progress-circular size="40" width="8" color="red-lighten-3" :model-value="summaryCard.failRate"></v-progress-circular>
+                                </div>
+                                <div>
+                                  <v-tooltip v-if="summaryCard.fieldName !== centerEllipsis(summaryCard.fieldName)" :text="`${summaryCard.fieldName}`" location="bottom">
+                                    <template v-slot:activator="{ props }">
+                                      <code class="d-block" v-bind="props">{{ centerEllipsis(summaryCard.fieldName) }}</code>
+                                    </template>
+                                  </v-tooltip>
+                                  <code v-else class="d-block">{{ summaryCard.fieldName }}</code>
+                                  <span class="ml-1 text-grey-darken-1" size="x-small">{{ summaryCard.failRate }}%</span>
+                                  <v-chip v-if="testOnField(summaryCard.fieldName)" class="ml-1" size="x-small" color="grey-darken-2">{{ testOnField(summaryCard.fieldName) }}</v-chip>
+                                </div>
+                              </div>
+                            </RouterLink>
+                          </v-card>
+                        </template>
+                      </v-hover>
+
                     </v-col>
                   </template>
                   <template v-else>
@@ -281,9 +278,9 @@
                 </v-row>  
               </div>
 
-              <!-- Coverage -->
-              <div v-if="mode === 'coverage'">
-                <template v-if="coverageItems">
+              <!-- Home -->
+              <div v-if="mode === 'home'">
+                <v-col v-if="coverageItems" cols="12" lg="9" xl="6">
                   <v-data-table
                     :headers="coverageHeaders"
                     :items="coverageItems"
@@ -292,59 +289,48 @@
                     flat
                     class="metrics-table"
                   >
-                    <template v-slot:item="{ item, columns }">
+                    <template #headers="{ columns }">
                       <tr>
-                        <td v-for="column in columns" :key="column.key" :class="column.isLink ? 'link-cell' : ''">
-                          <template v-if="column.key === 'type'">
-                            <code><a :href="`https://api.openalex.org/v2/${item.type}`" target="_blank" style="text-decoration: none; color: #000;">/{{ item.type }}</a></code>
-                          </template>
-
-                          <template v-else-if="column.key === 'coverage'">
-                            <cell-bar :percent="item.coverage" />
-                          </template>
-
-                          <template v-else-if="column.key === 'prodOnly'">
-                            <RouterLink :to="`/entity/${item.type}/list?entityView=prod`" custom v-slot="{ navigate }">
-                              <div @click="navigate" class="text-right cursor-pointer"><code>{{ item.prodOnly }}{{ item.prodOnly === '-' ? '' : '%' }}</code></div>
-                            </RouterLink>
-                          </template>
-
-                          <template v-else-if="column.key === 'both'">
-                            <RouterLink :to="`/entity/${item.type}/list`" custom v-slot="{ navigate }">
-                              <div @click="navigate" class="text-right cursor-pointer"><code>{{ item.both }}{{ item.both === '-' ? '' : '%' }}</code></div>
-                            </RouterLink>
-                          </template>
-
-                          <template v-else-if="column.key === 'waldenOnly'">
-                            <RouterLink :to="`/entity/${item.type}/list?entityView=walden`" custom v-slot="{ navigate }">
-                              <div @click="navigate" class="text-right cursor-pointer"><code>{{ item.waldenOnly }}{{ item.waldenOnly === '-' ? '' : '%' }}</code></div>
-                            </RouterLink>
-                          </template>
-
-                          <template v-else-if="column.key === 'testPassRate'">
-                            <RouterLink :to="`/entity/${item.type}/tests`" custom v-slot="{ navigate }">
-                              <div @click="navigate" class="text-right cursor-pointer"><code>{{ item.testPassRate }}{{ item.testPassRate === '-' ? '' : '%' }}</code></div>
-                            </RouterLink>
-                          </template>
-
-                          <template v-else-if="column.key === 'sampleSize'">
-                            <div class="text-right"><code>{{ item.sampleSize.toLocaleString() }}</code></div>
-                          </template>
-                          <template v-else>
-                            {{ item[column.key] }}
-                          </template>
-                        </td>
+                        <th
+                          v-for="column in columns"
+                          :key="column.key"
+                          :class="['font-weight-bold', column.align === 'end' ? 'text-right' : 'text-left']"
+                          :style="column.width ? { width: column.width } : {}"
+                        >
+                          {{ column.title }}
+                        </th>
                       </tr>
                     </template>
+                    <template v-slot:item="{ item, columns }">
+                      <v-hover>
+                        <template v-slot:default="{ isHovering, props }">
+                          <tr v-bind="props" :class="[isHovering ? 'bg-grey-lighten-3' : '', 'cursor-pointer']" v-ripple @click="router.push(`/entity/${item.type}`)">
+                            <td v-for="column in columns" :key="column.key">
+                              <template v-if="column.key === 'type'">
+                                <code>/{{ item.type }}</code>
+                              </template>
+
+                              <template v-else-if="column.key === 'sampleSize'">
+                                <div class="text-right"><code>{{ item.sampleSize.toLocaleString() }}</code></div>
+                              </template>
+
+                              <template v-else>
+                                <div class="text-right"><code>{{ item[column.key] }}{{ item[column.key] === '-' ? '' : '%' }}</code></div>
+                              </template>
+                            </td>
+                          </tr>
+                        </template>
+                      </v-hover>
+                    </template>
                   </v-data-table>
-                </template>
+                </v-col>
                 <v-skeleton-loader v-else type="list-item-three-line@12"></v-skeleton-loader>
               </div>
 
               <!-- Pagination -->
               <v-pagination
                 v-model="page"
-                v-if="mode === 'works' && entityView === 'both'"
+                v-if="mode === 'list' && entityView === 'both'"
                 :length="resultsMeta ? Math.ceil(resultsMeta.count / pageSize) : 0"
                 :total-visible="10"
                 rounded
@@ -353,13 +339,14 @@
 
             </div>
           </v-card>
+
         </v-col>
       </v-row>
     </v-container>
     
     <!-- Fixed Table Header -->
     <div
-      v-if="headers.length > 0 && mode === 'works'"
+      v-if="headers.length > 0 && mode === 'list'"
       ref="fixedHeaderRef"
       class="fixed-header"
       v-show="showFixedHeader"
@@ -367,111 +354,8 @@
       <table class="results-table">
         <thead>
           <tr>
-            <th v-for="column in headers" :key="column.key" :style="{width: column.width}" :class="{'icon-column': column.key in fieldIcons, 'spacer-column': column.key === 'spacer'}">
-              <span v-if="fieldIcons[column.key]">
-                <v-menu location="bottom left">
-                  <template #activator="{ props: menuProps }">
-                    <v-icon size="default" :color="filterFailing.includes(column.key) ? 'red-lighten-2' : 'grey-darken-2'" v-bind="menuProps" :icon="fieldIcons[column.key]"></v-icon>
-                  </template>
-                  <v-card class="pa-0">
-                    <v-list-item>
-                      <div class="d-flex">
-                        <v-icon size="default" class="mr-1" color="grey-darken-1" :icon="fieldIcons[column.key]"></v-icon>
-                        <div>
-                          <code>{{ column.key }}</code>
-                          <v-chip class="mx-1" size="small" color="grey-darken-1">{{ testOnField(column.key) }}</v-chip>
-                          <div class="text-grey-darken-1 text-caption">Pass rate: {{ matchRates[entityType][column.key] }}%</div>
-                        </div>
-                      </div>
-                    </v-list-item>
-                    <v-divider class="my-2"></v-divider>
-                    <v-list-item @click="filterFailing = filterFailing.filter((key) => key !== column.key)">
-                      <v-icon :color="filterFailing.includes(column.key) ? 'white' : 'grey'" icon="mdi-check" class="mr-1"></v-icon>
-                      No filter
-                    </v-list-item>
-                    <v-list-item @click="filterFailing = [...new Set([...filterFailing, column.key])]">
-                      <v-icon :color="filterFailing.includes(column.key) ? 'grey' : 'white'" icon="mdi-check" class="mr-1"></v-icon>
-                      Filter by failing
-                    </v-list-item>
-                    <v-divider class="my-2"></v-divider>
-                    <v-list-item @click="fieldsToShow = fieldsToShow.filter((key) => key !== column.key)">
-                      <v-icon color="grey-darken-1" icon="mdi-eye-off" class="mr-1"></v-icon>
-                      Hide column
-                    </v-list-item>
-                  </v-card>
-                </v-menu>
-              </span>
-              <span v-else-if="column.key === 'spacer'">
-                <!-- Tests Menu -->
-                <v-dialog max-width="900" v-model="showTestsDialog">
-                  <template #activator="{ props }">
-                    <v-btn icon size="x-small" color="grey-lighten-2" class="my-2" v-bind="props">
-                      <v-icon icon="mdi-plus"></v-icon>
-                    </v-btn>
-                  </template>
-                  <v-card rounded="xl" class="pa-4">
-                    <v-card-title class="d-flex justify-space-between align-start w-100">
-                      <div style="flex: 1; min-width: 0; margin-right: 16px;">
-                        Tests to show
-                      </div>
-                      <v-btn icon variant="text" class="mr-n4 mt-n2" style="flex-shrink: 0;" @click="showTestsDialog = false">
-                        <v-icon color="grey-darken-2">mdi-close</v-icon>
-                      </v-btn>
-                    </v-card-title>
-                    <v-card-text>
-                    <div>
-                      <v-chip 
-                        v-for="field in defaultFields[entityType]" 
-                        :key="field"
-                        :variant="fieldsToShow.includes(field) ? 'tonal' : 'flat'"
-                        :color="fieldsToShow.includes(field) ? 'blue-darken-3' : 'white'"
-                        :style="fieldsToShow.includes(field) ? '' : 'border: 1px solid #DCE4ED;'"
-                        class="mr-2 mb-3"
-                        @click="toggleField(field)"
-                      >
-                        {{ field }}
-                        <v-icon v-if="fieldsToShow.includes(field)" icon="mdi-close" class="mr-n1" end></v-icon>
-                      </v-chip>
-                    </div>
-                    <div class="mt-2">
-                      <span class="text-caption text-grey-darken-2 mr-1">Reset:</span>
-                      <v-btn
-                        variant="flat"
-                        color="grey-lighten-2"
-                        size="default"
-                        class="mr-2"
-                        rounded
-                        @click="fieldsToShow = [...defaultFields[entityType]]"
-                      >
-                        <v-icon icon="mdi-select-group"></v-icon>
-                        All
-                      </v-btn>                      
-                      
-                      <v-btn
-                        variant="flat"
-                        color="grey-lighten-2"
-                        size="default"
-                        rounded
-                        @click="fieldsToShow = []"
-                      >
-                        <v-icon icon="mdi-select"></v-icon>
-                        None
-                      </v-btn>
-                    </div>
-                    <div>
-                      <v-switch
-                        v-model="showProdColumn"
-                        label="Show production column"
-                        color="blue"
-                        hide-details
-                        class="mt-2"
-                      ></v-switch>
-                    </div>
-                  </v-card-text>
-                  </v-card>
-                </v-dialog>
-              </span>
-              <span v-else>{{ column.title }}</span>
+            <th v-for="column in headers" :key="column.key" :style="{width: column.width}">
+              <span>{{ column.title }}</span>
             </th>
           </tr>
         </thead>
@@ -535,7 +419,7 @@
 
 <script setup>
 import { ref, reactive, computed, watch, onMounted, toRefs, nextTick } from 'vue';
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useDisplay } from 'vuetify';
 import axios from 'axios';
 
@@ -563,6 +447,7 @@ const props = defineProps({
 });
 
 const route = useRoute()
+const router = useRouter()
 const currentRoute = ref(route.path)
 
 const schema         = ref(null);
@@ -570,11 +455,9 @@ const defaultFields  = ref(null);
 
 const metricsUrl   = `https://metrics-api.openalex.org/`;
 //const metricsUrl   = `http://localhost:5006/`;
-const axiosConfig  = {headers: {Authorization: "Bearer YWMKSvdNwfrknsOPtdqCPz"}};
 
 const { mode, entityType } = toRefs(props);
 
-const fieldsToShow      = useParams('fieldsToShow', 'array', []);
 const zoomId            = useParams('zoomId', 'string', null);
 const zoomSource        = useParams('zoomSource', 'string', 'prod');
 const compareId         = useParams('compareId', 'string', null);
@@ -587,7 +470,6 @@ const showProdColumn    = useParams('showProdColumn', 'boolean', true);
 const summarySort       = useParams('summarySort', 'string', 'alphabetical');
 const compareFieldId    = useParams('compareFieldId', 'string', null);
 const compareFieldField = useParams('compareFieldField', 'string', null);
-const showTestsDialog   = ref(false);
 
 const prodResults          = reactive({});
 const waldenResults        = reactive({});
@@ -596,39 +478,48 @@ const resultsMeta          = ref(null);
 const matchRates           = reactive({});
 const coverage             = reactive({});
 
+const matchRatesLoaded     = ref(false);
+const coverageLoaded       = ref(false);
+const dataLoaded           = computed(() => matchRatesLoaded.value && coverageLoaded.value);
+
 const tableScrollRef       = ref(null);
 const fixedHeaderRef       = ref(null);
 const vDataTableRef        = ref(null);
 const showFixedHeader      = ref(false);
 
-const { smAndDown } = useDisplay();
+const { smAndDown, mdAndDown } = useDisplay();
 
 const titles = {
-  "works": {
-    "title": "Works",
-    "subtitle": "Compare and explore works from production and Walden with key tests"
+  "entity": {
+    "title": filters.titleCase(entityType.value),
+    "subtitle": "Explore tests and sample data from production and Walden"
   },
-  "summary": {
-    "title": "Works",
+  "list": {
+    "title": filters.titleCase(entityType.value) + " List",
+    "subtitle": `Compare and explore ${entityType.value} from production and Walden with key tests`
+  },
+  "tests": {
+    "title": filters.titleCase(entityType.value) + " Tests",
     "subtitle": "Total pass rates of key tests across the full sample set"
   },
-  "coverage": {
-    "title": "Overview",
+  "home": {
+    "title": "Home",
     "subtitle": "Explore coverage and test rates between production and Walden across all endpoints"
   },
 };
 
 const breadcrumbs = computed(() => {
-  if (mode.value === "coverage") { return null; }
+  if (mode.value === "home") { return null; }
   const items = [
-    { title: "Overview", disabled: false, to: "/" },
-    { title: filters.titleCase(entityType.value), disabled: true, to: `/entity/${entityType.value}` },
+    { title: "Home", disabled: false, to: "/" },
   ];
-  if (mode.value === "works") {
-    const viewNames = {"prod": "Prod-only", "both": "Both", "walden": "Walden-only"};
+  if (mode.value === "entity") {
+    items.push({ title: filters.titleCase(entityType.value), disabled: true, to: `/entity/${entityType.value}` });
+  } else if (mode.value === "list") {
+    items.push({ title: filters.titleCase(entityType.value), disabled: false, to: `/entity/${entityType.value}` });
     items.push({ title: "List", disabled: true, to: `/entity/${entityType.value}/list` });
-    items.push({ title: viewNames[entityView.value], disabled: true, to: `/entity/${entityType.value}/list` });
-  } else if (mode.value === "summary") {
+  } else if (mode.value === "tests") {
+    items.push({ title: filters.titleCase(entityType.value), disabled: false, to: `/entity/${entityType.value}` });
     items.push({ title: "Tests", disabled: true, to: `/entity/${entityType.value}/tests` });
   }
   return items;
@@ -679,13 +570,13 @@ const fieldWithTest = (field) => {
 };
 
 const headers = computed(() => {
-  const fields = fieldsToShow.value.map(field => {
-    return { title: fieldWithTest(field), key: field, width: "30px", align: "center" };
-  });
-  fields.unshift({title: "Walden", key: "walden", width: "400px", align: "left"});
-  if (showProdColumn.value) { fields.unshift({title: "Prod", key: "prod", width: "400px", align: "left"}); }
-  fields.push({title: " ", key: "spacer", width: "50px", align: "center"});
-  return fields;
+  const columns = [
+    {title: "Walden", key: "walden", width: mdAndDown.value ? "250px" : "400px"},
+    {title: "Failing Tests", key: "tests", width: "200px"},
+  ];
+  if (showProdColumn.value) { columns.unshift({title: "Prod", key: "prod", width: mdAndDown.value ? "250px" : "400px"}); }
+
+  return columns;
 });
 
 const rows = computed(() => {
@@ -707,10 +598,15 @@ const makeRow = (id) => {
   row.prodUrl = `https://api.openalex.org/${entityType.value}/${id}`;
   row.waldenUrl = `https://api.openalex.org/v2/${entityType.value}/${id}`;
 
-  fieldsToShow.value.map(field => {    
-    row[field] = " ";
+  const failingTests = [];
+  defaultFields.value[entityType.value].map(field => {    
+    if (matches[id][field] === false) {
+      failingTests.push(field);
+    }
   });
-  //console.log(row);
+
+  row.failingTests = failingTests;
+
   return row;
 };
 
@@ -738,6 +634,7 @@ const summaryItems = computed(() => {
     rows.push({
       fieldName: key,
       passRate: matchRates[entityType.value][key],
+      failRate: 100 - matchRates[entityType.value][key],
     });
   });
   return rows;
@@ -748,8 +645,8 @@ const sortedSummaryItems = computed(() => {
   return items.sort((a, b) => {
     if (summarySort.value === 'alphabetical') {
       return a.fieldName.localeCompare(b.fieldName);
-    } else {
-      return b.passRate - a.passRate;
+    } else if (summarySort.value === 'failRate') {
+      return b.failRate - a.failRate;
     }
   });
 });
@@ -812,28 +709,28 @@ const coverageHeaders = computed(() => {
       title: 'Prod Only', 
       key: 'prodOnly',
       align: 'end',
-      width: "140px",
       isLink: true,
+      width: "120px",
       sortable: true,
     },
     { 
       title: 'Both', 
       key: 'both',
       align: 'end',
-      width: "140px",
       isLink: true,
+      width: "120px",
       sortable: true,
     },
     { 
       title: 'Walden Only', 
       key: 'waldenOnly',
       align: 'end',
-      width: "140px",
       isLink: true,
+      width: "120px",
       sortable: true,
     },
     { 
-      title: 'Test Pass', 
+      title: 'Tests Pass', 
       key: 'testPassRate',
       align: 'end',
       isLink: true,
@@ -843,7 +740,6 @@ const coverageHeaders = computed(() => {
       title: 'Sample Size', 
       key: 'sampleSize',
       align: 'end',
-      width: "200px",
       sortable: true,
     },
   ];
@@ -915,13 +811,13 @@ const calcScaledCoverage = (data) => {
   };
 };
 
-const toggleField = (field) => {
-  if (fieldsToShow.value.includes(field)) {
-    fieldsToShow.value = fieldsToShow.value.filter(f => f !== field);
+const toggleFailingFilter = (field) => {
+  if (filterFailing.value.includes(field)) {
+    filterFailing.value = filterFailing.value.filter(f => f !== field);
   } else {
-    fieldsToShow.value = [...fieldsToShow.value, field];
+    filterFailing.value = [...filterFailing.value, field];
   }
-}
+};
 
 const isDrawerOpen = computed(() => {
   return Boolean(zoomId.value);
@@ -969,7 +865,6 @@ async function fetchSchema() {
   const response = await axios.get(apiUrl);
   schema.value = response.data.schema;
   defaultFields.value = response.data.testFields;
-  fieldsToShow.value = fieldsToShow.value.length > 0 ? fieldsToShow.value : [...response.data.testFields[entityType.value]];
 }
 
 async function fetchMatchRates() {
@@ -978,8 +873,7 @@ async function fetchMatchRates() {
   Object.keys(response.data.data).forEach(key => {
     matchRates[key] = response.data.data[key];
   });
-  console.log("Fetched match rates")
-  console.log(matchRates);
+  matchRatesLoaded.value = true;
 }
 
 async function fetchCoverage() {
@@ -988,8 +882,7 @@ async function fetchCoverage() {
   Object.keys(response.data.data).forEach(key => {
     coverage[key] = response.data.data[key];
   });
-  console.log("Fetched coverage")
-  console.log(coverage);
+  coverageLoaded.value = true;
 }
 
 async function syncFixedHeader() {
@@ -1169,11 +1062,5 @@ watch([tableScrollRef, fixedHeaderRef], () => {
 }
 .v-card, .v-overlay {
   overflow: visible !important;
-}
-.link-cell {
-  cursor: pointer;
-}
-.link-cell:hover {
-  background-color: #E0E0E0;
 }
 </style>

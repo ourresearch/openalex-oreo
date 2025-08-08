@@ -12,23 +12,6 @@ app.use(sslRedirect(['production'], 301));
 // compress responses
 app.use(compression());
 
-// redirect alpha.openalex.org to openalex.org
-app.use(function (req, res, next) {
-    if (req.subdomains.includes('analytics') && req.path === '/') {
-        res.redirect('https://openalex.org/analytics');
-    
-    } else if (req.subdomains.includes('analytics') || req.subdomains.includes('alpha')) {
-        // Preserve path and params
-        const path = req.path;
-        const queryParams = new URLSearchParams(req.query).toString();
-        const redirectUrl = `https://openalex.org${path}${queryParams ? `?${queryParams}` : ''}`;
-
-        res.redirect(redirectUrl);
-    } else {
-        next();
-    }
-});
-
 // this was helpful for configs:
 // https://scotch.io/tutorials/creating-a-single-page-todo-app-with-node-and-angular
 app.use(serveStatic(__dirname + "/dist"));
