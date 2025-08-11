@@ -1,8 +1,53 @@
 <template>
   <div :class="['bg-color py-0 py-sm-12', mode]" style="min-height: 70vh;">
-    <v-container :fluid="smAndDown" :class="['pa-0', 'pa-sm-4']">
+    <v-container :fluid="smAndDown || sidebarLayout" :class="['pa-0', 'pa-sm-4']">
       <v-row>
-        <v-col cols="12">
+        <v-col v-if="sidebarLayout" cols="3" class="list-sidebar" style="max-width: 320px;">
+          <div v-if="dataLoaded" style="padding-top: 140px;">
+            <v-list class="bg-color" density="compact">
+              <v-list-item title="Show"></v-list-item>
+              <v-divider class="mb-1"></v-divider>
+              <v-list-item style="font-size: 14px;" @click="entityView = 'prod'">
+                <div class="d-flex align-center">
+                  <v-icon :icon="entityView === 'prod' ? 'mdi-radiobox-marked' : 'mdi-radiobox-blank'" class="mr-2" color="grey-darken-2"></v-icon>
+                  Prod Only
+                  <v-spacer></v-spacer>
+                  <span class="text-grey-darken-1" style="font-size: 14px;">{{ calcScaledCoverage(coverage[entityType]).prodOnly }}%</span>
+                </div>
+              </v-list-item>
+              <v-list-item style="font-size: 14px;" @click="entityView = 'both'">
+                <div class="d-flex align-center">
+                  <v-icon :icon="entityView === 'both' ? 'mdi-radiobox-marked' : 'mdi-radiobox-blank'" class="mr-2" color="grey-darken-2"></v-icon>
+                  Both
+                  <v-spacer></v-spacer>
+                  <span class="text-grey-darken-1" style="font-size: 14px;">{{ calcScaledCoverage(coverage[entityType]).both }}%</span>
+                </div>
+              </v-list-item>
+              <v-list-item style="font-size: 14px;" @click="entityView = 'walden'">
+                <div class="d-flex align-center">
+                  <v-icon :icon="entityView === 'walden' ? 'mdi-radiobox-marked' : 'mdi-radiobox-blank'" class="mr-2" color="grey-darken-2"></v-icon>
+                  Walden Only
+                  <v-spacer></v-spacer>
+                  <span class="text-grey-darken-1" style="font-size: 14px;">{{ calcScaledCoverage(coverage[entityType]).waldenOnly }}%</span>
+                </div>
+              </v-list-item>
+            </v-list>
+            <v-list v-if="entityView === 'both'" class="bg-color" density="compact">
+              <v-list-item title="Failing"></v-list-item>
+              <v-divider class="mb-1"></v-divider>
+              <v-list-item v-for="filter in defaultFields[entityType]" :key="filter" style="font-size: 14px;" @click="toggleFailingFilter(filter)">
+                <div class="d-flex align-center">
+                  <v-icon :icon="filterFailing.includes(filter) ? 'mdi-checkbox-marked-outline' : 'mdi-checkbox-blank-outline'" class="mr-2" color="grey-darken-2"></v-icon>
+                  <code>{{ centerEllipsis(filter, 20) }}</code>
+                  <v-spacer></v-spacer>
+                  <span class="text-grey-darken-1 ml-4" style="font-size: 14px;">{{ 100-matchRates[entityType][filter] }}%</span>
+                </div>
+              </v-list-item>
+            </v-list>
+          </div>
+        </v-col>
+
+        <v-col :cols="sidebarLayout ? 9 : 12">
           <div>
             <v-breadcrumbs v-if="breadcrumbs" :items="breadcrumbs" divider="›" class="px-0 mt-n10" />
             <div class="text-h3 mb-3">
@@ -14,73 +59,75 @@
           </div>
 
           <!-- List Filters -->
-          <div v-if="mode === 'list'" class="pt-0 pb-4 d-flex">
-            <v-menu width="200">
-              <template v-slot:activator="{ props }">
-                <v-chip v-bind="props" rounded="pill" color="blue-darken-1" variant="tonal" class="mr-1">
-                  Show: &nbsp;<b>{{ {prod: 'Prod Only', both: 'Both', walden: 'Walden Only'}[entityView] }}</b>
-                  <v-icon icon="mdi-menu-down"></v-icon>
+          <div v-if="mode === 'list'">
+            <div v-if="mdAndDown" class="pt-0 pb-4 d-flex">
+              <v-menu width="200">
+                <template v-slot:activator="{ props }">
+                  <v-chip v-bind="props" rounded="pill" color="blue-darken-1" variant="tonal" class="mr-1">
+                    Show: &nbsp;<b>{{ {prod: 'Prod Only', both: 'Both', walden: 'Walden Only'}[entityView] }}</b>
+                    <v-icon icon="mdi-menu-down"></v-icon>
+                  </v-chip>
+                </template>
+                <v-list>
+                  <v-list-item @click="entityView = 'prod'">
+                    <div class="d-flex align-center">
+                      <v-icon icon="mdi-check" class="mr-2" :color="entityView === 'prod' ? 'grey-darken-2' : 'white'"></v-icon>
+                      Prod Only
+                      <v-spacer></v-spacer>
+                      <span class="text-grey-darken-1" style="font-size: 14px;">{{ calcScaledCoverage(coverage[entityType]).prodOnly }}%</span>
+                    </div>
+                  </v-list-item>
+                  <v-list-item @click="entityView = 'both'">
+                    <div class="d-flex align-center">
+                      <v-icon icon="mdi-check" class="mr-2" :color="entityView === 'both' ? 'grey-darken-2' : 'white'"></v-icon>
+                      Both
+                      <v-spacer></v-spacer>
+                      <span class="text-grey-darken-1" style="font-size: 14px;">{{ calcScaledCoverage(coverage[entityType]).both }}%</span>
+                    </div>
+                  </v-list-item>
+                  <v-list-item @click="entityView = 'walden'">
+                    <div class="d-flex align-center">
+                      <v-icon icon="mdi-check" class="mr-2" :color="entityView === 'walden' ? 'grey-darken-2' : 'white'"></v-icon>
+                      Walden Only
+                      <v-spacer></v-spacer>
+                      <span class="text-grey-darken-1" style="font-size: 14px;">{{ calcScaledCoverage(coverage[entityType]).waldenOnly }}%</span>
+                    </div>
+                  </v-list-item>
+                </v-list>
+              </v-menu>
+              
+              <template v-if="filterFailing.length > 0 && entityView === 'both'">
+                <v-chip v-for="filter in filterFailing" :key="filter" class="mr-1" variant="tonal" rounded="pill" color="red-lighten-1">
+                  Failing: <code class="ml-1"><b>{{ filter }}</b></code>
+                  <v-icon icon="mdi-close" class="ml-1" @click="filterFailing = filterFailing.filter((key) => key !== filter)"></v-icon>
                 </v-chip>
               </template>
-              <v-list>
-                <v-list-item @click="entityView = 'prod'">
-                  <div class="d-flex align-center">
-                    <v-icon icon="mdi-check" class="mr-2" :color="entityView === 'prod' ? 'grey-darken-2' : 'white'"></v-icon>
-                    Prod Only
-                    <v-spacer></v-spacer>
-                    <span class="text-grey-darken-1" style="font-size: 14px;">{{ calcScaledCoverage(coverage[entityType]).prodOnly }}%</span>
-                  </div>
-                </v-list-item>
-                <v-list-item @click="entityView = 'both'">
-                  <div class="d-flex align-center">
-                    <v-icon icon="mdi-check" class="mr-2" :color="entityView === 'both' ? 'grey-darken-2' : 'white'"></v-icon>
-                    Both
-                    <v-spacer></v-spacer>
-                    <span class="text-grey-darken-1" style="font-size: 14px;">{{ calcScaledCoverage(coverage[entityType]).both }}%</span>
-                  </div>
-                </v-list-item>
-                <v-list-item @click="entityView = 'walden'">
-                  <div class="d-flex align-center">
-                    <v-icon icon="mdi-check" class="mr-2" :color="entityView === 'walden' ? 'grey-darken-2' : 'white'"></v-icon>
-                    Walden Only
-                    <v-spacer></v-spacer>
-                    <span class="text-grey-darken-1" style="font-size: 14px;">{{ calcScaledCoverage(coverage[entityType]).waldenOnly }}%</span>
-                  </div>
-                </v-list-item>
-              </v-list>
-            </v-menu>
-            
-            <template v-if="filterFailing.length > 0 && entityView === 'both'">
-              <v-chip v-for="filter in filterFailing" :key="filter" class="mr-1" variant="tonal" rounded="pill" color="red-lighten-1">
-                Failing: <code class="ml-1"><b>{{ filter }}</b></code>
-                <v-icon icon="mdi-close" class="ml-1" @click="filterFailing = filterFailing.filter((key) => key !== filter)"></v-icon>
-              </v-chip>
-            </template>
-            
-            <v-menu v-if="entityView === 'both'">
-              <template v-slot:activator="{ props }">
-                <v-chip v-bind="props" rounded="pill" color="red-lighten-1" variant="tonal" class="mr-1">
-                  <v-icon icon="mdi-plus"></v-icon>
-                  Filter failing
-                </v-chip>
-              </template>
-              <v-list style="max-height: 60vh" rounded="xl">
-                <v-list-item v-for="filter in defaultFields[entityType].filter(f => !filterFailing.includes(f))" :key="filter" @click="toggleFailingFilter(filter)">
-                  <div class="d-flex align-center">
-                    <v-icon :icon="fieldIcons[filter]" class="mr-2" color="grey-darken-2"></v-icon>
-                    {{ filter }}
-                    <v-spacer></v-spacer>
-                    <span class="text-grey-darken-1 ml-4" style="font-size: 14px;">{{ 100-matchRates[entityType][filter] }}%</span>
-                  </div>
-                </v-list-item>
-              </v-list>
-            </v-menu>
+              
+              <v-menu v-if="entityView === 'both'">
+                <template v-slot:activator="{ props }">
+                  <v-chip v-bind="props" rounded="pill" color="red-lighten-1" variant="tonal" class="mr-1">
+                    <v-icon icon="mdi-plus"></v-icon>
+                    Filter failing
+                  </v-chip>
+                </template>
+                <v-list style="max-height: 60vh" rounded="xl">
+                  <v-list-item v-for="filter in defaultFields[entityType].filter(f => !filterFailing.includes(f))" :key="filter" @click="toggleFailingFilter(filter)">
+                    <div class="d-flex align-center">
+                      <v-icon :icon="fieldIcons[filter]" class="mr-2" color="grey-darken-2"></v-icon>
+                      {{ filter }}
+                      <v-spacer></v-spacer>
+                      <span class="text-grey-darken-1 ml-4" style="font-size: 14px;">{{ 100-matchRates[entityType][filter] }}%</span>
+                    </div>
+                  </v-list-item>
+                </v-list>
+              </v-menu>
 
+            </div>
           </div>
 
           <!-- Tests Count / Sort -->
-          <div v-if="mode === 'tests' && dataLoaded" class="pt-0 pb-4 d-flex justify-space-between align-end">
-            <div class="text-h6">
+          <div v-if="mode === 'tests' && dataLoaded" class="pt-0 pb-2 d-flex justify-space-between align-end">
+            <div class="text-grey-darken-2" style="font-size: 14px;">
               {{ defaultFields[entityType].length }} tests • {{ 100 - matchRates[entityType]['_average'] }}% failing
             </div>
             <v-menu>
@@ -106,18 +153,20 @@
 
           <!-- Entity -->
           <v-row v-if="mode === 'entity'" class="px-2">
-            <v-col cols="12" md="6" lg="6" xl="4">
+            <v-col cols="12" md="6">
               <v-hover>
                 <template v-slot:default="{ isHovering, props }">
-                  <div class="text-h6 mb-1">Tests</div>
-                  <v-card flat rounded="xl" fill-height v-bind="props" :class="[isHovering ? 'bg-grey-lighten-3' : '', 'cursor-pointer']" @click="router.push(`/entity/${entityType}/tests`)">
+                  <v-card flat rounded="xl" fill-height v-bind="props" :class="[isHovering ? 'bg-blue-lighten-4' : '', 'pa-2', 'cursor-pointer']" @click="router.push(`/entity/${entityType}/tests`)">
+                    <v-card-title style="font-size: 24px;">Tests</v-card-title>
                     <v-card-text>
                       <div v-if="dataLoaded">
-                        <v-progress-circular :model-value="100 - matchRates[entityType]['_average']" determinate width="8" color="red-lighten-3"></v-progress-circular>
-                        <span class="ml-3">
-                          <b style="font-size: 18px;" >{{ defaultFields[entityType].length }}</b> tests
-                          <span style="font-size: 18px;" class="mx-2">•</span>
-                          <b style="font-size: 18px;" >{{ 100 - matchRates[entityType]['_average'] }}%</b> failing</span>
+                        <span class="">
+                          <b style="font-size: 20px;" >{{ defaultFields[entityType].length }}</b>
+                          <span style="font-size: 18px;" class="ml-1">tests</span>
+                          <span style="font-size: 16px;" class="mx-2">•</span>
+                          <b style="font-size: 20px;" >{{ 100 - matchRates[entityType]['_average'] }}%</b>
+                          <span style="font-size: 18px;" class="ml-1">failing</span>
+                        </span>
                       </div>
                       <v-skeleton-loader v-else type="list-item"></v-skeleton-loader>
                     </v-card-text>
@@ -125,20 +174,22 @@
                 </template>
               </v-hover>
             </v-col>
-            <v-col cols="12" md="6" lg="6" xl="4">
+            <v-col cols="12" md="6">
               <v-hover>
                 <template v-slot:default="{ isHovering, props }">
-                  <div class="text-h6 mb-1">List</div>
-                  <v-card flat rounded="xl" fill-height v-bind="props" :class="[isHovering ? 'bg-grey-lighten-3' : '', 'cursor-pointer']" @click="router.push(`/entity/${entityType}/list`)">
+                  <v-card flat rounded="xl" fill-height v-bind="props" :class="[isHovering ? 'bg-blue-lighten-4' : '', 'pa-2', 'cursor-pointer']" @click="router.push(`/entity/${entityType}/list`)">
+                    <v-card-title style="font-size: 24px;">List</v-card-title>
                     <v-card-text>
                       <div v-if="dataLoaded" class="d-flex align-center">
-                        <v-icon icon="mdi-format-list-bulleted" size="32" color="grey-lighten-1"></v-icon>
-                        <span class="ml-3">
-                          <b style="font-size: 18px;" >{{ calcScaledCoverage(coverage[entityType]).prodOnly }}%</b> Prod Only 
-                          <span style="font-size: 18px;" class="mx-2">•</span>
-                          <b style="font-size: 18px;" >{{ calcScaledCoverage(coverage[entityType]).both }}%</b> Both 
-                          <span style="font-size: 18px;" class="mx-2">•</span>
-                          <b style="font-size: 18px;" >{{ calcScaledCoverage(coverage[entityType]).waldenOnly }}%</b> Walden Only
+                        <span class="">
+                          <b style="font-size: 20px;" >{{ calcScaledCoverage(coverage[entityType]).prodOnly }}%</b> 
+                          <span style="font-size: 18px;" class="ml-1">Prod Only</span>
+                          <span style="font-size: 14px;" class="mx-2">•</span>
+                          <b style="font-size: 20px;" >{{ calcScaledCoverage(coverage[entityType]).both }}%</b> 
+                          <span style="font-size: 18px;" class="ml-1">Both</span>
+                          <span style="font-size: 14px;" class="mx-2">•</span>
+                          <b style="font-size: 20px;" >{{ calcScaledCoverage(coverage[entityType]).waldenOnly }}%</b> 
+                          <span style="font-size: 18px;" class="ml-1">Walden Only</span>
                         </span>
                       </div>
                       <v-skeleton-loader v-else type="list-item"></v-skeleton-loader>
@@ -163,7 +214,7 @@
 
               <!-- List -->
               <div v-if="mode == 'list'" ref="tableScrollRef" class="table-scroll">
-                <v-col cols="12" lg="12" xl="8">
+                <v-col cols="12">
                   <div v-if="entityView === 'both'">
                     
                     <div class="px-4 pt-2 pb-0 text-grey-darken-2">
@@ -235,7 +286,7 @@
                   </div>
 
                   <div v-else-if="entityView === 'walden'">
-                    <sample-explorer source="xpac" />
+                    <sample-explorer source="walden-only" />
                   </div>
                 </v-col>
               </div>
@@ -245,14 +296,14 @@
                 <v-row class="pa-4">
                   <template v-if="summaryItems">
                     
-                    <v-col cols="12" md="6" lg="4" xl="3" v-for="summaryCard in sortedSummaryItems" :key="summaryCard.fieldName">
+                    <v-col cols="12" md="6" lg="4" v-for="summaryCard in sortedSummaryItems" :key="summaryCard.fieldName">
                       <v-hover>
                         <template v-slot:default="{ isHovering, props }">
-                          <v-card flat v-ripple v-bind="props" :class="[isHovering ? 'bg-grey-lighten-2' : 'bg-grey-lighten-3', 'cursor-pointer']"   color="grey-lighten-4 pa-3" rounded="xl" class="fill-height">
+                          <v-card flat v-ripple v-bind="props" :class="[isHovering ? 'bg-grey-lighten-2' : 'bg-grey-lighten-4', 'cursor-pointer']" color="grey-lighten-4 pa-3" rounded="xl" class="fill-height">
                             <RouterLink :to="`/entity/${entityType}/list?filterFailing=${summaryCard.fieldName}&entityView=both`" custom v-slot="{ navigate }">
                               <div class="d-flex cursor-pointer" @click="navigate">
                                 <div class="flex-shrink-0 mr-2 d-flex align-center">
-                                  <v-progress-circular size="40" width="8" color="red-lighten-3" :model-value="summaryCard.failRate"></v-progress-circular>
+                                  <v-progress-circular size="40" width="8" color="red" :model-value="summaryCard.failRate"></v-progress-circular>
                                 </div>
                                 <div>
                                   <v-tooltip v-if="summaryCard.fieldName !== centerEllipsis(summaryCard.fieldName)" :text="`${summaryCard.fieldName}`" location="bottom">
@@ -315,7 +366,10 @@
                               </template>
 
                               <template v-else>
-                                <div class="text-right"><code>{{ item[column.key] }}{{ item[column.key] === '-' ? '' : '%' }}</code></div>
+                                <div class="text-right">
+                                  <div v-if="item[column.key] === '-'" class="text-grey-darken-1">-</div>
+                                  <div v-else><code>{{ item[column.key] }}</code></div>
+                                </div>
                               </template>
                             </td>
                           </tr>
@@ -346,7 +400,7 @@
     
     <!-- Fixed Table Header -->
     <div
-      v-if="headers.length > 0 && mode === 'list'"
+      v-if="headers.length > 0 && mode === 'list' && entityView === 'both'"
       ref="fixedHeaderRef"
       class="fixed-header"
       v-show="showFixedHeader"
@@ -405,15 +459,6 @@
       />
     </v-dialog>
 
-    <!-- Work Details Drawer -->  
-    <work-drawer 
-      v-model:isDrawerOpen="isDrawerOpen" 
-      :workId="zoomId" 
-      :workData="zoomData"
-      :isV2="zoomSource === 'walden'"
-      @close="onDrawerClose"
-    />
-
   </div>
 </template>
 
@@ -430,7 +475,6 @@ import WorkDrawer from '@/components/QA/WorkDrawer.vue';
 import CompareField from '@/components/QA/CompareField.vue';
 import CompareWork from '@/components/QA/CompareWork.vue';
 import GoogleScholarView from '@/components/QA/googleScholarView.vue';
-import CellBar from '@/components/QA/CellBar.vue';
 import SampleExplorer from '@/components/SampleExplorer.vue';
 
 defineOptions({ name: 'Oreo' });
@@ -488,6 +532,10 @@ const vDataTableRef        = ref(null);
 const showFixedHeader      = ref(false);
 
 const { smAndDown, mdAndDown } = useDisplay();
+
+const sidebarLayout = computed(() => {
+  return mode.value === "list" && !mdAndDown.value;
+});
 
 const titles = {
   "entity": {
@@ -651,8 +699,7 @@ const sortedSummaryItems = computed(() => {
   });
 });
 
-const centerEllipsis = (str) => {
-  const maxLen = 26;
+const centerEllipsis = (str, maxLen = 26) => {
   if (str.length <= maxLen) { return str; }
   
   // If there's a dot, prioritize showing text after the last dot
@@ -706,31 +753,31 @@ const coverageHeaders = computed(() => {
       sortable: true,
     },
     { 
-      title: 'Prod Only', 
+      title: 'Prod Only %', 
       key: 'prodOnly',
       align: 'end',
       isLink: true,
-      width: "120px",
+      width: "125px",
       sortable: true,
     },
     { 
-      title: 'Both', 
+      title: 'Both %', 
       key: 'both',
       align: 'end',
       isLink: true,
-      width: "120px",
+      width: "125px",
       sortable: true,
     },
     { 
-      title: 'Walden Only', 
+      title: 'Walden Only %', 
       key: 'waldenOnly',
       align: 'end',
       isLink: true,
-      width: "120px",
+      width: "125px",
       sortable: true,
     },
     { 
-      title: 'Tests Pass', 
+      title: 'Tests Pass %', 
       key: 'testPassRate',
       align: 'end',
       isLink: true,
@@ -978,11 +1025,12 @@ watch([tableScrollRef, fixedHeaderRef], () => {
 :deep(.v-number-input input) {
   text-align: center;
 }
-.results-section {
-}
 :deep(.results-table thead tr th) {
   border-bottom: 1px solid #E0E0E0 !important;
   white-space: nowrap;
+}
+:deep(.list-sidebar .v-list-item .v-list-item__content) {
+  padding: 6px 0 !important;
 }
 .results-table td a {
   color: #555;

@@ -171,8 +171,9 @@
 </template>
 
 <script setup>
+import { toRefs } from 'vue';
 
-defineProps({
+const props = defineProps({
   workId: {
     type: String,
     default: null
@@ -192,6 +193,8 @@ defineProps({
 });
 
 const emit = defineEmits(['close']);
+
+const { workData } = toRefs(props);
 
 function handleModelValueChange(value) {
   if (value === false) {

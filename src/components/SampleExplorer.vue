@@ -1,62 +1,87 @@
 <template>
-  <div class="px-8 py-4">
+  <div class="">
+    <v-skeleton-loader v-if="isLoading" type="list-item-three-line@12"></v-skeleton-loader>
+
     <template v-if="!isLoading">
 
-      <div class="pb-6 text-grey-darken-2">
+      <div class="px-4 pt-2 pb-0 text-grey-darken-2">
         <div style="font-size: 14px;">
           {{ ((page-1)*pageSize+1).toLocaleString() }}-{{ page*pageSize.toLocaleString() }} of 
           {{ sampleIds.length.toLocaleString() }} results 
         </div>
       </div>
 
-      <v-row v-for="id in idsWithData" :key="id" class="mb-3 pb-3" style="line-height: 1.3; border-bottom: 1px solid #f5f5f5;">
-        <v-col cols="12" sm="9">
+      <v-data-table
+        :headers="headers"
+        :items="idsWithData"
+        :items-per-page="-1"
+        class="fixed-table"
+        flat
+        hide-default-footer
+        density="compact"
+        item-value="name"
+      >
+        <template v-slot:headers="{ columns }">
+          <tr>
+            <th v-for="column in columns" :key="column.key" :style="column.key !== 'spacer' ? {width: column.width} : {}">
+              <span>{{ column.title }}</span>
+            </th>
+          </tr>
+        </template>
+        <template v-slot:item="{ item, columns }">
+          <tr>
+            <td v-for="column in columns" :key="column.key" :style="column.key === 'matches' ? {'vertical-align': 'top'} : {}">
+              
+              <div v-if="column.key === 'prod'" class="py-7 pr-4">
+                <div v-if="source === 'walden-only'" class="text-grey">-</div>
+                <google-scholar-view v-else :id="item" :data="apiData[item]" @title-click="zoomId = $event"/>
+              </div>
 
-          <google-scholar-view :id="id" :data="apiData[id]" @title-click="zoomId = $event"/>
+              <div v-else-if="column.key === 'walden'" class="py-7 w-100">
+                <div v-if="source === 'prod-only'" class="text-grey">-</div>
+                <google-scholar-view v-else :id="item" :data="apiData[item]" @title-click="zoomId = $event"/>
+              </div>
 
-        </v-col>
+              <div v-else-if="column.key === 'matches' && source === 'walden-only'" class="pt-7 text-caption">
+                <v-chip
+                  v-if="!(item in titleMatches) && apiData[item].title"
+                  color="grey"
+                  size="x-small"
+                  class="display-inline-block mb-1"
+                  :href="`https://openalex.org/works?filter=display_name.search:${encodeTitle(apiData[item].title)}`" 
+                  target="_blank"
+                >
+                  Checking...
+                </v-chip>
 
-        <v-col cols="12" sm="2" offset-sm="1">
+                <v-chip
+                  v-if="titleMatches[item]"
+                  :href="`https://openalex.org/works?filter=display_name.search:${encodeTitle(apiData[item].title)}`" 
+                  target="_blank"
+                  color="blue"
+                  size="x-small"
+                  class="display-inline-block flex-grow-0 mb-1"
+                  style="text-decoration: none;"
+                >
+                  {{ titleMatches[item].toLocaleString() }} {{ titleMatches[item] === 1 ? 'match' : 'matches' }}
+                  <v-icon class="ml-0" icon="mdi-chevron-right"></v-icon>
+                </v-chip>
+              </div>
+            </td>
+          </tr>
+        </template>
+      </v-data-table>
 
-          <div v-if="source === 'xpac'" class="text-caption text-right">
-            <v-chip
-              v-if="!(id in titleMatches) && apiData[id].title"
-              color="grey"
-              size="x-small"
-              class="display-inline-block mb-1"
-              :href="`https://openalex.org/works?filter=display_name.search:${encodeTitle(apiData[id].title)}`" 
-              target="_blank"
-            >
-              Checking...
-            </v-chip>
+      <v-pagination
+        v-if="!isLoading"
+        v-model="page"
+        :length="100"
+        :total-visible="10"
+        rounded
+        class="mt-8"
+      ></v-pagination>
 
-            <v-chip
-              v-if="titleMatches[id]"
-              :href="`https://openalex.org/works?filter=display_name.search:${encodeTitle(apiData[id].title)}`" 
-              target="_blank"
-              color="blue"
-              size="x-small"
-              class="display-inline-block flex-grow-0 mb-1"
-              style="text-decoration: none;"
-            >
-              {{ titleMatches[id].toLocaleString() }} {{ titleMatches[id] === 1 ? 'match' : 'matches' }}
-              <v-icon class="ml-0" icon="mdi-chevron-right"></v-icon>
-            </v-chip>
-          </div>
-        </v-col>
-      </v-row>
     </template>
-
-    <v-skeleton-loader v-if="isLoading" type="list-item-three-line@12"></v-skeleton-loader>
-    
-    <v-pagination
-      v-if="!isLoading"
-      v-model="page"
-      :length="100"
-      :total-visible="10"
-      rounded
-      class="mt-8"
-    ></v-pagination>
 
   </div>
 
@@ -65,7 +90,7 @@
     v-model:isDrawerOpen="isDrawerOpen" 
     :workId="zoomId" 
     :workData="zoomId && apiData[zoomId] ? apiData[zoomId] : null"
-    :isV2="source === 'xpac'"
+    :isV2="source === 'walden-only'"
     @close="onDrawerClose"
   />
 
@@ -74,6 +99,7 @@
 
 <script setup>
 import { ref, computed, watch, toRefs } from 'vue';
+import { useDisplay } from 'vuetify';
 import axios from 'axios';
 
 import { samples } from '@/qa/samples';
@@ -85,7 +111,7 @@ import GoogleScholarView from '@/components/QA/googleScholarView.vue';
 const props = defineProps({
   source: {
     type: String,
-    default: 'xpac'
+    default: 'walden-only'
   }
 });
 
@@ -94,16 +120,17 @@ const entityType = 'works';
 
 const apiData       = ref({});
 const titleMatches  = ref({});
-const isLoading     = ref(false);
+const isLoading     = ref(true);
 const pageSize      = ref(20);
 const page          = useParams('page', 'number', 1);
 const zoomId        = useParams('zoomId', 'string', null);
 
 const { source } = toRefs(props);
 
-const sample    = computed(() => source.value === 'xpac' ? samples.xpac3 : samples.prodOnly1);
-const sampleIds = computed(() => sample.value.ids);
+const { mdAndDown } = useDisplay();
 
+const sample    = computed(() => source.value === 'walden-only' ? samples.xpac3 : samples.prodOnly1);
+const sampleIds = computed(() => sample.value.ids);
 
 const idsToShow = computed(() => {
   return sampleIds.value.slice((page.value - 1) * pageSize.value, page.value * pageSize.value);
@@ -111,6 +138,15 @@ const idsToShow = computed(() => {
 
 const idsWithData = computed(() => {
   return idsToShow.value.filter(id => id in apiData.value);
+});
+
+const headers = computed(() => {
+  const columns = [
+    {title: "Prod", key: "prod", width: mdAndDown.value ? "300px" : "450px"},
+    {title: "Walden", key: "walden", width: mdAndDown.value ? "300px" : "450px"},
+    {title: "", key: "matches"},
+  ];
+  return columns;
 });
 
 const isDrawerOpen = computed(() => zoomId.value !== null);
@@ -125,7 +161,7 @@ async function fetchResponses() {
     }
   });
   if (newIds.length > 0) {
-    const versionStr = source.value === 'xpac' ? '&data-version=2' : '';
+    const versionStr = source.value === 'walden-only' ? '&data-version=2' : '';
     const url = `https://api.openalex.org/${entityType}?filter=ids.openalex:${newIds.join('|')}&per_page=100${versionStr}`;
     const response = await axios.get(url, axiosConfig);
     response.data.results.forEach(result => {
@@ -159,7 +195,7 @@ function encodeTitle(title) {
 
 watch(idsToShow, async () => {
   await fetchResponses();
-  if (source.value === 'xpac') {
+  if (source.value === 'walden-only') {
     idsToShow.value.forEach(id => {
       if (!(id in titleMatches.value)) {
         checkTitleMatch(id);
@@ -180,6 +216,9 @@ function onDrawerClose() {
   width: 40px !important;
   height: 40px !important;
   padding: 0 !important;
+}
+.fixed-table >>> table {
+  table-layout: fixed;
 }
 .option-card {
   border-color: #BDBDBD;

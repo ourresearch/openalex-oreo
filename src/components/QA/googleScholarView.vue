@@ -1,5 +1,5 @@
 <template>
-  <div v-if="data">
+  <div v-if="data" class="w-100">
     <div class="mb-0" style="font-size: 18px; cursor: pointer;" @click="emit('title-click', id)">
       <span v-if="data.title" :class="isCompare && !matches['title'] ? 'text-red-lighten-2' : ''">
         {{ data.title }}
@@ -57,7 +57,7 @@
   </div>
   <div v-else>
     <div class="mb-0" style="font-size: 18px;">
-      <span class="text-red-lighten-2">404</span>
+      <span class="text-grey-darken-2">-</span>
     </div>
   </div>
 </template>
@@ -87,5 +87,6 @@ const isCompare = computed(() => !!compareData && !!matches);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 100%;
 }
 </style>
