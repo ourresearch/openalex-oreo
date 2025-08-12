@@ -33,7 +33,7 @@
             </v-row>
 
             <v-row class="bg-grey-lighten-3 px-12 py-0 mx-n12" style="border-top: 2px solid #ccc">
-              <v-card color="white" class="pa-6 my-12" style="width: 540px;">
+              <v-card color="white" class="pa-6 my-12" style="width: 600px;">
                 <div class="text-h6 mb-6">New Sample</div>
                 
                 <!-- Sampler Builder -->
@@ -50,6 +50,7 @@
                     >
                       <v-btn value="prod">Prod</v-btn>
                       <v-btn value="walden">Walden</v-btn>
+                      <v-btn value="both">Both</v-btn>
                       <v-btn value="walden-only">Xpac</v-btn>
                       <v-btn value="prod-only">Prod Only</v-btn>
 
@@ -260,6 +261,8 @@ async function fetchRandomSample() {
       newIds = await removeProdIds(newIds);
     } else if (sampleTarget.value === 'prod-only') {
       newIds = await removeWaldenIds(newIds);
+    } else if (sampleTarget.value === 'both') {
+      newIds = await removeMissingWaldenIds(newIds);
     }
     return newIds;
 
@@ -317,6 +320,16 @@ async function removeWaldenIds(ids) {
   const response = await axios.get(url, axiosConfig);
   const waldenIds = response.data.results.map(result => extractID(result.id));
   return ids.filter(id => !waldenIds.includes(id));
+}
+
+async function removeMissingWaldenIds(ids) {
+  const filterKey = 'ids.openalex'
+  const selectFields = ['id'];
+  const filter = ids.map(id => encodeURIComponent(id)).join('|');
+  const url = `https://api.openalex.org/works?filter=${filterKey}:${filter}&select=${selectFields.join(',')}&per_page=100&data-version=2`;
+  const response = await axios.get(url, axiosConfig);
+  const waldenIds = response.data.results.map(result => extractID(result.id));
+  return ids.filter(id => waldenIds.includes(id));
 }
 
 const extractID = (input) => {
