@@ -12,7 +12,7 @@
                   <v-icon :icon="entityView === 'prod' ? 'mdi-radiobox-marked' : 'mdi-radiobox-blank'" class="mr-2" color="grey-darken-2"></v-icon>
                   Prod Only
                   <v-spacer></v-spacer>
-                  <span class="text-grey-darken-1" style="font-size: 14px;">{{ calcScaledCoverage(coverage[entityType]).prodOnly }}%</span>
+                  <span class="text-grey-darken-1" style="font-size: 14px;">{{ scaledCoverage[entityType].prodOnly }}%</span>
                 </div>
               </v-list-item>
               <v-list-item style="font-size: 14px;" @click="entityView = 'both'">
@@ -20,7 +20,7 @@
                   <v-icon :icon="entityView === 'both' ? 'mdi-radiobox-marked' : 'mdi-radiobox-blank'" class="mr-2" color="grey-darken-2"></v-icon>
                   Both
                   <v-spacer></v-spacer>
-                  <span class="text-grey-darken-1" style="font-size: 14px;">{{ calcScaledCoverage(coverage[entityType]).both }}%</span>
+                  <span class="text-grey-darken-1" style="font-size: 14px;">{{ scaledCoverage[entityType].both }}%</span>
                 </div>
               </v-list-item>
               <v-list-item style="font-size: 14px;" @click="entityView = 'walden'">
@@ -28,7 +28,7 @@
                   <v-icon :icon="entityView === 'walden' ? 'mdi-radiobox-marked' : 'mdi-radiobox-blank'" class="mr-2" color="grey-darken-2"></v-icon>
                   Walden Only
                   <v-spacer></v-spacer>
-                  <span class="text-grey-darken-1" style="font-size: 14px;">{{ calcScaledCoverage(coverage[entityType]).waldenOnly }}%</span>
+                  <span class="text-grey-darken-1" style="font-size: 14px;">{{ scaledCoverage[entityType].waldenOnly }}%</span>
                 </div>
               </v-list-item>
             </v-list>
@@ -74,7 +74,7 @@
                       <v-icon icon="mdi-check" class="mr-2" :color="entityView === 'prod' ? 'grey-darken-2' : 'white'"></v-icon>
                       Prod Only
                       <v-spacer></v-spacer>
-                      <span class="text-grey-darken-1" style="font-size: 14px;">{{ calcScaledCoverage(coverage[entityType]).prodOnly }}%</span>
+                      <span class="text-grey-darken-1" style="font-size: 14px;">{{ scaledCoverage[entityType].prodOnly }}%</span>
                     </div>
                   </v-list-item>
                   <v-list-item @click="entityView = 'both'">
@@ -82,7 +82,7 @@
                       <v-icon icon="mdi-check" class="mr-2" :color="entityView === 'both' ? 'grey-darken-2' : 'white'"></v-icon>
                       Both
                       <v-spacer></v-spacer>
-                      <span class="text-grey-darken-1" style="font-size: 14px;">{{ calcScaledCoverage(coverage[entityType]).both }}%</span>
+                      <span class="text-grey-darken-1" style="font-size: 14px;">{{ scaledCoverage[entityType].both }}%</span>
                     </div>
                   </v-list-item>
                   <v-list-item @click="entityView = 'walden'">
@@ -90,7 +90,7 @@
                       <v-icon icon="mdi-check" class="mr-2" :color="entityView === 'walden' ? 'grey-darken-2' : 'white'"></v-icon>
                       Walden Only
                       <v-spacer></v-spacer>
-                      <span class="text-grey-darken-1" style="font-size: 14px;">{{ calcScaledCoverage(coverage[entityType]).waldenOnly }}%</span>
+                      <span class="text-grey-darken-1" style="font-size: 14px;">{{ scaledCoverage[entityType].waldenOnly }}%</span>
                     </div>
                   </v-list-item>
                 </v-list>
@@ -182,13 +182,13 @@
                     <v-card-text>
                       <div v-if="dataLoaded" class="d-flex align-center">
                         <span class="">
-                          <b style="font-size: 20px;" >{{ calcScaledCoverage(coverage[entityType]).prodOnly }}%</b> 
+                          <b style="font-size: 20px;" >{{ scaledCoverage[entityType].prodOnly }}%</b> 
                           <span style="font-size: 18px;" class="ml-1">Prod Only</span>
                           <span style="font-size: 14px;" class="mx-2">•</span>
-                          <b style="font-size: 20px;" >{{ calcScaledCoverage(coverage[entityType]).both }}%</b> 
+                          <b style="font-size: 20px;" >{{ scaledCoverage[entityType].both }}%</b> 
                           <span style="font-size: 18px;" class="ml-1">Both</span>
                           <span style="font-size: 14px;" class="mx-2">•</span>
-                          <b style="font-size: 20px;" >{{ calcScaledCoverage(coverage[entityType]).waldenOnly }}%</b> 
+                          <b style="font-size: 20px;" >{{ scaledCoverage[entityType].waldenOnly }}%</b> 
                           <span style="font-size: 18px;" class="ml-1">Walden Only</span>
                         </span>
                       </div>
@@ -219,9 +219,8 @@
                     
                     <div class="px-4 pt-2 pb-0 text-grey-darken-2">
                       <div v-if="resultsMeta" style="font-size: 14px;">
-                        {{ ((page-1)*pageSize+1).toLocaleString() }}-{{ Math.min(page*pageSize, resultsMeta.count).toLocaleString() }} of 
-                        {{ resultsMeta.count.toLocaleString() }} results 
-                        ({{ Math.round(resultsMeta.count / resultsMeta.sample_size * 100) }}%)
+                        {{ ((page-1)*pageSize+1).toLocaleString() }}-{{ Math.min(page*pageSize, Math.round(resultsMeta.count * scaledCoverage[entityType].bothExact)).toLocaleString() }} of 
+                        {{ Math.round(resultsMeta.count * scaledCoverage[entityType].bothExact).toLocaleString() }} results 
                       </div>
                     </div>
                     
@@ -282,11 +281,11 @@
                   </div>
 
                   <div v-else-if="entityView === 'prod'">
-                    <sample-explorer source="prod-only" />
+                    <sample-explorer source="prod-only" :fractionToShow="scaledCoverage[entityType].prodOnlyExact"/>
                   </div>
 
                   <div v-else-if="entityView === 'walden'">
-                    <sample-explorer source="walden-only" />
+                    <sample-explorer source="walden-only" :fractionToShow="scaledCoverage[entityType].waldenOnlyExact"/>
                   </div>
                 </v-col>
               </div>
@@ -385,7 +384,7 @@
               <v-pagination
                 v-model="page"
                 v-if="mode === 'list' && entityView === 'both'"
-                :length="resultsMeta ? Math.ceil(resultsMeta.count / pageSize) : 0"
+                :length="resultsMeta ? Math.floor((resultsMeta.count * scaledCoverage[entityType].bothExact) / pageSize) : 0"
                 :total-visible="10"
                 rounded
                 class="py-4"
@@ -471,7 +470,6 @@ import axios from 'axios';
 import { fieldIcons } from '@/qa/apiComparison';
 import filters from "@/filters";
 import { useParams } from '@/composables/useStorage';
-import WorkDrawer from '@/components/QA/WorkDrawer.vue';
 import CompareField from '@/components/QA/CompareField.vue';
 import CompareWork from '@/components/QA/CompareWork.vue';
 import GoogleScholarView from '@/components/QA/googleScholarView.vue';
@@ -796,12 +794,12 @@ const coverageItems = computed(() => {
   if (!Object.keys(coverage).length) { return null; }
   const rows = []; 
   Object.keys(coverage).forEach(entity => {
-    let scaledCoverage = calcScaledCoverage(coverage[entity]);
+    let scaledCoverageItem = scaledCoverage.value[entity];
     rows.push({
       type: entity,
-      prodOnly: scaledCoverage.prodOnly,
-      both: scaledCoverage.both,
-      waldenOnly: scaledCoverage.waldenOnly,
+      prodOnly: scaledCoverageItem.prodOnly,
+      both: scaledCoverageItem.both,
+      waldenOnly: scaledCoverageItem.waldenOnly,
       testPassRate: entity in matchRates ? matchRates[entity]["_average"] : "-",
       sampleSize: coverage[entity]["prod"]["sampleSize"],
     });
@@ -828,12 +826,23 @@ const defaultCoverageSort = (rows) => {
   });
 };
 
+const scaledCoverage = computed(() => {
+  const scaled = {};
+  Object.keys(coverage).forEach(entity => {
+    scaled[entity] = calcScaledCoverage(coverage[entity]);
+  });
+  return scaled;
+});
+
 const calcScaledCoverage = (data) => {
   if (data.walden.coverage === "-") {
     return {
       prodOnly: 100 - data.prod.coverage,
       waldenOnly: "-",
       both: data.prod.coverage,
+      prodOnlyExact: (100 - data.prod.coverage) / 100,
+      waldenOnlyExact: 0,
+      bothExact: data.prod.coverage / 100,
     };
   }
 
@@ -855,6 +864,9 @@ const calcScaledCoverage = (data) => {
     prodOnly: Math.round((prodOnly / totalCount) * 100),
     waldenOnly: Math.round((waldenOnly / totalCount) * 100),
     both: Math.round((averageBoth / totalCount) * 100),
+    prodOnlyExact: prodOnly / totalCount,
+    waldenOnlyExact: waldenOnly / totalCount,
+    bothExact: averageBoth / totalCount,
   };
 };
 

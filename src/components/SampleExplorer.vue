@@ -112,6 +112,10 @@ const props = defineProps({
   source: {
     type: String,
     default: 'walden-only'
+  },
+  fractionToShow: {
+    type: Number,
+    default: 1
   }
 });
 
@@ -130,7 +134,7 @@ const { source } = toRefs(props);
 const { mdAndDown } = useDisplay();
 
 const sample    = computed(() => source.value === 'walden-only' ? samples.xpac3 : samples.prodOnly1);
-const sampleIds = computed(() => sample.value.ids);
+const sampleIds = computed(() => sample.value.ids.slice(0, Math.floor(sample.value.ids.length * props.fractionToShow)));
 
 const idsToShow = computed(() => {
   return sampleIds.value.slice((page.value - 1) * pageSize.value, page.value * pageSize.value);
