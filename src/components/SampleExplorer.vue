@@ -133,7 +133,7 @@ const { source } = toRefs(props);
 
 const { mdAndDown } = useDisplay();
 
-const sample    = computed(() => source.value === 'walden-only' ? samples.xpac3 : samples.prodOnly1);
+const sample    = computed(() => source.value === 'walden-only' ? samples.xpac4 : samples.prodOnly1);
 const sampleIds = computed(() => sample.value.ids.slice(0, Math.floor(sample.value.ids.length * props.fractionToShow)));
 
 const idsToShow = computed(() => {
