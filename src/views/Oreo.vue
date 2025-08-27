@@ -2,10 +2,12 @@
   <div :class="['bg-color py-0 py-sm-12', mode]" style="min-height: 70vh;">
     <v-container :fluid="smAndDown || sidebarLayout" :class="['pa-0', 'pa-sm-4']">
       <v-row>
-        <v-col v-if="sidebarLayout" cols="3" class="list-sidebar" style="max-width: 320px;">
-          <div v-if="dataLoaded" style="padding-top: 140px;">
+
+        <!-- Filter Sidebar -->
+        <v-col v-if="sidebarLayout" cols="3" class="list-sidebar" style="max-width: 340px;">
+          <div v-if="dataLoaded" style="padding-top: 180px;">
             <v-list class="bg-color" density="compact">
-              <v-list-item title="Show"></v-list-item>
+              <v-list-item title="Dataset"></v-list-item>
               <v-divider class="mb-1"></v-divider>
               <v-list-item style="font-size: 14px;" @click="entityView = 'prod'">
                 <div class="d-flex align-center">
@@ -33,21 +35,36 @@
               </v-list-item>
             </v-list>
             <v-list v-if="entityView === 'both'" class="bg-color" density="compact">
-              <v-list-item title="Failing"></v-list-item>
+              <v-list-item title="Bugs"></v-list-item>
               <v-divider class="mb-1"></v-divider>
-              <v-list-item v-for="filter in defaultFields[entityType]" :key="filter" style="font-size: 14px;" @click="toggleFailingFilter(filter)">
-                <div class="d-flex align-center">
-                  <v-icon :icon="filterFailing.includes(filter) ? 'mdi-checkbox-marked-outline' : 'mdi-checkbox-blank-outline'" class="mr-2" color="grey-darken-2"></v-icon>
-                  <code>{{ centerEllipsis(filter, 20) }}</code>
+              <v-list-item v-for="test in schema[entityType].filter(f => f.test_type === 'bug')" :key="test.key" style="font-size: 14px;" @click="toggleFailingFilter(test.key)">
+                <div class="d-flex align-start">
+                  <v-icon :icon="filterFailing.includes(test.key) ? 'mdi-checkbox-marked-outline' : 'mdi-checkbox-blank-outline'" class="mr-2" color="grey-darken-2"></v-icon>
+                  <code>{{ test.display_name }}</code>
                   <v-spacer></v-spacer>
-                  <span class="text-grey-darken-1 ml-4" style="font-size: 14px;">{{ 100-matchRates[entityType][filter] }}%</span>
+                  <span class="text-grey-darken-1 ml-4" style="font-size: 14px;">{{ 100-matchRates[entityType][test.key] }}%</span>
+                </div>
+              </v-list-item>
+            </v-list>
+            <v-list v-if="entityView === 'both'" class="bg-color" density="compact">
+              <v-list-item title="Features"></v-list-item>
+              <v-divider class="mb-1"></v-divider>
+              <v-list-item v-for="test in schema[entityType].filter(f => f.test_type === 'feature')" :key="test.key" style="font-size: 14px;" @click="toggleAddingFilter(test.key)">
+                <div class="d-flex align-start">
+                  <v-icon :icon="filterFailing.includes(test.key) ? 'mdi-checkbox-marked-outline' : 'mdi-checkbox-blank-outline'" class="mr-2" color="grey-darken-2"></v-icon>
+                  <code>{{ test.display_name }}</code>
+                  <v-spacer></v-spacer>
+                  <span class="text-grey-darken-1 ml-4" style="font-size: 14px;">{{ matchRates[entityType][test.key] }}%</span>
                 </div>
               </v-list-item>
             </v-list>
           </div>
         </v-col>
 
+        <!-- Main Content -->
         <v-col :cols="sidebarLayout ? 9 : 12">
+          
+          <!-- Title, Subtitle, Breadcrumbs -->
           <div>
             <v-breadcrumbs v-if="breadcrumbs" :items="breadcrumbs" divider="›" class="px-0 mt-n10" />
             <div class="text-h3 mb-3">
@@ -58,171 +75,232 @@
             </div>
           </div>
 
-          <!-- List Filters -->
-          <div v-if="mode === 'list'">
-            <div v-if="mdAndDown" class="pt-0 pb-4 d-flex">
-              <v-menu width="200">
-                <template v-slot:activator="{ props }">
-                  <v-chip v-bind="props" rounded="pill" color="blue-darken-1" variant="tonal" class="mr-1">
-                    Show: &nbsp;<b>{{ {prod: 'Prod Only', both: 'Both', walden: 'Walden Only'}[entityView] }}</b>
-                    <v-icon icon="mdi-menu-down"></v-icon>
+          <!-- List Filters / Count Above -->
+          <div v-if="mode === 'list' && dataLoaded">  
+            <div class="pt-0 pb-1">
+              <div class="d-flex">
+                <v-menu v-if="mdAndDown" width="200">
+                  <template v-slot:activator="{ props }">
+                    <v-chip v-bind="props" rounded="pill" color="blue-darken-1" variant="tonal" class="mr-1">
+                      Dataset: &nbsp;<b>{{ {prod: 'Prod Only', both: 'Both', walden: 'Walden Only'}[entityView] }}</b>
+                      <v-icon icon="mdi-menu-down"></v-icon>
+                    </v-chip>
+                  </template>
+                  <v-list>
+                    <v-list-item @click="entityView = 'prod'">
+                      <div class="d-flex align-center">
+                        <v-icon icon="mdi-check" class="mr-2" :color="entityView === 'prod' ? 'grey-darken-2' : 'white'"></v-icon>
+                        Prod Only
+                        <v-spacer></v-spacer>
+                        <span class="text-grey-darken-1" style="font-size: 14px;">{{ scaledCoverage[entityType].prodOnly }}%</span>
+                      </div>
+                    </v-list-item>
+                    <v-list-item @click="entityView = 'both'">
+                      <div class="d-flex align-center">
+                        <v-icon icon="mdi-check" class="mr-2" :color="entityView === 'both' ? 'grey-darken-2' : 'white'"></v-icon>
+                        Both
+                        <v-spacer></v-spacer>
+                        <span class="text-grey-darken-1" style="font-size: 14px;">{{ scaledCoverage[entityType].both }}%</span>
+                      </div>
+                    </v-list-item>
+                    <v-list-item @click="entityView = 'walden'">
+                      <div class="d-flex align-center">
+                        <v-icon icon="mdi-check" class="mr-2" :color="entityView === 'walden' ? 'grey-darken-2' : 'white'"></v-icon>
+                        Walden Only
+                        <v-spacer></v-spacer>
+                        <span class="text-grey-darken-1" style="font-size: 14px;">{{ scaledCoverage[entityType].waldenOnly }}%</span>
+                      </div>
+                    </v-list-item>
+                  </v-list>
+                </v-menu>
+                
+                <template v-if="filterFailing.length > 0 && entityView === 'both'">
+                  <v-chip v-for="filter in filterFailing" :key="filter" class="mr-1" variant="tonal" rounded="pill" color="red-lighten-1">
+                    Failing: <code class="ml-1"><b>{{ schema[entityType].find(t => t.key === filter).display_name }}</b></code>
+                    <v-icon icon="mdi-close" class="ml-1" @click="filterFailing = filterFailing.filter((key) => key !== filter)"></v-icon>
                   </v-chip>
                 </template>
-                <v-list>
-                  <v-list-item @click="entityView = 'prod'">
-                    <div class="d-flex align-center">
-                      <v-icon icon="mdi-check" class="mr-2" :color="entityView === 'prod' ? 'grey-darken-2' : 'white'"></v-icon>
-                      Prod Only
-                      <v-spacer></v-spacer>
-                      <span class="text-grey-darken-1" style="font-size: 14px;">{{ scaledCoverage[entityType].prodOnly }}%</span>
-                    </div>
-                  </v-list-item>
-                  <v-list-item @click="entityView = 'both'">
-                    <div class="d-flex align-center">
-                      <v-icon icon="mdi-check" class="mr-2" :color="entityView === 'both' ? 'grey-darken-2' : 'white'"></v-icon>
-                      Both
-                      <v-spacer></v-spacer>
-                      <span class="text-grey-darken-1" style="font-size: 14px;">{{ scaledCoverage[entityType].both }}%</span>
-                    </div>
-                  </v-list-item>
-                  <v-list-item @click="entityView = 'walden'">
-                    <div class="d-flex align-center">
-                      <v-icon icon="mdi-check" class="mr-2" :color="entityView === 'walden' ? 'grey-darken-2' : 'white'"></v-icon>
-                      Walden Only
-                      <v-spacer></v-spacer>
-                      <span class="text-grey-darken-1" style="font-size: 14px;">{{ scaledCoverage[entityType].waldenOnly }}%</span>
-                    </div>
-                  </v-list-item>
-                </v-list>
-              </v-menu>
-              
-              <template v-if="filterFailing.length > 0 && entityView === 'both'">
-                <v-chip v-for="filter in filterFailing" :key="filter" class="mr-1" variant="tonal" rounded="pill" color="red-lighten-1">
-                  Failing: <code class="ml-1"><b>{{ filter }}</b></code>
-                  <v-icon icon="mdi-close" class="ml-1" @click="filterFailing = filterFailing.filter((key) => key !== filter)"></v-icon>
-                </v-chip>
-              </template>
-              
-              <v-menu v-if="entityView === 'both'">
-                <template v-slot:activator="{ props }">
-                  <v-chip v-bind="props" rounded="pill" color="red-lighten-1" variant="tonal" class="mr-1">
-                    <v-icon icon="mdi-plus"></v-icon>
-                    Filter failing
+                
+                <template v-if="filterAdding.length > 0 && entityView === 'both'">
+                  <v-chip v-for="filter in filterAdding" :key="filter" class="mr-1" variant="tonal" rounded="pill" color="green-lighten-1">
+                    Adding: <code class="ml-1"><b>{{ schema[entityType].find(t => t.key === filter).display_name }}</b></code>
+                    <v-icon icon="mdi-close" class="ml-1" @click="filterAdding = filterAdding.filter((key) => key !== filter)"></v-icon>
                   </v-chip>
                 </template>
-                <v-list style="max-height: 60vh" rounded="xl">
-                  <v-list-item v-for="filter in defaultFields[entityType].filter(f => !filterFailing.includes(f))" :key="filter" @click="toggleFailingFilter(filter)">
-                    <div class="d-flex align-center">
-                      <v-icon :icon="fieldIcons[filter]" class="mr-2" color="grey-darken-2"></v-icon>
-                      {{ filter }}
-                      <v-spacer></v-spacer>
-                      <span class="text-grey-darken-1 ml-4" style="font-size: 14px;">{{ 100-matchRates[entityType][filter] }}%</span>
-                    </div>
-                  </v-list-item>
-                </v-list>
-              </v-menu>
 
+                <v-menu v-if="entityView === 'both' && mdAndDown">
+                  <template v-slot:activator="{ props }">
+                    <v-chip v-bind="props" rounded="pill" color="blue-darken-1" variant="tonal" class="mr-1">
+                      <v-icon icon="mdi-plus"></v-icon>
+                      Filter
+                    </v-chip>
+                  </template>
+                  <v-list style="max-height: 60vh" rounded="xl">
+                    <v-list-item v-for="test in schema[entityType].filter(f => !filterFailing.includes(f.key) || !filterAdding.includes(f.key))" :key="test.key" @click="toggleTestFilter(test.key)">
+                      <div class="d-flex align-center">
+                        <v-icon :icon="test.icon" class="mr-2" color="grey-darken-2"></v-icon>
+                        {{ test.display_name }}
+                        <v-spacer></v-spacer>
+                        <span class="text-grey-darken-1 ml-4" style="font-size: 14px;">{{ test.test_type === 'bug' ? 100-matchRates[entityType][test.key] : matchRates[entityType][test.key] }}%</span>
+                      </div>
+                    </v-list-item>
+                  </v-list>
+                </v-menu>
+              </div>
+              <div class="px-4 pt-2 pb-1 text-grey-darken-2">
+                <div v-if="resultsMeta" style="font-size: 14px;">
+                  {{ resultsCountStr }}
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- Tests Count / Sort -->
-          <div v-if="mode === 'tests' && dataLoaded" class="pt-0 pb-2 d-flex justify-space-between align-end">
-            <div class="text-grey-darken-2" style="font-size: 14px;">
-              {{ defaultFields[entityType].length }} tests • {{ 100 - matchRates[entityType]['_average'] }}% failing
-            </div>
-            <v-menu>
+          <!-- Tests Count / Sort Above -->
+          <div v-if="mode === 'tests' && dataLoaded" class="pt-0 pb-2">
+            <div class="mb-1">
+              <v-menu width="200">
               <template v-slot:activator="{ props }">
-                <v-btn v-bind="props" rounded="pill" color="blue-darken-1" variant="tonal">
-                  Sort:
-                  {{ summarySort === 'alphabetical' ? 'Alphabetical' : 'Fail Rate' }}
+                <v-chip v-bind="props" rounded="pill" color="blue-darken-1" variant="tonal" class="mr-1">
+                  Show: &nbsp;<b>{{ {all: 'All', bugs: 'Bugs', features: 'Features'}[testShow] }}</b>
                   <v-icon icon="mdi-menu-down"></v-icon>
-                </v-btn>
+                </v-chip>
               </template>
               <v-list>
-                <v-list-item @click="summarySort = 'alphabetical'">
-                  <v-icon icon="mdi-check" :color="summarySort === 'alphabetical' ? 'grey-darken-2' : 'white'"></v-icon>
-                  Alphabetical
+                <v-list-item @click="testShow = 'all'">
+                  <div class="d-flex align-center">
+                    <v-icon icon="mdi-check" class="mr-2" :color="testShow === 'all' ? 'grey-darken-2' : 'white'"></v-icon>
+                    All
+                  </div>
                 </v-list-item>
-                <v-list-item @click="summarySort = 'failRate'">
-                  <v-icon icon="mdi-check" :color="summarySort === 'failRate' ? 'grey-darken-2' : 'white'"></v-icon>
-                  Fail Rate
+                <v-list-item @click="testShow = 'bugs'">
+                  <div class="d-flex align-center">
+                    <v-icon icon="mdi-check" class="mr-2" :color="testShow === 'bugs' ? 'grey-darken-2' : 'white'"></v-icon>
+                    Bugs
+                  </div>
+                </v-list-item>
+                <v-list-item @click="testShow = 'features'">
+                  <div class="d-flex align-center">
+                    <v-icon icon="mdi-check" class="mr-2" :color="testShow === 'features' ? 'grey-darken-2' : 'white'"></v-icon>
+                    Features
+                    <v-spacer></v-spacer>
+                  </div>
                 </v-list-item>
               </v-list>
-            </v-menu>
+              </v-menu>
+            </div>
+            <div class="d-flex align-end ml-3">
+              <div class="text-grey-darken-2" style="font-size: 14px;">
+                {{ testsResultsStr }}
+              </div>
+              <v-spacer></v-spacer>
+              <v-menu>
+                  <template v-slot:activator="{ props }">
+                    <v-btn v-bind="props" rounded="pill" color="blue-darken-1" variant="text">
+                      Sort:
+                      {{ {alphabetical: 'Alphabetical', failRate: 'Fail Rate', addRate: 'Add Rate'}[testSort] }}
+                      <v-icon icon="mdi-menu-down"></v-icon>
+                    </v-btn>
+                  </template>
+                  <v-list>
+                    <v-list-item @click="testSort = 'alphabetical'">
+                      <v-icon icon="mdi-check" :color="testSort === 'alphabetical' ? 'grey-darken-2' : 'white'"></v-icon>
+                      Alphabetical
+                    </v-list-item>
+                    <v-list-item @click="testSort = 'failRate'">
+                      <v-icon icon="mdi-check" :color="testSort === 'failRate' ? 'grey-darken-2' : 'white'"></v-icon>
+                      Fail Rate
+                    </v-list-item>
+                    <v-list-item @click="testSort = 'addRate'">
+                      <v-icon icon="mdi-check" :color="testSort === 'addRate' ? 'grey-darken-2' : 'white'"></v-icon>
+                      Add Rate
+                    </v-list-item>
+                  </v-list>
+              </v-menu>
+            </div>
           </div>
 
           <!-- Entity -->
-          <v-row v-if="mode === 'entity'" class="px-2">
-            <v-col cols="12" md="6">
-              <v-hover>
-                <template v-slot:default="{ isHovering, props }">
-                  <v-card flat rounded="xl" fill-height v-bind="props" :class="[isHovering ? 'bg-blue-lighten-4' : '', 'pa-2', 'cursor-pointer']" @click="router.push(`/entity/${entityType}/tests`)">
-                    <v-card-title style="font-size: 24px;">Tests</v-card-title>
-                    <v-card-text>
-                      <div v-if="dataLoaded">
-                        <span class="">
-                          <b style="font-size: 20px;" >{{ defaultFields[entityType].length }}</b>
-                          <span style="font-size: 18px;" class="ml-1">tests</span>
-                          <span style="font-size: 16px;" class="mx-2">•</span>
-                          <b style="font-size: 20px;" >{{ 100 - matchRates[entityType]['_average'] }}%</b>
-                          <span style="font-size: 18px;" class="ml-1">failing</span>
-                        </span>
-                      </div>
-                      <v-skeleton-loader v-else type="list-item"></v-skeleton-loader>
-                    </v-card-text>
-                  </v-card>
-                </template>
-              </v-hover>
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-hover>
-                <template v-slot:default="{ isHovering, props }">
-                  <v-card flat rounded="xl" fill-height v-bind="props" :class="[isHovering ? 'bg-blue-lighten-4' : '', 'pa-2', 'cursor-pointer']" @click="router.push(`/entity/${entityType}/list`)">
-                    <v-card-title style="font-size: 24px;">List</v-card-title>
-                    <v-card-text>
-                      <div v-if="dataLoaded" class="d-flex align-center">
-                        <span class="">
-                          <b style="font-size: 20px;" >{{ scaledCoverage[entityType].prodOnly }}%</b> 
-                          <span style="font-size: 18px;" class="ml-1">Prod Only</span>
-                          <span style="font-size: 14px;" class="mx-2">•</span>
-                          <b style="font-size: 20px;" >{{ scaledCoverage[entityType].both }}%</b> 
-                          <span style="font-size: 18px;" class="ml-1">Both</span>
-                          <span style="font-size: 14px;" class="mx-2">•</span>
-                          <b style="font-size: 20px;" >{{ scaledCoverage[entityType].waldenOnly }}%</b> 
-                          <span style="font-size: 18px;" class="ml-1">Walden Only</span>
-                        </span>
-                      </div>
-                      <v-skeleton-loader v-else type="list-item"></v-skeleton-loader>
-                    </v-card-text>
-                  </v-card>
-                </template>
-              </v-hover>
-            </v-col>
-          </v-row>
+          <v-card v-if="mode === 'entity'" flat rounded="xl" class="px-6 py-10">
+            <v-row>
+              <v-col cols="12" md="6">
+                <v-hover>
+                  <template v-slot:default="{ isHovering, props }">
+                    <v-card 
+                      flat 
+                      rounded="xl" 
+                      fill-height 
+                      v-bind="props" 
+                      :class="isHovering ? 'bg-blue-lighten-5' : 'bg-grey-lighten-3'" 
+                      class="pa-4 mx-1"
+                      @click="router.push(`/entity/${entityType}/tests`)">
+                      <v-card-title style="font-size: 24px;">Tests</v-card-title>
+                      <v-card-text>
+                        <div v-if="dataLoaded">
+                          <span class="">
+                            <b style="font-size: 20px;" >{{ schema[entityType].length }}</b>
+                            <span style="font-size: 18px;" class="ml-1">tests</span>
+                            <span style="font-size: 16px;" class="mx-2">•</span>
+                            <b style="font-size: 20px;" >{{ 100 - matchRates[entityType]['_average_bug'] }}%</b>
+                            <span style="font-size: 18px;" class="ml-1">failing</span>
+                          </span>
+                        </div>
+                        <v-skeleton-loader v-else type="list-item"></v-skeleton-loader>
+                      </v-card-text>
+                    </v-card>
+                  </template>
+                </v-hover>
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-hover>
+                  <template v-slot:default="{ isHovering, props }">
+                    <v-card 
+                      flat 
+                      rounded="xl" 
+                      fill-height 
+                      v-bind="props" 
+                      :class="isHovering ? 'bg-blue-lighten-5' : 'bg-grey-lighten-3'"
+                      class="pa-4 mx-1"
+                      @click="router.push(`/entity/${entityType}/list`)"
+                    >
+                      <v-card-title style="font-size: 24px;">List</v-card-title>
+                      <v-card-text>
+                        <div v-if="dataLoaded" class="d-flex align-center">
+                          <span class="">
+                            <b style="font-size: 20px;" >{{ scaledCoverage[entityType].prodOnly }}%</b> 
+                            <span style="font-size: 18px;" class="ml-1">Prod Only</span>
+                            <span style="font-size: 14px;" class="mx-2">•</span>
+                            <b style="font-size: 20px;" >{{ scaledCoverage[entityType].both }}%</b> 
+                            <span style="font-size: 18px;" class="ml-1">Both</span>
+                            <span style="font-size: 14px;" class="mx-2">•</span>
+                            <b style="font-size: 20px;" >{{ scaledCoverage[entityType].waldenOnly }}%</b> 
+                            <span style="font-size: 18px;" class="ml-1">Walden Only</span>
+                          </span>
+                        </div>
+                        <v-skeleton-loader v-else type="list-item"></v-skeleton-loader>
+                      </v-card-text>
+                    </v-card>
+                  </template>
+                </v-hover>
+              </v-col>
+            </v-row>
+          </v-card>
 
           <v-card v-else flat class="pt-2 pb-0 px-4 rounded-o" style="overflow: hidden !important;">
 
             <!-- Skeleton Loader -->
             <v-skeleton-loader 
-              v-if="matchedIds.length === 0" 
+              v-if="matchedIds.length === 0 && !dataLoaded" 
               :type="mode === 'list' ? 'table' : 'list-item-three-line@12'" 
               class="mt-8"
             />
 
             <!-- Results -->
-            <div v-else-if="matchedIds.length > 0" class="mx-n4 results-section">
+            <div v-else class="mx-n4 results-section">
 
               <!-- List -->
               <div v-if="mode == 'list'" ref="tableScrollRef" class="table-scroll">
                 <v-col cols="12">
                   <div v-if="entityView === 'both'">
-                    
-                    <div class="px-4 pt-2 pb-0 text-grey-darken-2">
-                      <div v-if="resultsMeta" style="font-size: 14px;">
-                        {{ ((page-1)*pageSize+1).toLocaleString() }}-{{ Math.min(page*pageSize, Math.round(resultsMeta.count * scaledCoverage[entityType].bothExact)).toLocaleString() }} of 
-                        {{ Math.round(resultsMeta.count * scaledCoverage[entityType].bothExact).toLocaleString() }} results 
-                      </div>
-                    </div>
                     
                     <v-data-table
                       ref="vDataTableRef"
@@ -265,13 +343,24 @@
                             </div>
 
                             <div v-else-if="column.key === 'tests'">
-                              <span v-for="test in item.failingTests" :key="test">
-                                <v-tooltip open-delay="300" :text="test" location="bottom">
-                                  <template v-slot:activator="{ props }">
-                                    <v-icon v-bind="props" class="ma-1" color="red-lighten-3" @click="openCompareFieldDialog(item._id, test)" :icon="fieldIcons[test]" />
-                                  </template>
-                                </v-tooltip>  
-                              </span>
+                              <div class="mb-2">
+                                <span v-for="test in item.failingTests" :key="test">
+                                  <v-tooltip open-delay="300" :text="test.display_name" location="bottom">
+                                    <template v-slot:activator="{ props }">
+                                      <v-icon v-bind="props" class="ma-1" color="red-lighten-3" @click="openCompareFieldDialog(item._id, test.key)" :icon="test.icon" />
+                                    </template>
+                                  </v-tooltip>  
+                                </span>
+                              </div>
+                              <div>
+                                <span v-for="test in item.addingTests" :key="test">
+                                  <v-tooltip open-delay="300" :text="test.display_name" location="bottom">
+                                    <template v-slot:activator="{ props }">
+                                      <v-icon v-bind="props" class="ma-1" color="green-lighten-3" @click="openCompareFieldDialog(item._id, test.key)" :icon="test.icon" />
+                                    </template>
+                                  </v-tooltip>
+                                </span>
+                              </div>
                             </div>
           
                           </td>
@@ -293,26 +382,31 @@
               <!-- Tests  -->
               <div v-else-if="mode == 'tests'">
                 <v-row class="pa-4">
-                  <template v-if="summaryItems">
-                    
-                    <v-col cols="12" md="6" lg="4" v-for="summaryCard in sortedSummaryItems" :key="summaryCard.fieldName">
+                  <template v-if="testItems">
+                    <v-col cols="12" md="6" lg="4" v-for="testItem in sortedTestItems" :key="testItem.key">
                       <v-hover>
                         <template v-slot:default="{ isHovering, props }">
                           <v-card flat v-ripple v-bind="props" :class="[isHovering ? 'bg-grey-lighten-2' : 'bg-grey-lighten-4', 'cursor-pointer']" color="grey-lighten-4 pa-3" rounded="xl" class="fill-height">
-                            <RouterLink :to="`/entity/${entityType}/list?filterFailing=${summaryCard.fieldName}&entityView=both`" custom v-slot="{ navigate }">
-                              <div class="d-flex cursor-pointer" @click="navigate">
+                            <RouterLink :to="testItem.filterUrl" custom v-slot="{ navigate }">
+                              <div class="d-flex align-center cursor-pointer" @click="navigate">
                                 <div class="flex-shrink-0 mr-2 d-flex align-center">
-                                  <v-progress-circular size="40" width="8" color="red" :model-value="summaryCard.failRate"></v-progress-circular>
-                                </div>
-                                <div>
-                                  <v-tooltip v-if="summaryCard.fieldName !== centerEllipsis(summaryCard.fieldName)" :text="`${summaryCard.fieldName}`" location="bottom">
+                                  <v-tooltip :text="testItem.type === 'bug' ? `${testItem.failRate}% Failing` : `${testItem.passRate}% Adding`" location="bottom">
                                     <template v-slot:activator="{ props }">
-                                      <code class="d-block" v-bind="props">{{ centerEllipsis(summaryCard.fieldName) }}</code>
+                                      <v-progress-circular 
+                                        v-bind="props"
+                                        size="40" 
+                                        width="8" 
+                                        :color="testItem.type === 'bug' ? 'red' : 'green'" :model-value="testItem.type === 'bug' ? testItem.failRate : testItem.passRate">
+                                      </v-progress-circular>
                                     </template>
                                   </v-tooltip>
-                                  <code v-else class="d-block">{{ summaryCard.fieldName }}</code>
-                                  <span class="ml-1 text-grey-darken-1" size="x-small">{{ summaryCard.failRate }}%</span>
-                                  <v-chip v-if="testOnField(summaryCard.fieldName)" class="ml-1" size="x-small" color="grey-darken-2">{{ testOnField(summaryCard.fieldName) }}</v-chip>
+                                </div>
+                                <div>
+                                  <v-tooltip :text="`${testItem.field} (${testItem.test_func})`" location="bottom">
+                                    <template v-slot:activator="{ props }">
+                                      <code v-bind="props" class="d-block">{{ testItem.name }}</code>
+                                    </template>
+                                  </v-tooltip>
                                 </div>
                               </div>
                             </RouterLink>
@@ -425,14 +519,13 @@
     >
       <compare-field
         v-if="showCompareFieldDialog"
-        :id="compareFieldId"
-        :field="compareFieldField"
-        :match="matches[compareFieldId][compareFieldField]"
-        :type="schema[entityType][compareFieldField]"
-        :prod-value="getFieldOrTestValue(compareFieldId, compareFieldField, 'prod')"
-        :walden-value="waldenResults[compareFieldId] ? getFieldOrTestValue(compareFieldId, compareFieldField, 'walden') : '[404]'"
+        :id="compareTestId"
+        :test="schema[entityType].find(t => t.key === compareTestKey)"
+        :match="matches[compareTestId][compareTestKey]"
+        :prod-value="getTestValue(compareTestId, compareTestKey, 'prod')"
+        :walden-value="waldenResults[compareTestId] ? getTestValue(compareTestId, compareTestKey, 'walden') : '[404]'"
         @close="closeCompareFieldDialog"
-        @show-comparison="onShowComparison(compareFieldId, compareFieldField, $event)"
+        @show-comparison="onShowComparison(compareTestId, compareTestKey, $event)"
       />
     </v-dialog>
 
@@ -467,7 +560,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { useDisplay } from 'vuetify';
 import axios from 'axios';
 
-import { fieldIcons } from '@/qa/apiComparison';
 import filters from "@/filters";
 import { useParams } from '@/composables/useStorage';
 import CompareField from '@/components/QA/CompareField.vue';
@@ -492,26 +584,25 @@ const route = useRoute()
 const router = useRouter()
 const currentRoute = ref(route.path)
 
-const schema         = ref(null);
-const defaultFields  = ref(null);
-
 const metricsUrl   = `https://metrics-api.openalex.org/`;
 //const metricsUrl   = `http://localhost:5006/`;
 
 const { mode, entityType } = toRefs(props);
 
-const zoomId            = useParams('zoomId', 'string', null);
-const zoomSource        = useParams('zoomSource', 'string', 'prod');
+const schema         = ref(null);
+
 const compareId         = useParams('compareId', 'string', null);
 const compareView       = useParams('compareView', 'string', 'diff');
 const pageSize          = useParams('pageSize', 'number', 20);
 const page              = useParams('page', 'number', 1);
 const filterFailing     = useParams('filterFailing', 'array', []);
+const filterAdding      = useParams('filterAdding', 'array', []);
 const entityView        = useParams('entityView', 'string', 'both');
 const showProdColumn    = useParams('showProdColumn', 'boolean', true);
-const summarySort       = useParams('summarySort', 'string', 'alphabetical');
-const compareFieldId    = useParams('compareFieldId', 'string', null);
-const compareFieldField = useParams('compareFieldField', 'string', null);
+const testSort          = useParams('testSort', 'string', 'alphabetical');
+const testShow          = useParams('testShow', 'string', 'all');
+const compareTestId     = useParams('compareTestId', 'string', null);
+const compareTestKey    = useParams('compareTestKey', 'string', null);
 
 const prodResults          = reactive({});
 const waldenResults        = reactive({});
@@ -571,18 +662,19 @@ const breadcrumbs = computed(() => {
   return items;
 });
 
-const getFieldOrTestValue = (id, field, source) => {
-  if (field in matches[id]["_test_values"]) {
-    return matches[id]["_test_values"][field][source];
+const getTestValue = (id, testKey, source) => {
+  if (testKey in matches[id]["_test_values"]) {
+    return matches[id]["_test_values"][testKey][source];
   }
+
+  const test = schema.value[entityType.value].find(t => t.key === testKey);
+
   const obj = source === "prod" ? prodResults[id] : waldenResults[id];
-  return getFieldValue(obj, field);
+  return getFieldValue(obj, test.field);
 };
 
 const getFieldValue = (obj, field) => {
   if (!obj) { return undefined; }
-
-  const id = extractID(obj.id);
 
   const keys = field.split(".");
   let value = obj;
@@ -600,25 +692,11 @@ const matchedIds = computed(() => {
   return matches ? Object.keys(matches) : [];
 });
 
-const testOnField = (field) => {
-  if (!schema.value) { return null; }
-  const type = schema.value[entityType.value][field];
-  const typeParts = type.split("|");
-  if (typeParts.length > 1) {
-    return typeParts[1];
-  }
-  return "=";
-};
-
-const fieldWithTest = (field) => {
-  const test = testOnField(field);
-  return test ? field + " " + test : field;
-};
 
 const headers = computed(() => {
   const columns = [
     {title: "Walden", key: "walden", width: mdAndDown.value ? "250px" : "400px"},
-    {title: "Failing Tests", key: "tests", width: "200px"},
+    {title: "Tests", key: "tests", width: "200px"},
   ];
   if (showProdColumn.value) { columns.unshift({title: "Prod", key: "prod", width: mdAndDown.value ? "250px" : "400px"}); }
 
@@ -645,99 +723,118 @@ const makeRow = (id) => {
   row.waldenUrl = `https://api.openalex.org/v2/${entityType.value}/${id}`;
 
   const failingTests = [];
-  defaultFields.value[entityType.value].map(field => {    
-    if (matches[id][field] === false) {
-      failingTests.push(field);
+  const addingTests = [];
+  schema.value[entityType.value].map(test => {    
+    if (test.test_type === "bug" && matches[id][test.key] === false) {
+      failingTests.push(test);
+    } else if (test.test_type === "feature" && matches[id][test.key] === true) {
+      addingTests.push(test);
     }
   });
 
   row.failingTests = failingTests;
+  row.addingTests = addingTests;
 
   return row;
 };
 
-const getCellStyle = (item, column) => {  
-  if (!item || ["prod", "walden", "spacer"].includes(column.key)) { return {}; }
+const resultsCountStr = computed(() => {
+  if (!resultsMeta.value) { return null; }
 
-  let passed = false;
-
-  if (matches && matches[item._id] && matches[item._id][column.key]) {
-    passed = true;
+  const scale = scaledCoverage.value[entityType.value];
+  let totalNum;
+  if (entityView.value === "both") {
+    totalNum = Math.round(resultsMeta.value.count * scale.bothExact);
+  } else if (entityView.value === "prod") {
+    totalNum = Math.round(10000 * scale.prodOnlyExact);
+  } else if (entityView.value === "walden") {
+    totalNum = Math.round(10000 * scale.waldenOnlyExact);
   }
+  const startNum = ((page.value-1) * pageSize.value + 1).toLocaleString();
+  const endNum = (Math.min(page.value * pageSize.value, totalNum)).toLocaleString();
+  return `${startNum}-${endNum} of ${totalNum.toLocaleString()} results`;
+});
 
-  const styles = {width: column.width};
-
-  styles.backgroundColor = passed ? "#DCEDC8" : "#FFCDD2";
-
-  return styles;
-}
-
-const summaryItems = computed(() => {
-  if (!defaultFields.value || !Object.keys(matchRates).length) { return null; }
+const testItems = computed(() => {
+  if (!schema.value || !matchRates[entityType.value] || !Object.keys(matchRates[entityType.value]).length) { return null; }
 
   const rows = []; 
-  defaultFields.value[entityType.value].forEach(key => {
+  schema.value[entityType.value].forEach(test => {
     rows.push({
-      fieldName: key,
-      passRate: matchRates[entityType.value][key],
-      failRate: 100 - matchRates[entityType.value][key],
+      key: test.key,
+      name: test.display_name,
+      type: test.test_type,
+      field: test.field,
+      test_func: test.test_func,
+      filterUrl: `/entity/${entityType.value}/list?${test.test_type === "bug" ? `filterFailing=${test.key}` : `filterAdding=${test.key}`}&entityView=both`,
+      passRate: matchRates[entityType.value][test.key],
+      failRate: 100 - matchRates[entityType.value][test.key],
     });
   });
   return rows;
 });
 
-const sortedSummaryItems = computed(() => {
-  const items = [...summaryItems.value];
+const sortedTestItems = computed(() => {
+  let items = [...testItems.value];
+  
+  if (testShow.value === 'bugs') {
+    items = items.filter(item => item.type === 'bug');
+  } else if (testShow.value === 'features') {
+    items =  items.filter(item => item.type === 'feature');
+  }
+
   return items.sort((a, b) => {
-    if (summarySort.value === 'alphabetical') {
-      return a.fieldName.localeCompare(b.fieldName);
-    } else if (summarySort.value === 'failRate') {
+    if (testSort.value === 'alphabetical') {
+      return a.name.localeCompare(b.name);
+    } else if (testSort.value === 'failRate') {
+      if (a.type !== b.type) {
+        return a.type === 'bug' ? -1 : 1;
+      }
       return b.failRate - a.failRate;
+    } else if (testSort.value === 'addRate') {
+      if (a.type !== b.type) {
+        return a.type === 'feature' ? -1 : 1;
+      }
+      return b.passRate - a.passRate;
     }
   });
 });
 
-const centerEllipsis = (str, maxLen = 26) => {
-  if (str.length <= maxLen) { return str; }
-  
-  // If there's a dot, prioritize showing text after the last dot
-  if (str.includes('.')) {
-    const lastDotIndex = str.lastIndexOf('.');
-    const rightSide = str.slice(lastDotIndex); // includes the dot
-    const remainingLength = maxLen - rightSide.length - 2; // subtract 3 for ".."
-    
-    if (remainingLength > 0) {
-      const leftSide = str.slice(0, remainingLength);
-      return leftSide + ".." + rightSide;
-    } else {
-      // If right side is too long, fall back to original logic
-      const half = Math.floor(maxLen / 2);
-      return str.slice(0, half) + ".." + str.slice(-half);
-    }
-  }
-  
-  // Original logic for strings without dots
-  const half = Math.floor(maxLen / 2);
-  return str.slice(0, half) + "..." + str.slice(-half);
-}
+const testsResultsStr = computed(() => {
 
-const openCompareFieldDialog = (itemId, columnKey) => {
-  compareFieldId.value = itemId;
-  compareFieldField.value = columnKey;
+  const parts = [];
+  if (testShow.value === "all") {
+    parts.push(`${schema.value[entityType.value].length} tests`);
+    parts.push(`${100 - matchRates[entityType.value]['_average_bug']}% failing`);
+    parts.push(`${matchRates[entityType.value]['_average_feature']}% adding`);
+  } else if (testShow.value === "bugs") {
+    parts.push(`${schema.value[entityType.value].filter(test => test.test_type === "bug").length} bug tests`);
+    parts.push(`${100 - matchRates[entityType.value]['_average_bug']}% failing`);
+  } else if (testShow.value === "features") {
+    parts.push(`${schema.value[entityType.value].filter(test => test.test_type === "feature").length} feature tests`);
+    parts.push(`${matchRates[entityType.value]['_average_feature']}% adding`);
+  }
+
+  return parts.join(" • ");
+});
+
+const openCompareFieldDialog = (itemId, key) => {
+  compareTestId.value = itemId;
+  compareTestKey.value = key;
 }
 
 const closeCompareFieldDialog = () => {
-  compareFieldId.value = null;
-  compareFieldField.value = null;
+  compareTestId.value = null;
+  compareTestKey.value = null;
 }
 
 const showCompareFieldDialog = computed(() => {
-  return compareFieldId.value !== null && compareFieldField.value !== null;
+  return compareTestId.value !== null && compareTestKey.value !== null;
 });
   
 const onShowComparison = (itemId, columnKey, event) => {
-  compareFieldId.value = null;
-  compareFieldField.value = null;
+  compareTestId.value = null;
+  compareTestKey.value = null;
   compareId.value = event;
 }
 
@@ -775,8 +872,8 @@ const coverageHeaders = computed(() => {
       sortable: true,
     },
     { 
-      title: 'Tests Pass %', 
-      key: 'testPassRate',
+      title: 'Failing Tests %', 
+      key: 'testFailRate',
       align: 'end',
       isLink: true,
       sortable: true,
@@ -800,7 +897,7 @@ const coverageItems = computed(() => {
       prodOnly: scaledCoverageItem.prodOnly,
       both: scaledCoverageItem.both,
       waldenOnly: scaledCoverageItem.waldenOnly,
-      testPassRate: entity in matchRates ? matchRates[entity]["_average"] : "-",
+      testFailRate: entity in matchRates ? (100 - matchRates[entity]["_average_bug"]) : "-",
       sampleSize: coverage[entity]["prod"]["sampleSize"],
     });
   });
@@ -808,7 +905,7 @@ const coverageItems = computed(() => {
 });
 
 const defaultCoverageSort = (rows) => {
-  const top = ["works", "authors", "sources", "funders", "topics","institutions", "publishers"];
+  const top = ["works", "authors", "sources", "funders", "topics", "institutions", "publishers"];
 
   return rows.sort((a, b) => {
     const aIndex = top.indexOf(a.type);
@@ -870,6 +967,23 @@ const calcScaledCoverage = (data) => {
   };
 };
 
+const toggleTestFilter = (field) => {
+  const type = schema.value[entityType].find(test => test.key === field).test_type;
+  if (type === 'bug') {
+    toggleFailingFilter(field);
+  } else if (type === 'feature') {
+    toggleAddingFilter(field);
+  }
+};
+
+const toggleAddingFilter = (field) => {
+  if (filterAdding.value.includes(field)) {
+    filterAdding.value = filterAdding.value.filter(f => f !== field);
+  } else {
+    filterAdding.value = [...filterAdding.value, field];
+  }
+};
+
 const toggleFailingFilter = (field) => {
   if (filterFailing.value.includes(field)) {
     filterFailing.value = filterFailing.value.filter(f => f !== field);
@@ -878,23 +992,10 @@ const toggleFailingFilter = (field) => {
   }
 };
 
-const isDrawerOpen = computed(() => {
-  return Boolean(zoomId.value);
-});
-
-const zoomData = computed(() => {
-  if (!zoomId.value) { return null; }
-
-  return zoomSource.value === "prod" ? prodResults[zoomId.value] : waldenResults[zoomId.value];
-});
-
-function onDrawerClose() {
-  zoomId.value = null;
-}
-
-const extractID = (input) => {
-  const orgIndex = input.indexOf('.org/');
-  return orgIndex !== -1 ? input.substring(orgIndex + 5) : input;
+async function fetchSchema() {
+  const apiUrl = `${metricsUrl}/schema`;
+  const response = await axios.get(apiUrl);
+  schema.value = response.data.tests_schema;
 }
 
 async function fetchMetricsResponses() {
@@ -908,8 +1009,12 @@ async function fetchMetricsResponses() {
   if (filterFailing.value.length > 0) {
     failingFilter = `&filterFailing=${filterFailing.value.join(",")}`;
   }
+  let addingFilter = "";
+  if (filterAdding.value.length > 0) {
+    addingFilter = `&filterAdding=${filterAdding.value.join(",")}`;
+  }
 
-  const apiUrl = `${metricsUrl}/responses?page=${page.value}${failingFilter}&per_page=${pageSize.value}`;
+  const apiUrl = `${metricsUrl}/responses?page=${page.value}${failingFilter}${addingFilter}&per_page=${pageSize.value}`;
   const response = await axios.get(apiUrl);
   response.data.results.forEach((item) => {
     prodResults[item.id] = item.prod;
@@ -917,13 +1022,6 @@ async function fetchMetricsResponses() {
     matches[item.id] = item.match;
   });
   resultsMeta.value = response.data.meta;
-}
-
-async function fetchSchema() {
-  const apiUrl = `${metricsUrl}/schema`;
-  const response = await axios.get(apiUrl);
-  schema.value = response.data.schema;
-  defaultFields.value = response.data.testFields;
 }
 
 async function fetchMatchRates() {
@@ -984,6 +1082,11 @@ watch(page, async () => {
 });
 
 watch(filterFailing, async () => {
+  console.log("filterFailing changed");
+  await fetchMetricsResponses();
+});
+
+watch(filterAdding, async () => {
   console.log("filterFailing changed");
   await fetchMetricsResponses();
 });

@@ -3,14 +3,6 @@
     <v-skeleton-loader v-if="isLoading" type="list-item-three-line@12"></v-skeleton-loader>
 
     <template v-if="!isLoading">
-
-      <div class="px-4 pt-2 pb-0 text-grey-darken-2">
-        <div style="font-size: 14px;">
-          {{ ((page-1)*pageSize+1).toLocaleString() }}-{{ page*pageSize.toLocaleString() }} of 
-          {{ sampleIds.length.toLocaleString() }} results 
-        </div>
-      </div>
-
       <v-data-table
         :headers="headers"
         :items="idsWithData"

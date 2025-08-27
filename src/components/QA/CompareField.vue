@@ -1,8 +1,7 @@
 <template>
   <v-card class="compare-card rounded-o" transition="none">
     <v-card-title :class="['px-6 pt-2 pb-0 d-flex', match ? 'bg-green-lighten-4' : 'bg-red-lighten-4']" style="font-size: 18px; border-top-left-radius: 15px; border-top-right-radius: 15px;">
-      <code>{{ field }}</code>
-      <v-chip v-if="comparisonType" size="default" variant="tonal" class="ml-2">{{ comparisonType }}</v-chip>
+      {{ test.display_name }}
 
       <v-spacer></v-spacer>
       <v-btn @click="emit('close')" size="default" icon variant="text" class="mt-n2 mr-n6">
@@ -28,8 +27,6 @@
           </div>
         </div>
       </div>
-
-        
     </v-card-text>
     
     <v-card-actions class="pa-4">
@@ -39,50 +36,16 @@
         <v-icon size="small" end variant="plain" icon="mdi-chevron-right"></v-icon>
       </v-btn>
     </v-card-actions>
- 
-    <!--
-    <div v-if="isObject(prodValue) || isObject(waldenValue)" class="d-flex pb-4">
-      <div class="flex-grow-1">
-        <div class="compare-card-title py-2 px-4">
-          <a :href="prodUrl" target="_blank">Prod</a>
-          <v-icon size="x-small" variant="plain" class="ml-1" icon="mdi-open-in-new"></v-icon>
-        </div>
-        <div class="compare-card-value px-4">
-
-          <vue-json-pretty v-if="isObject(prodValue)" :data="prodValue"></vue-json-pretty>
-          <span v-else class="array-value">
-            <code>{{ prodDisplayValue }}</code>
-          </span>
-        </div>
-      </div>
-      
-      <div class="flex-grow-1 pl-8">
-        <div class="compare-card-title ml-n8 py-2 pl-8 pr-4">
-          <a :href="waldenUrl" target="_blank">Walden</a> 
-          <v-icon size="x-small" variant="plain" class="ml-1" icon="mdi-open-in-new"></v-icon>
-        </div>
-        <div class="compare-card-value px-4">
-          <vue-json-pretty v-if="isObject(waldenValue)" :data="waldenValue"></vue-json-pretty>
-          <span v-else class="array-value">
-            <code>{{ waldenDisplayValue }}</code>
-          </span>
-        </div>
-      </div>
-    </div>
-    -->
   </v-card>
 </template>
 
 
 <script setup>
 import { computed } from 'vue';
-import VueJsonPretty from 'vue-json-pretty';
-import 'vue-json-pretty/lib/styles.css';
 
-const {id, field, type, match, prodValue, waldenValue} = defineProps({
+const {id, test, match, prodValue, waldenValue} = defineProps({
  id: String,
- field: String,
- type: String,
+ test: Object,
  match: Boolean,
  prodValue: null,
  waldenValue: null,
@@ -109,24 +72,10 @@ const waldenDisplayValue = computed(() => {
   return displayValue(waldenValue);
 });
 
-const comparisonType = computed(() => {
-  const typeParts = type.split("|");
-  return typeParts.length === 2 ? typeParts[1] : null;
-});
 
 const onShowComparison = () => {
   emit('show-comparison', id);
 };
-
-function isObject(obj) {
-  if (Array.isArray(obj)) {
-    return true;
-  } else if (typeof obj === 'object' && obj !== null) {
-    return true;
-  } else {
-    return false;
-  }
-}
 
 const getShortValue = (value) => {
   if (Array.isArray(value)) {

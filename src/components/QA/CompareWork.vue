@@ -52,27 +52,27 @@
         <div v-if="mode === 'diff'" class="diff-table-container">
           <table class="diff-table pa-4" style="table-layout: fixed; max-width: 100%;">
             <tbody>
-              <tr v-for="field in Object.keys(schema.works)" :key="field">
+              <tr v-for="test in schema.works" :key="test.key">
                 <td
                   v-for="(source, index) in ['prod', 'walden']"
                   :key="index"
-                  :class="index === 1 ? getDiffCellClass(field) : ''"
+                  :class="index === 1 ? getDiffCellClass(test) : ''"
                   style="word-wrap: break-word; overflow-wrap: break-word;"
                 >
                   <div v-if="source === 'prod' ? prodResults : waldenResults" class="d-flex">
                     <v-icon 
                       size="small"
                       class="mr-1 expand-icon"
-                      :style="{visibility: isObject(getFieldOrTestValue(field, source)) ? 'visible' : 'hidden'}"
-                      @click="toggleExpanded(field)" 
-                      :icon="expandedFields.has(field) ? 'mdi-menu-down' : 'mdi-menu-right'"
+                      :style="{visibility: isObject(getTestValue(test, source)) ? 'visible' : 'hidden'}"
+                      @click="toggleExpanded(test.key)" 
+                      :icon="expandedFields.has(test.key) ? 'mdi-menu-down' : 'mdi-menu-right'"
                     ></v-icon>
                     <span>
-                      <code class="font-weight-bold mr-2">{{ field }}:</code>
-                      <template v-if="isObject(getFieldOrTestValue(field, source)) && !expandedFields.has(field)">
-                        <code style="white-space: pre-wrap">{{ getShortValue(getFieldOrTestValue(field, source)) }}</code>
+                      <code class="font-weight-bold mr-2">{{ test.field }}:</code>
+                      <template v-if="isObject(getTestValue(test, source)) && !expandedFields.has(test.key)">
+                        <code style="white-space: pre-wrap">{{ getShortValue(getTestValue(test, source)) }}</code>
                       </template>
-                      <code v-else style="white-space: pre-wrap">{{ displayValue(getFieldOrTestValue(field, source)) }}</code>
+                      <code v-else style="white-space: pre-wrap">{{ displayValue(getTestValue(test, source)) }}</code>
                     </span>
                   </div>
                   <div v-else>404</div>
@@ -85,10 +85,10 @@
         <!-- JSON -->
         <div v-else-if="mode === 'json'" class="d-flex">
           <div class="json-container">  
-            <vue-json-pretty :data="prodResults"></vue-json-pretty>
+            <vue-json-pretty :data="prodResults" deep="1"></vue-json-pretty>
           </div>
           <div class="json-container">  
-            <vue-json-pretty :data="waldenResults"></vue-json-pretty>
+            <vue-json-pretty :data="waldenResults" deep="1"></vue-json-pretty>
           </div>
         </div>
       </div>
@@ -129,12 +129,12 @@ const toggleExpanded = (field) => {
   }
 };
 
-const getFieldOrTestValue = (field, source) => {
-  if (field in matches["_test_values"]) {
-    return matches["_test_values"][field][source];
+const getTestValue = (test, source) => {
+  if (test.field in matches["_test_values"]) {
+    return matches["_test_values"][test.field][source];
   }
   const obj = source === "prod" ? prodResults : waldenResults;
-  return getFieldValue(obj, field);
+  return getFieldValue(obj, test.field);
 };
 
 const getFieldValue = (obj, field) => {
@@ -170,15 +170,13 @@ function isObject(obj) {
   }
 }
 
-function getDiffCellClass(field) {
-  const prodValue = getFieldValue(prodResults, field);
-  const waldenValue = getFieldValue(waldenResults, field);
+function getDiffCellClass(test) {
 
-  if ((prodValue === null || prodValue === undefined) && (waldenValue !== null && waldenValue !== undefined)) {
+  if (test.test_type === "feature" && matches[test.key]) {
     return 'bg-green-lighten-4';
   }
 
-  if (!matches[field]) {
+  if (test.test_type === "bug" && !matches[test.key]) {
     return 'bg-red-lighten-4';
   }
 
