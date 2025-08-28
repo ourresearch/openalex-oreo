@@ -35,7 +35,7 @@ import { useHead } from '@unhead/vue';
 
 // Head
 useHead({
-  titleTemplate: (title) => (title ? `${title} | OREO` : 'OREO'),
+  titleTemplate: (title) => (title ? `${title} | OREO` : 'OpenAlex Rewrite Evaluation Overview'),
   link: [],
   meta: []
 });

@@ -1,5 +1,5 @@
 <template>
-  <div :class="['bg-color py-0 py-sm-12', mode]" style="min-height: 70vh;">
+  <div :class="['bg-color py-0 py-sm-12', mode]" style="min-height: calc(100vh - 70px);">
     <v-container :fluid="smAndDown || sidebarLayout" :class="['pa-0', 'pa-sm-4']">
       <v-row>
 
@@ -67,11 +67,17 @@
           <!-- Title, Subtitle, Breadcrumbs -->
           <div>
             <v-breadcrumbs v-if="breadcrumbs" :items="breadcrumbs" divider="›" class="px-0 mt-n10" />
-            <div class="text-h3 mb-3">
-              {{ titles[mode].title }}
+            <div class="d-flex align-start justify-space-between">
+              <div class="text-h3 mb-2">
+                {{ titles[mode].title }}
+              </div>
+              <v-btn v-if="mode === 'tests'"  variant="flat" href="https://github.com/ourresearch/openalex-metrics-api/blob/main/schema.py" target="_blank">
+                Tests on GitHub
+                <v-icon icon="mdi-open-in-new" class="ml-1"></v-icon>
+              </v-btn>
             </div>
-            <div class="text-grey-darken-3 text-subtitle-1 mb-8">
-              {{ titles[mode].subtitle }}
+              <div class="text-grey-darken-3 text-subtitle-1 mb-8">
+                {{ titles[mode].subtitle }}
             </div>
           </div>
 
@@ -135,7 +141,7 @@
                       Filter
                     </v-chip>
                   </template>
-                  <v-list style="max-height: 60vh" rounded="xl">
+                  <v-list style="max-height: 60vh">
                     <v-list-item v-for="test in schema[entityType].filter(f => !filterFailing.includes(f.key) || !filterAdding.includes(f.key))" :key="test.key" @click="toggleTestFilter(test.key)">
                       <div class="d-flex align-center">
                         <v-icon :icon="test.icon" class="mr-2" color="grey-darken-2"></v-icon>
@@ -168,19 +174,19 @@
               <v-list>
                 <v-list-item @click="testShow = 'all'">
                   <div class="d-flex align-center">
-                    <v-icon icon="mdi-check" class="mr-2" :color="testShow === 'all' ? 'grey-darken-2' : 'white'"></v-icon>
+                    <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testShow === 'all' ? '' : 'opacity-0']"></v-icon>
                     All
                   </div>
                 </v-list-item>
                 <v-list-item @click="testShow = 'bugs'">
                   <div class="d-flex align-center">
-                    <v-icon icon="mdi-check" class="mr-2" :color="testShow === 'bugs' ? 'grey-darken-2' : 'white'"></v-icon>
+                    <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testShow === 'bugs' ? '' : 'opacity-0']"></v-icon>
                     Bugs
                   </div>
                 </v-list-item>
                 <v-list-item @click="testShow = 'features'">
                   <div class="d-flex align-center">
-                    <v-icon icon="mdi-check" class="mr-2" :color="testShow === 'features' ? 'grey-darken-2' : 'white'"></v-icon>
+                    <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testShow === 'features' ? '' : 'opacity-0']"></v-icon>
                     Features
                     <v-spacer></v-spacer>
                   </div>
@@ -194,27 +200,27 @@
               </div>
               <v-spacer></v-spacer>
               <v-menu>
-                  <template v-slot:activator="{ props }">
-                    <v-btn v-bind="props" rounded="pill" color="blue-darken-1" variant="text">
-                      Sort:
-                      {{ {alphabetical: 'Alphabetical', failRate: 'Fail Rate', addRate: 'Add Rate'}[testSort] }}
-                      <v-icon icon="mdi-menu-down"></v-icon>
-                    </v-btn>
-                  </template>
-                  <v-list>
-                    <v-list-item @click="testSort = 'alphabetical'">
-                      <v-icon icon="mdi-check" :color="testSort === 'alphabetical' ? 'grey-darken-2' : 'white'"></v-icon>
-                      Alphabetical
-                    </v-list-item>
-                    <v-list-item @click="testSort = 'failRate'">
-                      <v-icon icon="mdi-check" :color="testSort === 'failRate' ? 'grey-darken-2' : 'white'"></v-icon>
-                      Fail Rate
-                    </v-list-item>
-                    <v-list-item @click="testSort = 'addRate'">
-                      <v-icon icon="mdi-check" :color="testSort === 'addRate' ? 'grey-darken-2' : 'white'"></v-icon>
-                      Add Rate
-                    </v-list-item>
-                  </v-list>
+                <template v-slot:activator="{ props }">
+                  <v-btn v-bind="props" rounded="pill" color="blue-darken-1" variant="text">
+                    Sort:
+                    {{ {alphabetical: 'Alphabetical', failRate: 'Fail Rate', addRate: 'Add Rate'}[testSort] }}
+                    <v-icon icon="mdi-menu-down"></v-icon>
+                  </v-btn>
+                </template>
+                <v-list>
+                  <v-list-item @click="testSort = 'alphabetical'">
+                    <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testSort === 'alphabetical' ? '' : 'opacity-0']"></v-icon>
+                    Alphabetical
+                  </v-list-item>
+                  <v-list-item @click="testSort = 'failRate'">
+                    <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testSort === 'failRate' ? '' : 'opacity-0']"></v-icon>
+                    Fail Rate
+                  </v-list-item>
+                  <v-list-item @click="testSort = 'addRate'">
+                    <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testSort === 'addRate' ? '' : 'opacity-0']"></v-icon>
+                    Add Rate
+                  </v-list-item>
+                </v-list>
               </v-menu>
             </div>
           </div>
@@ -233,15 +239,18 @@
                       :class="isHovering ? 'bg-blue-lighten-5' : 'bg-grey-lighten-3'" 
                       class="pa-4 mx-1"
                       @click="router.push(`/entity/${entityType}/tests`)">
-                      <v-card-title style="font-size: 24px;">Tests</v-card-title>
+                      <v-card-title style="font-size: 28px;">Tests</v-card-title>
                       <v-card-text>
                         <div v-if="dataLoaded">
                           <span class="">
                             <b style="font-size: 20px;" >{{ schema[entityType].length }}</b>
                             <span style="font-size: 18px;" class="ml-1">tests</span>
                             <span style="font-size: 16px;" class="mx-2">•</span>
-                            <b style="font-size: 20px;" >{{ 100 - matchRates[entityType]['_average_bug'] }}%</b>
-                            <span style="font-size: 18px;" class="ml-1">failing</span>
+                            <b style="font-size: 20px;" >{{ schema[entityType].filter(f => f.test_type === 'bug').length }}</b>
+                            <span style="font-size: 18px;" class="ml-1">bug tests</span>
+                            <span style="font-size: 16px;" class="mx-2">•</span>
+                            <b style="font-size: 20px;" >{{ schema[entityType].filter(f => f.test_type === 'feature').length }}</b>
+                            <span style="font-size: 18px;" class="ml-1">feature tests</span>
                           </span>
                         </div>
                         <v-skeleton-loader v-else type="list-item"></v-skeleton-loader>
@@ -262,7 +271,7 @@
                       class="pa-4 mx-1"
                       @click="router.push(`/entity/${entityType}/list`)"
                     >
-                      <v-card-title style="font-size: 24px;">List</v-card-title>
+                      <v-card-title style="font-size: 28px;">List</v-card-title>
                       <v-card-text>
                         <div v-if="dataLoaded" class="d-flex align-center">
                           <span class="">
@@ -287,15 +296,8 @@
 
           <v-card v-else flat class="pt-2 pb-0 px-4 rounded-o" style="overflow: hidden !important;">
 
-            <!-- Skeleton Loader -->
-            <v-skeleton-loader 
-              v-if="matchedIds.length === 0 && !dataLoaded" 
-              :type="mode === 'list' ? 'table' : 'list-item-three-line@12'" 
-              class="mt-8"
-            />
-
             <!-- Results -->
-            <div v-else class="mx-n4 results-section">
+            <div class="mx-n4 results-section">
 
               <!-- List -->
               <div v-if="mode == 'list'" ref="tableScrollRef" class="table-scroll">
@@ -303,6 +305,7 @@
                   <div v-if="entityView === 'both'">
                     
                     <v-data-table
+                      v-if="resultsMeta"
                       ref="vDataTableRef"
                       class="results-table fixed-table"
                       :headers="headers"
@@ -367,6 +370,7 @@
                         </tr>
                       </template>
                     </v-data-table>
+                    <v-skeleton-loader v-else type="table"></v-skeleton-loader>
                   </div>
 
                   <div v-else-if="entityView === 'prod'">
@@ -380,47 +384,63 @@
               </div>
 
               <!-- Tests  -->
-              <div v-else-if="mode == 'tests'">
-                <v-row class="pa-4">
-                  <template v-if="testItems">
-                    <v-col cols="12" md="6" lg="4" v-for="testItem in sortedTestItems" :key="testItem.key">
-                      <v-hover>
-                        <template v-slot:default="{ isHovering, props }">
-                          <v-card flat v-ripple v-bind="props" :class="[isHovering ? 'bg-grey-lighten-2' : 'bg-grey-lighten-4', 'cursor-pointer']" color="grey-lighten-4 pa-3" rounded="xl" class="fill-height">
-                            <RouterLink :to="testItem.filterUrl" custom v-slot="{ navigate }">
-                              <div class="d-flex align-center cursor-pointer" @click="navigate">
-                                <div class="flex-shrink-0 mr-2 d-flex align-center">
-                                  <v-tooltip :text="testItem.type === 'bug' ? `${testItem.failRate}% Failing` : `${testItem.passRate}% Adding`" location="bottom">
-                                    <template v-slot:activator="{ props }">
-                                      <v-progress-circular 
-                                        v-bind="props"
-                                        size="40" 
-                                        width="8" 
-                                        :color="testItem.type === 'bug' ? 'red' : 'green'" :model-value="testItem.type === 'bug' ? testItem.failRate : testItem.passRate">
-                                      </v-progress-circular>
-                                    </template>
-                                  </v-tooltip>
-                                </div>
-                                <div>
-                                  <v-tooltip :text="`${testItem.field} (${testItem.test_func})`" location="bottom">
-                                    <template v-slot:activator="{ props }">
-                                      <code v-bind="props" class="d-block">{{ testItem.name }}</code>
-                                    </template>
-                                  </v-tooltip>
-                                </div>
-                              </div>
-                            </RouterLink>
-                          </v-card>
-                        </template>
-                      </v-hover>
+              <div v-else-if="mode == 'tests' && dataLoaded">
+                <v-data-table
+                  v-if="testItems"
+                  :headers="testHeaders"
+                  :items="sortedTestItems"
+                  :items-per-page="-1"
+                  flat
+                  hide-default-header
+                  hide-default-footer
+                >
+                  <template v-slot:item="{ item, columns }">
+                    <v-hover>
+                      <template v-slot:default="{ isHovering, props }">
+                        <tr 
+                          v-bind="props" 
+                          :class="[isHovering ? 'bg-grey-lighten-3' : '', 'cursor-pointer']" 
+                          v-ripple 
+                          @click="router.push(item.filterUrl)"
+                        >
+                          <td v-for="column in columns" :key="column.key" :style="{width: column.width || 'auto'}" :class="column.tight ? 'px-1' : ''">
+      
+                            <template v-if="column.key === 'donut'">
+                              <v-progress-circular 
+                                size="24" 
+                                width="10" 
+                                :color="item.type === 'bug' ? 'red' : 'green'" :model-value="item.type === 'bug' ? item.failRate : item.passRate">
+                              </v-progress-circular>
+                            </template>
 
-                    </v-col>
+                            <template v-if="column.key === 'rate'">
+                              <div class="text-right">
+                                <code>{{ item.type === 'bug' ? item.failRate : item.passRate }}%</code>
+                              </div>
+                            </template>
+
+                            <template v-if="column.key === 'type'">
+                              <v-icon :icon="item.type === 'bug' ? 'mdi-bug' : 'mdi-plus'" :color="item.type === 'bug' ? 'red' : 'green'" />
+                            </template>
+
+                            <template v-else-if="column.key === 'name'">
+                              <span class="font-weight-medium">{{ item.name }}</span>
+                            </template>
+
+                            <template v-else-if="column.key === 'description'">
+                              {{ item.description }}
+                            </template>
+
+                          </td>
+                        </tr>
+                      </template>
+                    </v-hover>
                   </template>
-                  <template v-else>
-                    <v-skeleton-loader type="list-item-three-line@12"></v-skeleton-loader>
-                  </template>
-                </v-row>  
+                </v-data-table>
               </div>
+              <template v-else-if="mode === 'tests'">
+                <v-skeleton-loader type="list-item-three-line@12"></v-skeleton-loader>
+              </template>
 
               <!-- Home -->
               <div v-if="mode === 'home'">
@@ -584,8 +604,8 @@ const route = useRoute()
 const router = useRouter()
 const currentRoute = ref(route.path)
 
-const metricsUrl   = `https://metrics-api.openalex.org/`;
-//const metricsUrl   = `http://localhost:5006/`;
+const metricsUrl   = `https://metrics-api.openalex.org`;
+//const metricsUrl   = `http://localhost:5006`;
 
 const { mode, entityType } = toRefs(props);
 
@@ -599,7 +619,7 @@ const filterFailing     = useParams('filterFailing', 'array', []);
 const filterAdding      = useParams('filterAdding', 'array', []);
 const entityView        = useParams('entityView', 'string', 'both');
 const showProdColumn    = useParams('showProdColumn', 'boolean', true);
-const testSort          = useParams('testSort', 'string', 'alphabetical');
+const testSort          = useParams('testSort', 'string', 'failRate');
 const testShow          = useParams('testShow', 'string', 'all');
 const compareTestId     = useParams('compareTestId', 'string', null);
 const compareTestKey    = useParams('compareTestKey', 'string', null);
@@ -755,6 +775,16 @@ const resultsCountStr = computed(() => {
   return `${startNum}-${endNum} of ${totalNum.toLocaleString()} results`;
 });
 
+const testHeaders = computed(() => {
+  return [
+    { title: '', key: 'donut', width: "35px", tight: false },
+    { title: '', key: 'rate', width: "35px", tight: true },
+    { title: '', key: 'type', width: "35px", tight: true },
+    { title: 'Name', key: 'name' },
+    { title: 'Description', key: 'description' },
+  ];
+});
+
 const testItems = computed(() => {
   if (!schema.value || !matchRates[entityType.value] || !Object.keys(matchRates[entityType.value]).length) { return null; }
 
@@ -763,6 +793,7 @@ const testItems = computed(() => {
     rows.push({
       key: test.key,
       name: test.display_name,
+      description: test.description,
       type: test.test_type,
       field: test.field,
       test_func: test.test_func,
@@ -805,14 +836,12 @@ const testsResultsStr = computed(() => {
   const parts = [];
   if (testShow.value === "all") {
     parts.push(`${schema.value[entityType.value].length} tests`);
-    parts.push(`${100 - matchRates[entityType.value]['_average_bug']}% failing`);
-    parts.push(`${matchRates[entityType.value]['_average_feature']}% adding`);
+    parts.push(`${schema.value[entityType.value].filter(test => test.test_type === "bug").length} bug tests`);
+    parts.push(`${schema.value[entityType.value].filter(test => test.test_type === "feature").length} feature tests`);
   } else if (testShow.value === "bugs") {
     parts.push(`${schema.value[entityType.value].filter(test => test.test_type === "bug").length} bug tests`);
-    parts.push(`${100 - matchRates[entityType.value]['_average_bug']}% failing`);
   } else if (testShow.value === "features") {
     parts.push(`${schema.value[entityType.value].filter(test => test.test_type === "feature").length} feature tests`);
-    parts.push(`${matchRates[entityType.value]['_average_feature']}% adding`);
   }
 
   return parts.join(" • ");
@@ -869,13 +898,6 @@ const coverageHeaders = computed(() => {
       align: 'end',
       isLink: true,
       width: "125px",
-      sortable: true,
-    },
-    { 
-      title: 'Failing Tests %', 
-      key: 'testFailRate',
-      align: 'end',
-      isLink: true,
       sortable: true,
     },
     { 
