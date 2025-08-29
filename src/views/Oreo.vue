@@ -42,7 +42,7 @@
                   <v-icon :icon="filterFailing.includes(test.key) ? 'mdi-checkbox-marked-outline' : 'mdi-checkbox-blank-outline'" class="mr-2" color="grey-darken-2"></v-icon>
                   <code>{{ test.display_name }}</code>
                   <v-spacer></v-spacer>
-                  <span class="text-grey-darken-1 ml-4" style="font-size: 14px;">{{ 100-matchRates[entityType][test.key] }}%</span>
+                  <span class="text-grey-darken-1 ml-4" style="font-size: 14px;">{{ matchRates[entityType][test.key] }}%</span>
                 </div>
               </v-list-item>
             </v-list>
@@ -147,7 +147,7 @@
                         <v-icon :icon="test.icon" class="mr-2" color="grey-darken-2"></v-icon>
                         {{ test.display_name }}
                         <v-spacer></v-spacer>
-                        <span class="text-grey-darken-1 ml-4" style="font-size: 14px;">{{ test.test_type === 'bug' ? 100-matchRates[entityType][test.key] : matchRates[entityType][test.key] }}%</span>
+                        <span class="text-grey-darken-1 ml-4" style="font-size: 14px;">{{ matchRates[entityType][test.key] }}%</span>
                       </div>
                     </v-list-item>
                   </v-list>
@@ -409,18 +409,18 @@
                               <v-progress-circular 
                                 size="24" 
                                 width="10" 
-                                :color="item.type === 'bug' ? 'red' : 'green'" :model-value="item.type === 'bug' ? item.failRate : item.passRate">
+                                :color="item.type === 'bug' ? 'red' : 'green'" :model-value="item.rate">
                               </v-progress-circular>
                             </template>
 
                             <template v-if="column.key === 'rate'">
                               <div class="text-right">
-                                <code>{{ item.type === 'bug' ? item.failRate : item.passRate }}%</code>
+                                <code>{{ item.rate }}%</code>
                               </div>
                             </template>
 
                             <template v-if="column.key === 'type'">
-                              <v-icon :icon="item.type === 'bug' ? 'mdi-bug' : 'mdi-plus'" :color="item.type === 'bug' ? 'red' : 'green'" />
+                              <v-icon :icon="item.type === 'bug' ? 'mdi-bug' : 'mdi-rocket-launch'" :color="item.type === 'bug' ? 'red' : 'green'" />
                             </template>
 
                             <template v-else-if="column.key === 'name'">
@@ -428,7 +428,7 @@
                             </template>
 
                             <template v-else-if="column.key === 'description'">
-                              {{ item.description }}
+                              <span class="test-description" v-html="item.description"></span>
                             </template>
 
                           </td>
@@ -795,11 +795,10 @@ const testItems = computed(() => {
       name: test.display_name,
       description: test.description,
       type: test.test_type,
+      rate: matchRates[entityType.value][test.key],
       field: test.field,
       test_func: test.test_func,
       filterUrl: `/entity/${entityType.value}/list?${test.test_type === "bug" ? `filterFailing=${test.key}` : `filterAdding=${test.key}`}&entityView=both`,
-      passRate: matchRates[entityType.value][test.key],
-      failRate: 100 - matchRates[entityType.value][test.key],
     });
   });
   return rows;
@@ -821,12 +820,12 @@ const sortedTestItems = computed(() => {
       if (a.type !== b.type) {
         return a.type === 'bug' ? -1 : 1;
       }
-      return b.failRate - a.failRate;
+      return b.rate - a.rate;
     } else if (testSort.value === 'addRate') {
       if (a.type !== b.type) {
         return a.type === 'feature' ? -1 : 1;
       }
-      return b.passRate - a.passRate;
+      return b.rate - a.rate;
     }
   });
 });
@@ -919,7 +918,7 @@ const coverageItems = computed(() => {
       prodOnly: scaledCoverageItem.prodOnly,
       both: scaledCoverageItem.both,
       waldenOnly: scaledCoverageItem.waldenOnly,
-      testFailRate: entity in matchRates ? (100 - matchRates[entity]["_average_bug"]) : "-",
+      testFailRate: entity in matchRates ? matchRates[entity]["_average_bug"] : "-",
       sampleSize: coverage[entity]["prod"]["sampleSize"],
     });
   });
@@ -1244,6 +1243,14 @@ watch([tableScrollRef, fixedHeaderRef], () => {
   top: 0;
   z-index: 1000;
   background: white;
+}
+:deep(.test-description code) {
+  background-color: #f5f5f5;
+  color: #d73a49;
+  font-family: monospace;
+  font-size: 0.95em;
+  padding: 0.2em 0.4em;
+  border-radius: 5px;
 }
 .v-card, .v-overlay {
   overflow: visible !important;
