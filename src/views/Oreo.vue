@@ -1,158 +1,29 @@
 <template>
   <div :class="['bg-color py-0 py-sm-12', mode]" style="min-height: calc(100vh - 70px);">
-    <v-container :fluid="smAndDown || sidebarLayout" :class="['pa-0', 'pa-sm-4']">
+    <v-container :fluid="smAndDown" :class="['pa-0', 'pa-sm-4']">
       <v-row>
 
-        <!-- Filter Sidebar -->
-        <v-col v-if="sidebarLayout" cols="3" class="list-sidebar" style="max-width: 340px;">
-          <div v-if="dataLoaded" style="padding-top: 180px;">
-            <v-list class="bg-color" density="compact">
-              <v-list-item title="Dataset"></v-list-item>
-              <v-divider class="mb-1"></v-divider>
-              <v-list-item style="font-size: 14px;" @click="entityView = 'prod'">
-                <div class="d-flex align-center">
-                  <v-icon :icon="entityView === 'prod' ? 'mdi-radiobox-marked' : 'mdi-radiobox-blank'" class="mr-2" color="grey-darken-2"></v-icon>
-                  Prod Only
-                  <v-spacer></v-spacer>
-                  <span class="text-grey-darken-1" style="font-size: 14px;">{{ scaledCoverage[entityType].prodOnly }}%</span>
-                </div>
-              </v-list-item>
-              <v-list-item style="font-size: 14px;" @click="entityView = 'both'">
-                <div class="d-flex align-center">
-                  <v-icon :icon="entityView === 'both' ? 'mdi-radiobox-marked' : 'mdi-radiobox-blank'" class="mr-2" color="grey-darken-2"></v-icon>
-                  Both
-                  <v-spacer></v-spacer>
-                  <span class="text-grey-darken-1" style="font-size: 14px;">{{ scaledCoverage[entityType].both }}%</span>
-                </div>
-              </v-list-item>
-              <v-list-item style="font-size: 14px;" @click="entityView = 'walden'">
-                <div class="d-flex align-center">
-                  <v-icon :icon="entityView === 'walden' ? 'mdi-radiobox-marked' : 'mdi-radiobox-blank'" class="mr-2" color="grey-darken-2"></v-icon>
-                  Walden Only
-                  <v-spacer></v-spacer>
-                  <span class="text-grey-darken-1" style="font-size: 14px;">{{ scaledCoverage[entityType].waldenOnly }}%</span>
-                </div>
-              </v-list-item>
-            </v-list>
-            <v-list v-if="entityView === 'both'" class="bg-color" density="compact">
-              <v-list-item title="Bugs"></v-list-item>
-              <v-divider class="mb-1"></v-divider>
-              <v-list-item v-for="test in schema[entityType].filter(f => f.test_type === 'bug')" :key="test.key" style="font-size: 14px;" @click="toggleFailingFilter(test.key)">
-                <div class="d-flex align-start">
-                  <v-icon :icon="filterFailing.includes(test.key) ? 'mdi-checkbox-marked-outline' : 'mdi-checkbox-blank-outline'" class="mr-2" color="grey-darken-2"></v-icon>
-                  <code>{{ test.display_name }}</code>
-                  <v-spacer></v-spacer>
-                  <span class="text-grey-darken-1 ml-4" style="font-size: 14px;">{{ matchRates[entityType][test.key] }}%</span>
-                </div>
-              </v-list-item>
-            </v-list>
-            <v-list v-if="entityView === 'both'" class="bg-color" density="compact">
-              <v-list-item title="Features"></v-list-item>
-              <v-divider class="mb-1"></v-divider>
-              <v-list-item v-for="test in schema[entityType].filter(f => f.test_type === 'feature')" :key="test.key" style="font-size: 14px;" @click="toggleAddingFilter(test.key)">
-                <div class="d-flex align-start">
-                  <v-icon :icon="filterFailing.includes(test.key) ? 'mdi-checkbox-marked-outline' : 'mdi-checkbox-blank-outline'" class="mr-2" color="grey-darken-2"></v-icon>
-                  <code>{{ test.display_name }}</code>
-                  <v-spacer></v-spacer>
-                  <span class="text-grey-darken-1 ml-4" style="font-size: 14px;">{{ matchRates[entityType][test.key] }}%</span>
-                </div>
-              </v-list-item>
-            </v-list>
-          </div>
-        </v-col>
-
         <!-- Main Content -->
-        <v-col :cols="sidebarLayout ? 9 : 12">
+        <v-col cols="12">
           
           <!-- Title, Subtitle, Breadcrumbs -->
           <div>
             <v-breadcrumbs v-if="breadcrumbs" :items="breadcrumbs" divider="›" class="px-0 mt-n10" />
-            <div class="d-flex align-start justify-space-between">
+            <div class="d-flex align-end justify-space-between">
               <div class="text-h3 mb-2">
                 {{ titles[mode].title }}
               </div>
-              <v-btn v-if="mode === 'tests'"  variant="flat" href="https://github.com/ourresearch/openalex-metrics-api/blob/main/schema.py" target="_blank">
+              <v-btn v-if="mode === 'tests'"  variant="text" href="https://github.com/ourresearch/openalex-metrics-api/blob/main/schema.py" target="_blank">
                 Tests on GitHub
                 <v-icon icon="mdi-open-in-new" class="ml-1"></v-icon>
               </v-btn>
             </div>
-              <div class="text-grey-darken-3 text-subtitle-1 mb-8">
-                {{ titles[mode].subtitle }}
-            </div>
+              <div class="text-grey-darken-3 text-subtitle-1 mb-8" v-html="titles[mode].subtitle"></div>
           </div>
 
-          <!-- List Filters / Count Above -->
+          <!-- List Count Above -->
           <div v-if="mode === 'list' && dataLoaded">  
             <div class="pt-0 pb-1">
-              <div class="d-flex">
-                <v-menu v-if="mdAndDown" width="200">
-                  <template v-slot:activator="{ props }">
-                    <v-chip v-bind="props" rounded="pill" color="blue-darken-1" variant="tonal" class="mr-1">
-                      Dataset: &nbsp;<b>{{ {prod: 'Prod Only', both: 'Both', walden: 'Walden Only'}[entityView] }}</b>
-                      <v-icon icon="mdi-menu-down"></v-icon>
-                    </v-chip>
-                  </template>
-                  <v-list>
-                    <v-list-item @click="entityView = 'prod'">
-                      <div class="d-flex align-center">
-                        <v-icon icon="mdi-check" class="mr-2" :color="entityView === 'prod' ? 'grey-darken-2' : 'white'"></v-icon>
-                        Prod Only
-                        <v-spacer></v-spacer>
-                        <span class="text-grey-darken-1" style="font-size: 14px;">{{ scaledCoverage[entityType].prodOnly }}%</span>
-                      </div>
-                    </v-list-item>
-                    <v-list-item @click="entityView = 'both'">
-                      <div class="d-flex align-center">
-                        <v-icon icon="mdi-check" class="mr-2" :color="entityView === 'both' ? 'grey-darken-2' : 'white'"></v-icon>
-                        Both
-                        <v-spacer></v-spacer>
-                        <span class="text-grey-darken-1" style="font-size: 14px;">{{ scaledCoverage[entityType].both }}%</span>
-                      </div>
-                    </v-list-item>
-                    <v-list-item @click="entityView = 'walden'">
-                      <div class="d-flex align-center">
-                        <v-icon icon="mdi-check" class="mr-2" :color="entityView === 'walden' ? 'grey-darken-2' : 'white'"></v-icon>
-                        Walden Only
-                        <v-spacer></v-spacer>
-                        <span class="text-grey-darken-1" style="font-size: 14px;">{{ scaledCoverage[entityType].waldenOnly }}%</span>
-                      </div>
-                    </v-list-item>
-                  </v-list>
-                </v-menu>
-                
-                <template v-if="filterFailing.length > 0 && entityView === 'both'">
-                  <v-chip v-for="filter in filterFailing" :key="filter" class="mr-1" variant="tonal" rounded="pill" color="red-lighten-1">
-                    Failing: <code class="ml-1"><b>{{ schema[entityType].find(t => t.key === filter).display_name }}</b></code>
-                    <v-icon icon="mdi-close" class="ml-1" @click="filterFailing = filterFailing.filter((key) => key !== filter)"></v-icon>
-                  </v-chip>
-                </template>
-                
-                <template v-if="filterAdding.length > 0 && entityView === 'both'">
-                  <v-chip v-for="filter in filterAdding" :key="filter" class="mr-1" variant="tonal" rounded="pill" color="green-lighten-1">
-                    Adding: <code class="ml-1"><b>{{ schema[entityType].find(t => t.key === filter).display_name }}</b></code>
-                    <v-icon icon="mdi-close" class="ml-1" @click="filterAdding = filterAdding.filter((key) => key !== filter)"></v-icon>
-                  </v-chip>
-                </template>
-
-                <v-menu v-if="entityView === 'both' && mdAndDown">
-                  <template v-slot:activator="{ props }">
-                    <v-chip v-bind="props" rounded="pill" color="blue-darken-1" variant="tonal" class="mr-1">
-                      <v-icon icon="mdi-plus"></v-icon>
-                      Filter
-                    </v-chip>
-                  </template>
-                  <v-list style="max-height: 60vh">
-                    <v-list-item v-for="test in schema[entityType].filter(f => !filterFailing.includes(f.key) || !filterAdding.includes(f.key))" :key="test.key" @click="toggleTestFilter(test.key)">
-                      <div class="d-flex align-center">
-                        <v-icon :icon="test.icon" class="mr-2" color="grey-darken-2"></v-icon>
-                        {{ test.display_name }}
-                        <v-spacer></v-spacer>
-                        <span class="text-grey-darken-1 ml-4" style="font-size: 14px;">{{ matchRates[entityType][test.key] }}%</span>
-                      </div>
-                    </v-list-item>
-                  </v-list>
-                </v-menu>
-              </div>
               <div class="px-4 pt-2 pb-1 text-grey-darken-2">
                 <div v-if="resultsMeta" style="font-size: 14px;">
                   {{ resultsCountStr }}
@@ -238,7 +109,7 @@
                       v-bind="props" 
                       :class="isHovering ? 'bg-blue-lighten-5' : 'bg-grey-lighten-3'" 
                       class="pa-4 mx-1"
-                      @click="router.push(`/entity/${entityType}/tests`)">
+                      @click="router.push(`/${entityType}/tests`)">
                       <v-card-title style="font-size: 28px;">Tests</v-card-title>
                       <v-card-text>
                         <div v-if="dataLoaded">
@@ -269,21 +140,11 @@
                       v-bind="props" 
                       :class="isHovering ? 'bg-blue-lighten-5' : 'bg-grey-lighten-3'"
                       class="pa-4 mx-1"
-                      @click="router.push(`/entity/${entityType}/list`)"
+                      @click="router.push(`/${entityType}/plots`)"
                     >
-                      <v-card-title style="font-size: 28px;">List</v-card-title>
+                      <v-card-title style="font-size: 28px;">Plots</v-card-title>
                       <v-card-text>
                         <div v-if="dataLoaded" class="d-flex align-center">
-                          <span class="">
-                            <b style="font-size: 20px;" >{{ scaledCoverage[entityType].prodOnly }}%</b> 
-                            <span style="font-size: 18px;" class="ml-1">Prod Only</span>
-                            <span style="font-size: 14px;" class="mx-2">•</span>
-                            <b style="font-size: 20px;" >{{ scaledCoverage[entityType].both }}%</b> 
-                            <span style="font-size: 18px;" class="ml-1">Both</span>
-                            <span style="font-size: 14px;" class="mx-2">•</span>
-                            <b style="font-size: 20px;" >{{ scaledCoverage[entityType].waldenOnly }}%</b> 
-                            <span style="font-size: 18px;" class="ml-1">Walden Only</span>
-                          </span>
                         </div>
                         <v-skeleton-loader v-else type="list-item"></v-skeleton-loader>
                       </v-card-text>
@@ -300,16 +161,22 @@
             <div class="mx-n4 results-section">
 
               <!-- List -->
-              <div v-if="mode == 'list'" ref="tableScrollRef" class="table-scroll">
-                <v-col cols="12">
-                  <div v-if="entityView === 'both'">
-                    
+              <div v-if="mode == 'list'">
+                <v-col cols="12" v-if="dataLoaded">
+                  <div v-if="testKey === 'works_lost'">
+                    <sample-explorer source="prod-only" :fractionToShow="scaledCoverage[entityType].prodOnlyExact"/>
+                  </div>
+
+                  <div v-else-if="testKey === 'works_added'">
+                    <sample-explorer source="walden-only" :fractionToShow="scaledCoverage[entityType].waldenOnlyExact"/>
+                  </div>
+
+                  <div v-else>  
                     <v-data-table
                       v-if="resultsMeta"
-                      ref="vDataTableRef"
                       class="results-table fixed-table"
-                      :headers="headers"
-                      :items="rows"
+                      :headers="listHeaders"
+                      :items="listItems"
                       :items-per-page="-1"
                       flat
                       hide-default-footer
@@ -324,7 +191,7 @@
                         </tr>
                       </template>
 
-                      <!-- Table Rows -->
+                      <!-- List Table Rows -->
                       <template v-slot:item="{ item, columns }">
                         <tr>
                           <td v-for="column in columns" :key="column.key">
@@ -343,44 +210,15 @@
                                 :matches="matches[item._id]"
                                 :compare-data="prodResults[item._id]" 
                                 @title-click="compareId = item._id"/>
-                            </div>
-
-                            <div v-else-if="column.key === 'tests'">
-                              <div class="mb-2">
-                                <span v-for="test in item.failingTests" :key="test">
-                                  <v-tooltip open-delay="300" :text="test.display_name" location="bottom">
-                                    <template v-slot:activator="{ props }">
-                                      <v-icon v-bind="props" class="ma-1" color="red-lighten-3" @click="openCompareFieldDialog(item._id, test.key)" :icon="test.icon" />
-                                    </template>
-                                  </v-tooltip>  
-                                </span>
-                              </div>
-                              <div>
-                                <span v-for="test in item.addingTests" :key="test">
-                                  <v-tooltip open-delay="300" :text="test.display_name" location="bottom">
-                                    <template v-slot:activator="{ props }">
-                                      <v-icon v-bind="props" class="ma-1" color="green-lighten-3" @click="openCompareFieldDialog(item._id, test.key)" :icon="test.icon" />
-                                    </template>
-                                  </v-tooltip>
-                                </span>
-                              </div>
-                            </div>
-          
+                            </div>          
                           </td>
                         </tr>
                       </template>
                     </v-data-table>
-                    <v-skeleton-loader v-else type="table"></v-skeleton-loader>
-                  </div>
-
-                  <div v-else-if="entityView === 'prod'">
-                    <sample-explorer source="prod-only" :fractionToShow="scaledCoverage[entityType].prodOnlyExact"/>
-                  </div>
-
-                  <div v-else-if="entityView === 'walden'">
-                    <sample-explorer source="walden-only" :fractionToShow="scaledCoverage[entityType].waldenOnlyExact"/>
+                    <v-skeleton-loader v-else type="list-item-three-line@12"></v-skeleton-loader>
                   </div>
                 </v-col>
+                <v-skeleton-loader v-else type="list-item-three-line@12"></v-skeleton-loader>
               </div>
 
               <!-- Tests  -->
@@ -468,7 +306,7 @@
                     <template v-slot:item="{ item, columns }">
                       <v-hover>
                         <template v-slot:default="{ isHovering, props }">
-                          <tr v-bind="props" :class="[isHovering ? 'bg-grey-lighten-3' : '', 'cursor-pointer']" v-ripple @click="router.push(`/entity/${item.type}`)">
+                          <tr v-bind="props" :class="[isHovering ? 'bg-grey-lighten-3' : '', 'cursor-pointer']" v-ripple @click="router.push(`/${item.type}`)">
                             <td v-for="column in columns" :key="column.key">
                               <template v-if="column.key === 'type'">
                                 <code>/{{ item.type }}</code>
@@ -497,7 +335,7 @@
               <!-- Pagination -->
               <v-pagination
                 v-model="page"
-                v-if="mode === 'list' && entityView === 'both'"
+                v-if="mode === 'list' && testKey !== 'works_lost' && testKey !== 'works_added'"
                 :length="resultsMeta ? Math.floor((resultsMeta.count * scaledCoverage[entityType].bothExact) / pageSize) : 0"
                 :total-visible="10"
                 rounded
@@ -510,24 +348,6 @@
         </v-col>
       </v-row>
     </v-container>
-    
-    <!-- Fixed Table Header -->
-    <div
-      v-if="headers.length > 0 && mode === 'list' && entityView === 'both'"
-      ref="fixedHeaderRef"
-      class="fixed-header"
-      v-show="showFixedHeader"
-    >
-      <table class="results-table">
-        <thead>
-          <tr>
-            <th v-for="column in headers" :key="column.key" :style="{width: column.width}">
-              <span>{{ column.title }}</span>
-            </th>
-          </tr>
-        </thead>
-      </table>
-    </div>
 
     <!-- Compare Field Dialog -->
     <v-dialog 
@@ -598,6 +418,10 @@ const props = defineProps({
     type: String,
     default: 'works',
   },
+  testKey: {
+    type: String,
+    default: null,
+  },
 });
 
 const route = useRoute()
@@ -607,7 +431,7 @@ const currentRoute = ref(route.path)
 const metricsUrl   = `https://metrics-api.openalex.org`;
 //const metricsUrl   = `http://localhost:5006`;
 
-const { mode, entityType } = toRefs(props);
+const { mode, entityType, testKey } = toRefs(props);
 
 const schema         = ref(null);
 
@@ -615,10 +439,6 @@ const compareId         = useParams('compareId', 'string', null);
 const compareView       = useParams('compareView', 'string', 'diff');
 const pageSize          = useParams('pageSize', 'number', 20);
 const page              = useParams('page', 'number', 1);
-const filterFailing     = useParams('filterFailing', 'array', []);
-const filterAdding      = useParams('filterAdding', 'array', []);
-const entityView        = useParams('entityView', 'string', 'both');
-const showProdColumn    = useParams('showProdColumn', 'boolean', true);
 const testSort          = useParams('testSort', 'string', 'failRate');
 const testShow          = useParams('testShow', 'string', 'all');
 const compareTestId     = useParams('compareTestId', 'string', null);
@@ -635,35 +455,33 @@ const matchRatesLoaded     = ref(false);
 const coverageLoaded       = ref(false);
 const dataLoaded           = computed(() => matchRatesLoaded.value && coverageLoaded.value);
 
-const tableScrollRef       = ref(null);
-const fixedHeaderRef       = ref(null);
-const vDataTableRef        = ref(null);
-const showFixedHeader      = ref(false);
+const currentTest = computed(() => {
+  if (!testKey.value || !schema.value || !schema.value[entityType.value]) { return null; }
+  return schema.value[entityType.value].find(t => t.key === testKey.value);
+});
 
 const { smAndDown, mdAndDown } = useDisplay();
 
-const sidebarLayout = computed(() => {
-  return mode.value === "list" && !mdAndDown.value;
+const titles = computed(() => {
+  return {
+    "entity": {
+      "title": filters.titleCase(entityType.value),
+      "subtitle": "Explore tests and sample data from production and Walden"
+    },
+    "list": {
+      "title": currentTest.value ? currentTest.value.display_name : "",
+      "subtitle": currentTest.value ? currentTest.value.description : ""
+    },
+    "tests": {
+      "title": filters.titleCase(entityType.value) + " Tests",
+      "subtitle": "Total pass rates of key tests across the full sample set"
+    },
+    "home": {
+      "title": "Home",
+      "subtitle": "Explore coverage and test rates between production and Walden across all endpoints"
+    }
+  };
 });
-
-const titles = {
-  "entity": {
-    "title": filters.titleCase(entityType.value),
-    "subtitle": "Explore tests and sample data from production and Walden"
-  },
-  "list": {
-    "title": filters.titleCase(entityType.value) + " List",
-    "subtitle": `Compare and explore ${entityType.value} from production and Walden with key tests`
-  },
-  "tests": {
-    "title": filters.titleCase(entityType.value) + " Tests",
-    "subtitle": "Total pass rates of key tests across the full sample set"
-  },
-  "home": {
-    "title": "Home",
-    "subtitle": "Explore coverage and test rates between production and Walden across all endpoints"
-  },
-};
 
 const breadcrumbs = computed(() => {
   if (mode.value === "home") { return null; }
@@ -671,13 +489,14 @@ const breadcrumbs = computed(() => {
     { title: "Home", disabled: false, to: "/" },
   ];
   if (mode.value === "entity") {
-    items.push({ title: filters.titleCase(entityType.value), disabled: true, to: `/entity/${entityType.value}` });
+    items.push({ title: filters.titleCase(entityType.value), disabled: true, to: `/${entityType.value}` });
   } else if (mode.value === "list") {
-    items.push({ title: filters.titleCase(entityType.value), disabled: false, to: `/entity/${entityType.value}` });
-    items.push({ title: "List", disabled: true, to: `/entity/${entityType.value}/list` });
+    items.push({ title: filters.titleCase(entityType.value), disabled: false, to: `/${entityType.value}` });
+    items.push({ title: "Tests", disabled: false, to: `/${entityType.value}/tests` });
+    items.push({ title: currentTest.value ? currentTest.value.display_name : "", disabled: true, to: `/${entityType.value}/tests/${testKey.value}` });
   } else if (mode.value === "tests") {
-    items.push({ title: filters.titleCase(entityType.value), disabled: false, to: `/entity/${entityType.value}` });
-    items.push({ title: "Tests", disabled: true, to: `/entity/${entityType.value}/tests` });
+    items.push({ title: filters.titleCase(entityType.value), disabled: false, to: `/${entityType.value}` });
+    items.push({ title: "Tests", disabled: true, to: `/${entityType.value}/tests` });
   }
   return items;
 });
@@ -707,23 +526,19 @@ const getFieldValue = (obj, field) => {
   return value;
 };
 
-
 const matchedIds = computed(() => {
   return matches ? Object.keys(matches) : [];
 });
 
-
-const headers = computed(() => {
+const listHeaders = computed(() => {
   const columns = [
+    {title: "Prod", key: "prod", width: mdAndDown.value ? "250px" : "400px"},
     {title: "Walden", key: "walden", width: mdAndDown.value ? "250px" : "400px"},
-    {title: "Tests", key: "tests", width: "200px"},
   ];
-  if (showProdColumn.value) { columns.unshift({title: "Prod", key: "prod", width: mdAndDown.value ? "250px" : "400px"}); }
-
   return columns;
 });
 
-const rows = computed(() => {
+const listItems = computed(() => {
   const rows = [];
 
   matchedIds.value.forEach(id => {
@@ -741,20 +556,6 @@ const makeRow = (id) => {
   row._id = id;
   row.prodUrl = `https://api.openalex.org/${entityType.value}/${id}`;
   row.waldenUrl = `https://api.openalex.org/v2/${entityType.value}/${id}`;
-
-  const failingTests = [];
-  const addingTests = [];
-  schema.value[entityType.value].map(test => {    
-    if (test.test_type === "bug" && matches[id][test.key] === false) {
-      failingTests.push(test);
-    } else if (test.test_type === "feature" && matches[id][test.key] === true) {
-      addingTests.push(test);
-    }
-  });
-
-  row.failingTests = failingTests;
-  row.addingTests = addingTests;
-
   return row;
 };
 
@@ -763,13 +564,13 @@ const resultsCountStr = computed(() => {
 
   const scale = scaledCoverage.value[entityType.value];
   let totalNum;
-  if (entityView.value === "both") {
-    totalNum = Math.round(resultsMeta.value.count * scale.bothExact);
-  } else if (entityView.value === "prod") {
+  if (testKey.value === "works_lost") {
     totalNum = Math.round(10000 * scale.prodOnlyExact);
-  } else if (entityView.value === "walden") {
+  } else if (testKey.value === "works_added") {
     totalNum = Math.round(10000 * scale.waldenOnlyExact);
-  }
+  } else {
+    totalNum = Math.round(resultsMeta.value.count * scale.bothExact);
+  } 
   const startNum = ((page.value-1) * pageSize.value + 1).toLocaleString();
   const endNum = (Math.min(page.value * pageSize.value, totalNum)).toLocaleString();
   return `${startNum}-${endNum} of ${totalNum.toLocaleString()} results`;
@@ -795,10 +596,10 @@ const testItems = computed(() => {
       name: test.display_name,
       description: test.description,
       type: test.test_type,
-      rate: matchRates[entityType.value][test.key],
+      rate: test.rate || matchRates[entityType.value][test.key],
       field: test.field,
       test_func: test.test_func,
-      filterUrl: `/entity/${entityType.value}/list?${test.test_type === "bug" ? `filterFailing=${test.key}` : `filterAdding=${test.key}`}&entityView=both`,
+      filterUrl: `/${entityType.value}/tests/${test.key}`,
     });
   });
   return rows;
@@ -988,31 +789,6 @@ const calcScaledCoverage = (data) => {
   };
 };
 
-const toggleTestFilter = (field) => {
-  const type = schema.value[entityType].find(test => test.key === field).test_type;
-  if (type === 'bug') {
-    toggleFailingFilter(field);
-  } else if (type === 'feature') {
-    toggleAddingFilter(field);
-  }
-};
-
-const toggleAddingFilter = (field) => {
-  if (filterAdding.value.includes(field)) {
-    filterAdding.value = filterAdding.value.filter(f => f !== field);
-  } else {
-    filterAdding.value = [...filterAdding.value, field];
-  }
-};
-
-const toggleFailingFilter = (field) => {
-  if (filterFailing.value.includes(field)) {
-    filterFailing.value = filterFailing.value.filter(f => f !== field);
-  } else {
-    filterFailing.value = [...filterFailing.value, field];
-  }
-};
-
 async function fetchSchema() {
   const apiUrl = `${metricsUrl}/schema`;
   const response = await axios.get(apiUrl);
@@ -1026,16 +802,12 @@ async function fetchMetricsResponses() {
   matches && Object.keys(matches).forEach(key => delete matches[key]);
   resultsMeta.value = null;
   
-  let failingFilter = "";
-  if (filterFailing.value.length > 0) {
-    failingFilter = `&filterFailing=${filterFailing.value.join(",")}`;
-  }
-  let addingFilter = "";
-  if (filterAdding.value.length > 0) {
-    addingFilter = `&filterAdding=${filterAdding.value.join(",")}`;
+  let testFilter = "";
+  if (currentTest.value) {
+    testFilter = `&filterTest=${currentTest.value.key}`;
   }
 
-  const apiUrl = `${metricsUrl}/responses?page=${page.value}${failingFilter}${addingFilter}&per_page=${pageSize.value}`;
+  const apiUrl = `${metricsUrl}/responses?page=${page.value}${testFilter}&per_page=${pageSize.value}`;
   const response = await axios.get(apiUrl);
   response.data.results.forEach((item) => {
     prodResults[item.id] = item.prod;
@@ -1061,37 +833,30 @@ async function fetchCoverage() {
     coverage[key] = response.data.data[key];
   });
   coverageLoaded.value = true;
+  addPseudoTests();
 }
 
-async function syncFixedHeader() {
-  // Synchronize the fixed header's horizontal scroll, position, and column widths with the real table
-  await nextTick();
-  const scroll = tableScrollRef.value;
-  const fixed = fixedHeaderRef.value;
-  
-  if (!scroll || !fixed) return;
-
-  const left = scroll.getBoundingClientRect().left;
-  fixed.style.left = `${left}px`;
-  fixed.style.width = `${scroll.clientWidth}px`;
-  fixed.style.overflow = 'hidden';
-
-  const realThs = scroll.querySelectorAll('thead tr:first-child th');
-  const fixedThs = fixed.querySelectorAll('thead tr:first-child th');
-  if (realThs.length === fixedThs.length) {
-    for (let i = 0; i < realThs.length; i++) {
-      const w = realThs[i].offsetWidth;
-      fixedThs[i].style.width = w + 'px';
-      fixedThs[i].style.minWidth = w + 'px';
-      fixedThs[i].style.maxWidth = w + 'px';
-    }
-  }
-}
+const addPseudoTests = () => {
+  const pseudoTests = [
+    {
+      "display_name": "Works Lost",
+      "key": "works_lost",
+      "test_type": "bug",
+      "rate": 100 - coverage["works"]["prod"]["coverage"],
+      "description": "Works that are in the prod sample but not in the Walden sample",
+    },
+    {
+      "display_name": "Works Added",
+      "key": "works_added",
+      "test_type": "feature",
+      "rate": coverage["works"]["walden"]["coverage"],
+      "description": "Works that are in the Walden sample but not in the prod sample",
+    },
+  ];
+  schema.value["works"].push(...pseudoTests);
+};
 
 onMounted(async () => {
-  window.addEventListener('resize', () => {
-    syncFixedHeader();
-  });
   await fetchSchema();
   fetchMetricsResponses();
   fetchMatchRates();
@@ -1102,51 +867,12 @@ watch(page, async () => {
   await fetchMetricsResponses();
 });
 
-watch(filterFailing, async () => {
-  console.log("filterFailing changed");
+watch(testKey, async () => {
   await fetchMetricsResponses();
-});
-
-watch(filterAdding, async () => {
-  console.log("filterFailing changed");
-  await fetchMetricsResponses();
-});
-
-const handleWindowScroll = () => {
-  // Fixed header visibility logic based on window scroll
-  const wrapper = document.querySelector('.v-table__wrapper');
-  if (!wrapper) return;
-
-  const wrapperRect = wrapper.getBoundingClientRect();
-  showFixedHeader.value = wrapperRect.top < 0;
-};
-
-watch(() => Object.keys(matches).length, async (count) => {
-  if (count > 0) {
-    // Setup syncing fixed header with data table
-    await nextTick();
-    const scroll = document.querySelector('.v-table__wrapper');
-    const fixed = fixedHeaderRef.value;
-    if (scroll && fixed) {
-      const scrollHandler = () => {
-        fixed.scrollLeft = scroll.scrollLeft;
-      };
-      scroll.addEventListener('scroll', scrollHandler);
-      fixed.scrollLeft = scroll.scrollLeft;
-      syncFixedHeader();
-      window.addEventListener('scroll', handleWindowScroll);
-      handleWindowScroll(); // Call immediately to set showFixedHeader initially
-    }
-  }
 });
 
 watch(() => route.path, (newPath) => {
   currentRoute.value = newPath;
-});
-
-watch([tableScrollRef, fixedHeaderRef], () => {
-  syncFixedHeader();
-  handleWindowScroll();
 });
 </script>
 
@@ -1164,9 +890,6 @@ watch([tableScrollRef, fixedHeaderRef], () => {
 :deep(.results-table thead tr th) {
   border-bottom: 1px solid #E0E0E0 !important;
   white-space: nowrap;
-}
-:deep(.list-sidebar .v-list-item .v-list-item__content) {
-  padding: 6px 0 !important;
 }
 .results-table td a {
   color: #555;
