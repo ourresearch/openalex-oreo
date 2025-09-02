@@ -52,7 +52,7 @@
         <div v-if="mode === 'diff'" class="diff-table-container">
           <table class="diff-table pa-4" style="table-layout: fixed; max-width: 100%;">
             <tbody>
-              <tr v-for="test in schema.works" :key="test.key">
+              <tr v-for="test in cleanedSchema" :key="test.key">
                 <td
                   v-for="(source, index) in ['prod', 'walden']"
                   :key="index"
@@ -107,7 +107,7 @@ defineOptions({ name: 'CompareWork'});
 
 const { id, schema, prodResults, waldenResults, matches, compareView } = defineProps({
   id: String,
-  schema: Object,
+  schema: Array,
   prodResults: null,
   waldenResults: null,
   matches: Object,
@@ -120,6 +120,10 @@ const mode = ref(compareView);
 const expandedFields = reactive(new Set());
 
 const isLoading = computed(() => !prodResults);
+
+const cleanedSchema = computed(() => {
+  return schema.filter(test => !test.is_pseudo);
+});
 
 const toggleExpanded = (field) => {
   if (expandedFields.has(field)) {

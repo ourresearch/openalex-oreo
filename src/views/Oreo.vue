@@ -32,37 +32,54 @@
             </div>
           </div>
 
-          <!-- Tests Count / Sort Above -->
+          <!-- Tests Fitler, Sort, Count Above -->
           <div v-if="mode === 'tests' && dataLoaded" class="pt-0 pb-2">
             <div class="mb-1">
               <v-menu width="200">
-              <template v-slot:activator="{ props }">
-                <v-chip v-bind="props" rounded="pill" color="blue-darken-1" variant="tonal" class="mr-1">
-                  Show: &nbsp;<b>{{ {all: 'All', bugs: 'Bugs', features: 'Features'}[testShow] }}</b>
-                  <v-icon icon="mdi-menu-down"></v-icon>
-                </v-chip>
-              </template>
-              <v-list>
-                <v-list-item @click="testShow = 'all'">
-                  <div class="d-flex align-center">
-                    <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testShow === 'all' ? '' : 'opacity-0']"></v-icon>
-                    All
-                  </div>
-                </v-list-item>
-                <v-list-item @click="testShow = 'bugs'">
-                  <div class="d-flex align-center">
-                    <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testShow === 'bugs' ? '' : 'opacity-0']"></v-icon>
-                    Bugs
-                  </div>
-                </v-list-item>
-                <v-list-item @click="testShow = 'features'">
-                  <div class="d-flex align-center">
-                    <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testShow === 'features' ? '' : 'opacity-0']"></v-icon>
-                    Features
-                    <v-spacer></v-spacer>
-                  </div>
-                </v-list-item>
-              </v-list>
+                <template v-slot:activator="{ props }">
+                  <v-chip v-bind="props" rounded="pill" color="blue-darken-1" variant="tonal" class="mr-1">
+                    Type: &nbsp;<b>{{ {all: 'All', bugs: 'Bugs', features: 'Features'}[testTypeFilter] }}</b>
+                    <v-icon icon="mdi-menu-down"></v-icon>
+                  </v-chip>
+                </template>
+                <v-list>
+                  <v-list-item @click="testTypeFilter = 'all'">
+                    <div class="d-flex align-center">
+                      <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testTypeFilter === 'all' ? '' : 'opacity-0']"></v-icon>
+                      All
+                    </div>
+                  </v-list-item>
+                  <v-list-item @click="testTypeFilter = 'bugs'">
+                    <div class="d-flex align-center">
+                      <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testTypeFilter === 'bugs' ? '' : 'opacity-0']"></v-icon>
+                      Bugs
+                    </div>
+                  </v-list-item>
+                  <v-list-item @click="testTypeFilter = 'features'">
+                    <div class="d-flex align-center">
+                      <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testTypeFilter === 'features' ? '' : 'opacity-0']"></v-icon>
+                      Features
+                      <v-spacer></v-spacer>
+                    </div>
+                  </v-list-item>
+                </v-list>
+              </v-menu>
+
+              <v-menu width="200">
+                <template v-slot:activator="{ props }">
+                  <v-chip v-bind="props" rounded="pill" color="blue-darken-1" variant="tonal" class="mr-1">
+                    Category: &nbsp;<b>{{ filters.titleCase(testCategoryFilter) }}</b>
+                    <v-icon icon="mdi-menu-down"></v-icon>
+                  </v-chip>
+                </template>
+                <v-list>
+                  <v-list-item v-for="category in testCategoryOptions" :key="category" @click="testCategoryFilter = category">
+                    <div class="d-flex align-center">
+                      <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testCategoryFilter === category ? '' : 'opacity-0']"></v-icon>
+                      {{ filters.titleCase(category) }}
+                    </div>
+                  </v-list-item>
+                </v-list>
               </v-menu>
             </div>
             <div class="d-flex align-end ml-3">
@@ -247,7 +264,7 @@
                               <v-progress-circular 
                                 size="24" 
                                 width="10" 
-                                :color="item.type === 'bug' ? 'red' : 'green'" :model-value="item.rate">
+                                :color="item.test_type === 'bug' ? 'red' : 'green'" :model-value="item.rate">
                               </v-progress-circular>
                             </template>
 
@@ -258,11 +275,13 @@
                             </template>
 
                             <template v-if="column.key === 'type'">
-                              <v-icon :icon="item.type === 'bug' ? 'mdi-bug' : 'mdi-rocket-launch'" :color="item.type === 'bug' ? 'red' : 'green'" />
+                              <v-icon :icon="item.test_type === 'bug' ? 'mdi-bug' : 'mdi-rocket-launch'" :color="item.test_type === 'bug' ? 'red' : 'green'" />
                             </template>
 
-                            <template v-else-if="column.key === 'name'">
-                              <span class="font-weight-medium">{{ item.name }}</span>
+                            <template v-else-if="column.key === 'display_name'">
+                              <span class="font-weight-medium">{{ item.display_name }}</span>
+                              <v-chip :color="'black'" variant="tonal" size="x-small" class="ml-2">{{ item.category }}</v-chip>
+
                             </template>
 
                             <template v-else-if="column.key === 'description'">
@@ -371,6 +390,7 @@
 
     <!-- Compare Work Dialog -->
     <v-dialog 
+      v-if="schema"
       max-width="80vw" 
       max-height="80vh"
       :model-value="!!compareId"
@@ -381,7 +401,7 @@
       <compare-work
         v-if="compareId"
         :id="compareId"
-        :schema="schema"
+        :schema="schema.works"
         :matches="matches[compareId]"
         :prod-results="prodResults[compareId]"
         :walden-results="waldenResults[compareId]"
@@ -435,14 +455,15 @@ const { mode, entityType, testKey } = toRefs(props);
 
 const schema         = ref(null);
 
-const compareId         = useParams('compareId', 'string', null);
-const compareView       = useParams('compareView', 'string', 'diff');
-const pageSize          = useParams('pageSize', 'number', 20);
-const page              = useParams('page', 'number', 1);
-const testSort          = useParams('testSort', 'string', 'failRate');
-const testShow          = useParams('testShow', 'string', 'all');
-const compareTestId     = useParams('compareTestId', 'string', null);
-const compareTestKey    = useParams('compareTestKey', 'string', null);
+const compareId            = useParams('compareId', 'string', null);
+const compareView          = useParams('compareView', 'string', 'diff');
+const pageSize             = useParams('pageSize', 'number', 20);
+const page                 = useParams('page', 'number', 1);
+const testSort             = useParams('testSort', 'string', 'failRate');
+const testTypeFilter       = useParams('testType', 'string', 'all');
+const testCategoryFilter   = useParams('testCategory', 'string', 'all');
+const compareTestId        = useParams('compareTestId', 'string', null);
+const compareTestKey       = useParams('compareTestKey', 'string', null);
 
 const prodResults          = reactive({});
 const waldenResults        = reactive({});
@@ -514,6 +535,7 @@ const getTestValue = (id, testKey, source) => {
 
 const getFieldValue = (obj, field) => {
   if (!obj) { return undefined; }
+  if (!field) { console.trace();return undefined; }
 
   const keys = field.split(".");
   let value = obj;
@@ -581,8 +603,9 @@ const testHeaders = computed(() => {
     { title: '', key: 'donut', width: "35px", tight: false },
     { title: '', key: 'rate', width: "35px", tight: true },
     { title: '', key: 'type', width: "35px", tight: true },
-    { title: 'Name', key: 'name' },
-    { title: 'Description', key: 'description' },
+    { title: '', key: 'display_name' },
+    { title: '', key: 'category' },
+    { title: '', key: 'description' },
   ];
 });
 
@@ -592,13 +615,8 @@ const testItems = computed(() => {
   const rows = []; 
   schema.value[entityType.value].forEach(test => {
     rows.push({
-      key: test.key,
-      name: test.display_name,
-      description: test.description,
-      type: test.test_type,
+      ...test,
       rate: test.rate || matchRates[entityType.value][test.key],
-      field: test.field,
-      test_func: test.test_func,
       filterUrl: `/${entityType.value}/tests/${test.key}`,
     });
   });
@@ -608,39 +626,51 @@ const testItems = computed(() => {
 const sortedTestItems = computed(() => {
   let items = [...testItems.value];
   
-  if (testShow.value === 'bugs') {
-    items = items.filter(item => item.type === 'bug');
-  } else if (testShow.value === 'features') {
-    items =  items.filter(item => item.type === 'feature');
+  if (testTypeFilter.value === 'bugs') {
+    items = items.filter(item => item.test_type === 'bug');
+  } else if (testTypeFilter.value === 'features') {
+    items =  items.filter(item => item.test_type === 'feature');
+  }
+
+  if (testCategoryFilter.value !== 'all') {
+    items = items.filter(item => item.category === testCategoryFilter.value);
   }
 
   return items.sort((a, b) => {
     if (testSort.value === 'alphabetical') {
-      return a.name.localeCompare(b.name);
+      return a.display_name.localeCompare(b.display_name);
     } else if (testSort.value === 'failRate') {
-      if (a.type !== b.type) {
-        return a.type === 'bug' ? -1 : 1;
+      if (a.test_type !== b.test_type) {
+        return a.test_type === 'bug' ? -1 : 1;
       }
       return b.rate - a.rate;
     } else if (testSort.value === 'addRate') {
-      if (a.type !== b.type) {
-        return a.type === 'feature' ? -1 : 1;
+      if (a.test_type !== b.test_type) {
+        return a.test_type === 'feature' ? -1 : 1;
       }
       return b.rate - a.rate;
     }
   });
 });
 
+const testCategoryOptions = computed(() => {
+  const categories = new Set();
+  testItems.value.forEach(test => {
+    categories.add(test.category);
+  });
+  return ["all", ...Array.from(categories).sort((a, b) => a.localeCompare(b))];
+});
+
 const testsResultsStr = computed(() => {
 
   const parts = [];
-  if (testShow.value === "all") {
+  if (testTypeFilter.value === "all") {
     parts.push(`${schema.value[entityType.value].length} tests`);
     parts.push(`${schema.value[entityType.value].filter(test => test.test_type === "bug").length} bug tests`);
     parts.push(`${schema.value[entityType.value].filter(test => test.test_type === "feature").length} feature tests`);
-  } else if (testShow.value === "bugs") {
+  } else if (testTypeFilter.value === "bugs") {
     parts.push(`${schema.value[entityType.value].filter(test => test.test_type === "bug").length} bug tests`);
-  } else if (testShow.value === "features") {
+  } else if (testTypeFilter.value === "features") {
     parts.push(`${schema.value[entityType.value].filter(test => test.test_type === "feature").length} feature tests`);
   }
 
@@ -842,6 +872,8 @@ const addPseudoTests = () => {
       "display_name": "Works Lost",
       "key": "works_lost",
       "test_type": "bug",
+      "category": "other",
+      "is_pseudo": true,
       "rate": 100 - coverage["works"]["prod"]["coverage"],
       "description": "Works that are in the prod sample but not in the Walden sample",
     },
@@ -849,6 +881,8 @@ const addPseudoTests = () => {
       "display_name": "Works Added",
       "key": "works_added",
       "test_type": "feature",
+      "category": "other",
+      "is_pseudo": true,
       "rate": coverage["works"]["walden"]["coverage"],
       "description": "Works that are in the Walden sample but not in the prod sample",
     },
