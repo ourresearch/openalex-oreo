@@ -236,7 +236,7 @@ async function buildSample() {
     let prevCount = sampleIds.value.length;
     sampleIds.value = [...new Set(sampleIds.value.concat(newIds))];
     let newCount = sampleIds.value.length;
-    if (newCount === prevCount && sampleTarget.value !== 'prod-only') {
+    if (newCount === prevCount && !["prod-only", "walden-only", "both"].includes(sampleTarget.value)) {
       break;
     }
   }
@@ -306,7 +306,7 @@ async function removeProdIds(ids) {
   const filterKey = 'ids.openalex'
   const selectFields = ['id'];
   const filter = ids.map(id => encodeURIComponent(id)).join('|');
-  const url = `https://api.openalex.org/works?filter=${filterKey}:${filter}&select=${selectFields.join(',')}&per_page=100`;
+  const url = `https://api.openalex.org/${entityType.value}?filter=${filterKey}:${filter}&select=${selectFields.join(',')}&per_page=100`;
   const response = await axios.get(url, axiosConfig);
   const prodIds = response.data.results.map(result => extractID(result.id));
   return ids.filter(id => !prodIds.includes(id));
@@ -316,7 +316,7 @@ async function removeWaldenIds(ids) {
   const filterKey = 'ids.openalex'
   const selectFields = ['id'];
   const filter = ids.map(id => encodeURIComponent(id)).join('|');
-  const url = `https://api.openalex.org/works?filter=${filterKey}:${filter}&select=${selectFields.join(',')}&per_page=100&data-version=2`;
+  const url = `https://api.openalex.org/${entityType.value}?filter=${filterKey}:${filter}&select=${selectFields.join(',')}&per_page=100&data-version=2`;
   const response = await axios.get(url, axiosConfig);
   const waldenIds = response.data.results.map(result => extractID(result.id));
   return ids.filter(id => !waldenIds.includes(id));
@@ -326,7 +326,7 @@ async function removeMissingWaldenIds(ids) {
   const filterKey = 'ids.openalex'
   const selectFields = ['id'];
   const filter = ids.map(id => encodeURIComponent(id)).join('|');
-  const url = `https://api.openalex.org/works?filter=${filterKey}:${filter}&select=${selectFields.join(',')}&per_page=100&data-version=2`;
+  const url = `https://api.openalex.org/${entityType.value}?filter=${filterKey}:${filter}&select=${selectFields.join(',')}&per_page=100&data-version=2`;
   const response = await axios.get(url, axiosConfig);
   const waldenIds = response.data.results.map(result => extractID(result.id));
   return ids.filter(id => waldenIds.includes(id));

@@ -25,22 +25,22 @@
             <td v-for="column in columns" :key="column.key" :style="column.key === 'matches' ? {'vertical-align': 'top'} : {}">
               
               <div v-if="column.key === 'prod'" class="py-7 pr-4">
-                <div v-if="source === 'walden-only'" class="text-grey">-</div>
+                <div v-if="source.includes('walden-only')" class="text-grey">-</div>
                 <google-scholar-view v-else :id="item" :data="apiData[item]" @title-click="zoomId = $event"/>
               </div>
 
               <div v-else-if="column.key === 'walden'" class="py-7 w-100">
-                <div v-if="source === 'prod-only'" class="text-grey">-</div>
+                <div v-if="source.includes('prod-only')" class="text-grey">-</div>
                 <google-scholar-view v-else :id="item" :data="apiData[item]" @title-click="zoomId = $event"/>
               </div>
 
-              <div v-else-if="column.key === 'matches' && source === 'walden-only'" class="pt-7 text-caption">
+              <div v-else-if="column.key === 'matches' && source.includes('walden-only')" class="pt-7 text-caption">
                 <v-chip
-                  v-if="!(item in titleMatches) && apiData[item].title"
+                  v-if="!(item in titleMatches) && apiData[item].display_name"
                   color="grey"
                   size="x-small"
                   class="display-inline-block mb-1"
-                  :href="`https://openalex.org/works?filter=display_name.search:${encodeTitle(apiData[item].title)}`" 
+                  :href="`https://openalex.org/works?filter=display_name.search:${encodeTitle(apiData[item].display_name)}`" 
                   target="_blank"
                 >
                   Checking...
@@ -48,7 +48,7 @@
 
                 <v-chip
                   v-if="titleMatches[item]"
-                  :href="`https://openalex.org/works?filter=display_name.search:${encodeTitle(apiData[item].title)}`" 
+                  :href="`https://openalex.org/${entityType}?filter=display_name.search:${encodeTitle(apiData[item].display_name)}`" 
                   target="_blank"
                   color="blue"
                   size="x-small"
@@ -103,7 +103,9 @@ import GoogleScholarView from '@/components/QA/googleScholarView.vue';
 const props = defineProps({
   source: {
     type: String,
-    default: 'walden-only'
+  },
+  entityType: {
+    type: String,
   },
   fractionToShow: {
     type: Number,
@@ -112,7 +114,6 @@ const props = defineProps({
 });
 
 const axiosConfig = {headers: {Authorization: "Bearer YWMKSvdNwfrknsOPtdqCPz"}};
-const entityType = 'works';
 
 const apiData       = ref({});
 const titleMatches  = ref({});
@@ -121,11 +122,17 @@ const pageSize      = ref(20);
 const page          = useParams('page', 'number', 1);
 const zoomId        = useParams('zoomId', 'string', null);
 
-const { source } = toRefs(props);
+const { source, entityType } = toRefs(props);
 
 const { mdAndDown } = useDisplay();
 
-const sample    = computed(() => source.value === 'walden-only' ? samples.xpac4 : samples.prodOnly2);
+const sample = computed(() => {
+  return {
+    "works-walden-only": samples.xpac4,
+    "works-prod-only": samples.prodOnly2,
+    "sources-walden-only": samples.sourcesWaldenOnly,
+  }[source.value];
+});
 const sampleIds = computed(() => sample.value.ids.slice(0, Math.floor(sample.value.ids.length * props.fractionToShow)));
 
 const idsToShow = computed(() => {
@@ -157,8 +164,8 @@ async function fetchResponses() {
     }
   });
   if (newIds.length > 0) {
-    const versionStr = source.value === 'walden-only' ? '&data-version=2' : '';
-    const url = `https://api.openalex.org/${entityType}?filter=ids.openalex:${newIds.join('|')}&per_page=100${versionStr}`;
+    const versionStr = source.value.includes('walden-only') ? '&data-version=2' : '';
+    const url = `https://api.openalex.org/${entityType.value}?filter=ids.openalex:${newIds.join('|')}&per_page=100${versionStr}`;
     const response = await axios.get(url, axiosConfig);
     response.data.results.forEach(result => {
       apiData.value[extractID(result.id)] = result;
@@ -172,9 +179,9 @@ const extractID = (input) => {
 }
 
 async function checkTitleMatch(id) {
-  if (!apiData.value[id]?.title) { return; }
-  const title = apiData.value[id].title;
-  const url = `https://api.openalex.org/works?filter=display_name.search:${encodeTitle(title)}`;
+  if (!apiData.value[id]?.display_name) { return; }
+  const title = apiData.value[id].display_name;
+  const url = `https://api.openalex.org/${entityType.value}?filter=display_name.search:${encodeTitle(title)}`;
   try {
     const response = await axios.get(url, axiosConfig);
     titleMatches.value[id] = response.data.meta.count;
@@ -191,7 +198,7 @@ function encodeTitle(title) {
 
 watch(idsToShow, async () => {
   await fetchResponses();
-  if (source.value === 'walden-only') {
+  if (source.value.includes('walden-only')) {
     idsToShow.value.forEach(id => {
       if (!(id in titleMatches.value)) {
         checkTitleMatch(id);

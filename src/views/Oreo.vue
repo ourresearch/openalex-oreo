@@ -153,10 +153,9 @@
                     <v-card 
                       flat 
                       rounded="xl" 
-                      fill-height 
                       v-bind="props" 
                       :class="isHovering ? 'bg-blue-lighten-5' : 'bg-grey-lighten-3'"
-                      class="pa-4 mx-1"
+                      class="pa-4 mx-1 fill-height"
                       @click="router.push(`/${entityType}/plots`)"
                     >
                       <v-card-title style="font-size: 28px;">Plots</v-card-title>
@@ -180,12 +179,12 @@
               <!-- List -->
               <div v-if="mode == 'list'">
                 <v-col cols="12" v-if="dataLoaded">
-                  <div v-if="testKey === 'works_lost'">
-                    <sample-explorer source="prod-only" :fractionToShow="scaledCoverage[entityType].prodOnlyExact"/>
-                  </div>
-
-                  <div v-else-if="testKey === 'works_added'">
-                    <sample-explorer source="walden-only" :fractionToShow="scaledCoverage[entityType].waldenOnlyExact"/>
+                  <div v-if="currentTest.sample_source">
+                    <sample-explorer 
+                      :source="currentTest.sample_source"
+                      :entityType="entityType" 
+                      :fractionToShow="currentTest.sample_source.includes('prod-only') ? scaledCoverage[entityType].prodOnlyExact : scaledCoverage[entityType].waldenOnlyExact"
+                    />
                   </div>
 
                   <div v-else>  
@@ -215,7 +214,8 @@
                             
                             <div v-if="column.key === 'prod'" class="py-7 pr-4">
                               <google-scholar-view 
-                                :id="item._id" 
+                                :id="item._id"
+                                :entity-type="entityType"
                                 :data="prodResults[item._id]"
                                 @title-click="compareId = item._id" />
                             </div>
@@ -223,6 +223,7 @@
                             <div v-else-if="column.key === 'walden'" class="py-7 pr-4">
                               <google-scholar-view 
                                 :id="item._id" 
+                                :entity-type="entityType"
                                 :data="waldenResults[item._id]"
                                 :matches="matches[item._id]"
                                 :compare-data="prodResults[item._id]" 
@@ -401,7 +402,7 @@
       <compare-work
         v-if="compareId"
         :id="compareId"
-        :schema="schema.works"
+        :schema="schema[entityType]"
         :matches="matches[compareId]"
         :prod-results="prodResults[compareId]"
         :walden-results="waldenResults[compareId]"
@@ -867,15 +868,16 @@ async function fetchCoverage() {
 }
 
 const addPseudoTests = () => {
-  const pseudoTests = [
+  const worksPseudoTests = [
     {
       "display_name": "Works Lost",
       "key": "works_lost",
       "test_type": "bug",
       "category": "other",
       "is_pseudo": true,
+      "sample_source": "works-prod-only",
       "rate": 100 - coverage["works"]["prod"]["coverage"],
-      "description": "Works that are in the prod sample but not in the Walden sample",
+      "description": "Works that are in prod but not in Walden",
     },
     {
       "display_name": "Works Added",
@@ -883,11 +885,25 @@ const addPseudoTests = () => {
       "test_type": "feature",
       "category": "other",
       "is_pseudo": true,
+      "sample_source": "works-walden-only",
       "rate": coverage["works"]["walden"]["coverage"],
-      "description": "Works that are in the Walden sample but not in the prod sample",
+      "description": "Works that are in Walden but not in prod",
     },
   ];
-  schema.value["works"].push(...pseudoTests);
+  const sourcesPseudoTests = [
+    {
+      "display_name": "Sources Added",
+      "key": "sources_added",
+      "test_type": "feature",
+      "category": "other",
+      "is_pseudo": true,
+      "sample_source": "sources-walden-only",
+      "rate": coverage["sources"]["walden"]["coverage"],
+      "description": "Sources that are in Walden but not in prod",
+    },
+  ];
+  schema.value["works"].push(...worksPseudoTests);
+  schema.value["sources"].push(...sourcesPseudoTests);
 };
 
 onMounted(async () => {
