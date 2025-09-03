@@ -837,7 +837,7 @@ async function fetchMetricsResponses() {
     testFilter = `&filterTest=${currentTest.value.key}`;
   }
 
-  const apiUrl = `${metricsUrl}/responses?page=${page.value}${testFilter}&per_page=${pageSize.value}`;
+  const apiUrl = `${metricsUrl}/responses/${entityType.value}?page=${page.value}${testFilter}&per_page=${pageSize.value}`;
   const response = await axios.get(apiUrl);
   response.data.results.forEach((item) => {
     prodResults[item.id] = item.prod;
