@@ -37,9 +37,13 @@
             <div class="mb-1">
               <v-menu width="200">
                 <template v-slot:activator="{ props }">
-                  <v-chip v-bind="props" rounded="pill" color="blue-darken-1" variant="tonal" class="mr-1">
-                    Type: &nbsp;<b>{{ {all: 'All', bugs: 'Bugs', features: 'Features'}[testTypeFilter] }}</b>
+                  <v-chip v-if="testTypeFilter === 'all'" v-bind="props" rounded="pill" color="grey-darken-2" variant="outlined" style="border: 1px solid #BDBDBD;" class="mr-1">
+                    Type
                     <v-icon icon="mdi-menu-down"></v-icon>
+                  </v-chip>
+                  <v-chip v-else v-bind="props" rounded="pill" color="blue-darken-1" variant="tonal" class="mr-1">
+                    Type: <b class="ml-1">{{ {bugs: 'Bugs', features: 'Features'}[testTypeFilter] }}</b>
+                    <v-icon icon="mdi-close" @click.stop="testTypeFilter = 'all'"></v-icon>
                   </v-chip>
                 </template>
                 <v-list>
@@ -67,9 +71,13 @@
 
               <v-menu width="200">
                 <template v-slot:activator="{ props }">
-                  <v-chip v-bind="props" rounded="pill" color="blue-darken-1" variant="tonal" class="mr-1">
-                    Category: &nbsp;<b>{{ filters.titleCase(testCategoryFilter) }}</b>
+                  <v-chip v-if="testCategoryFilter === 'all'" v-bind="props" rounded="pill" color="grey-darken-2" variant="outlined" style="border: 1px solid #BDBDBD;" class="mr-1">
+                    Category
                     <v-icon icon="mdi-menu-down"></v-icon>
+                  </v-chip>
+                  <v-chip v-else v-bind="props" rounded="pill" color="blue-darken-1" variant="tonal" class="mr-1">
+                    Category: <b class="ml-1">{{ filters.titleCase(testCategoryFilter) }}</b>
+                    <v-icon icon="mdi-close" @click.stop="testCategoryFilter = 'all'"></v-icon>
                   </v-chip>
                 </template>
                 <v-list>
@@ -91,15 +99,11 @@
                 <template v-slot:activator="{ props }">
                   <v-btn v-bind="props" rounded="pill" color="blue-darken-1" variant="text">
                     Sort:
-                    {{ {alphabetical: 'Alphabetical', failRate: 'Fail Rate', addRate: 'Add Rate'}[testSort] }}
+                    {{ {alphabetical: 'Alphabetical', category: 'Category', failRate: 'Fail Rate', addRate: 'Add Rate'}[testSort] }}
                     <v-icon icon="mdi-menu-down"></v-icon>
                   </v-btn>
                 </template>
                 <v-list>
-                  <v-list-item @click="testSort = 'alphabetical'">
-                    <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testSort === 'alphabetical' ? '' : 'opacity-0']"></v-icon>
-                    Alphabetical
-                  </v-list-item>
                   <v-list-item @click="testSort = 'failRate'">
                     <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testSort === 'failRate' ? '' : 'opacity-0']"></v-icon>
                     Fail Rate
@@ -107,6 +111,14 @@
                   <v-list-item @click="testSort = 'addRate'">
                     <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testSort === 'addRate' ? '' : 'opacity-0']"></v-icon>
                     Add Rate
+                  </v-list-item>
+                  <v-list-item @click="testSort = 'category'">
+                    <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testSort === 'category' ? '' : 'opacity-0']"></v-icon>
+                    Category
+                  </v-list-item>
+                  <v-list-item @click="testSort = 'alphabetical'">
+                    <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testSort === 'alphabetical' ? '' : 'opacity-0']"></v-icon>
+                    Alphabetical
                   </v-list-item>
                 </v-list>
               </v-menu>
@@ -292,8 +304,10 @@
 
                             <template v-else-if="column.key === 'display_name'">
                               <span class="font-weight-medium">{{ item.display_name }}</span>
-                              <v-chip :color="'black'" variant="tonal" size="x-small" class="ml-2">{{ item.category }}</v-chip>
+                            </template>
 
+                            <template v-else-if="column.key === 'category'">
+                              <v-chip color="black" variant="tonal" size="small" class="ml-2" @click.stop="testCategoryFilter = item.category">{{ item.category }}</v-chip>
                             </template>
 
                             <template v-else-if="column.key === 'description'">
@@ -650,6 +664,7 @@ const testHeaders = computed(() => {
     { title: '', key: 'display_name' },
     { title: '', key: 'category' },
     { title: '', key: 'description' },
+
   ];
 });
 
@@ -683,6 +698,8 @@ const sortedTestItems = computed(() => {
   return items.sort((a, b) => {
     if (testSort.value === 'alphabetical') {
       return a.display_name.localeCompare(b.display_name);
+    } else if (testSort.value === 'category') {
+      return a.category.localeCompare(b.category);
     } else if (testSort.value === 'failRate') {
       if (a.test_type !== b.test_type) {
         return a.test_type === 'bug' ? -1 : 1;
