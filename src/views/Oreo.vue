@@ -493,7 +493,7 @@ const { mode, entityType, testKey } = toRefs(props);
 const schema         = ref(null);
 
 const compareId            = useParams('compareId', 'string', null);
-const compareView          = useParams('compareView', 'string', 'diff');
+const compareView          = useParams('compareView', 'string', 'tests');
 const pageSize             = useParams('pageSize', 'number', 20);
 const page                 = useParams('page', 'number', 1);
 const testSort             = useParams('testSort', 'string', 'failRate');
