@@ -654,7 +654,10 @@ const resultsCountStr = computed(() => {
   } 
   const startNum = ((page.value-1) * pageSize.value + 1).toLocaleString();
   const endNum = (Math.min(page.value * pageSize.value, totalNum)).toLocaleString();
-  return `${startNum}-${endNum} of ${totalNum.toLocaleString()} results (${matchRates[entityType.value][testKey.value]}%)`;
+
+  const matchRate = currentTest.value.rate || matchRates[entityType.value][testKey.value];
+
+  return `${startNum}-${endNum} of ${totalNum.toLocaleString()} results (${matchRate}%)`;
 });
 
 const testHeaders = computed(() => {
