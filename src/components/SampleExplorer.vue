@@ -82,7 +82,8 @@
     v-model:isDrawerOpen="isDrawerOpen" 
     :workId="zoomId" 
     :workData="zoomId && apiData[zoomId] ? apiData[zoomId] : null"
-    :isV2="source === 'walden-only'"
+    :entityType="entityType"
+    :isV2="source.includes('walden-only')"
     @close="onDrawerClose"
   />
 

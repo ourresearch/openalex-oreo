@@ -3,6 +3,7 @@
     :model-value="isDrawerOpen" 
     @update:model-value="handleModelValueChange($event)" 
     temporary
+    teleport="body"
     :disable-route-watcher="true"
     disable-resize-watcher
     :scroll-strategy="'none'"
@@ -11,11 +12,11 @@
     class="full-height-drawer"
   >
     <template v-if="workData">
-      <v-card flat>
+      <v-card flat style="padding-top: 60px">
         <v-row>
           <v-col cols="10">
             <div class="text-h6 pt-12 px-8">
-              {{ workData.title || '[Title Missing]' }}
+              {{ workData.display_name || '[Title Missing]' }}
             </div>
           </v-col>
           <v-col cols="2" class="text-right">
@@ -31,7 +32,7 @@
             color="blue-lighten-1" 
             size="small"
             variant="flat"
-            :href="`https://api.openalex.org/${isV2 ? 'v2/' : ''}works/${workId}`"
+            :href="`https://api.openalex.org/${entityType}/${workId}${isV2 ? '?data-version=2' : ''}`"
             target="_blank"
             class="mr-1"
           >
@@ -181,6 +182,9 @@ const props = defineProps({
   workData: {
     type: Object,
     default: null
+  },
+  entityType: {
+    type: String,
   },
   isDrawerOpen: {
     type: Boolean,

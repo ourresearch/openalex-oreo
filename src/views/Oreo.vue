@@ -441,26 +441,6 @@
       </v-row>
     </v-container>
 
-    <!-- Compare Field Dialog -->
-    <v-dialog 
-      max-width="70vw" 
-      max-height="70vh"
-      width="auto"
-      v-model="showCompareFieldDialog"
-      @update:model-value="(val) => { if (!val) closeCompareFieldDialog() }"
-    >
-      <compare-field
-        v-if="showCompareFieldDialog"
-        :id="compareTestId"
-        :test="schema[entityType].find(t => t.key === compareTestKey)"
-        :match="matches[compareTestId][compareTestKey]"
-        :prod-value="getTestValue(compareTestId, compareTestKey, 'prod')"
-        :walden-value="waldenResults[compareTestId] ? getTestValue(compareTestId, compareTestKey, 'walden') : '[404]'"
-        @close="closeCompareFieldDialog"
-        @show-comparison="onShowComparison(compareTestId, compareTestKey, $event)"
-      />
-    </v-dialog>
-
     <!-- Compare Work Dialog -->
     <v-dialog 
       v-if="schema"
@@ -496,7 +476,6 @@ import axios from 'axios';
 
 import filters from "@/filters";
 import { useParams } from '@/composables/useStorage';
-import CompareField from '@/components/QA/CompareField.vue';
 import CompareWork from '@/components/QA/CompareWork.vue';
 import GoogleScholarView from '@/components/QA/googleScholarView.vue';
 import SampleExplorer from '@/components/SampleExplorer.vue';
@@ -668,7 +647,6 @@ const testHeaders = computed(() => {
     { title: '', key: 'display_name' },
     { title: '', key: 'category' },
     { title: '', key: 'description' },
-
   ];
 });
 
