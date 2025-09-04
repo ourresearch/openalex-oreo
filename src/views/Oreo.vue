@@ -349,12 +349,13 @@
 
               <!-- Plots -->
               <div v-if="mode === 'plots'">
-                <div v-if="resultsMeta" class="text-center py-8">
+                <div v-if="resultsMeta" class="text-center py-10">
                   <scatter-plot
                     v-if="entityType !== 'works'"
                     title="Works Count"
                     @click-point="handlePlotPointClick"
                     :data="plotData.works_count"
+                    style="margin-bottom: 80px;"
                   />
                   <scatter-plot
                     title="Cited by Count"
@@ -363,7 +364,7 @@
                   />
                 </div>
                 <div v-else style="height: 600px;" class="text-center">
-                  <v-progress-linear color="blue" class="mt-n2" indeterminate></v-progress-linear>
+                  <v-progress-linear color="blue" class="" indeterminate></v-progress-linear>
                   <div style="font-size: 14px; color: #777; margin-top: 200px; font-style: italic;">Loading...</div>
                 </div>
               </div>
@@ -399,7 +400,7 @@
                             <td v-for="column in columns" :key="column.key">
                               <template v-if="column.key === 'type'">
                                 <v-icon :icon="entityIcons[item.type]" size="default" color="grey" class="mr-2 mb-1"></v-icon>
-                                <span class="font-weight-bold">{{ filters.titleCase(item.type) }}</span>
+                                <span class="font-weight-bold">{{ filters.titleCase(item.type.replace("-", " ")) }}</span>
                               </template>
 
                               <template v-else-if="['worksCountChange', 'citationsCountChange'].includes(column.key)">
@@ -705,15 +706,17 @@ const sortedTestItems = computed(() => {
     } else if (testSort.value === 'category') {
       return a.category.localeCompare(b.category);
     } else if (testSort.value === 'failRate') {
+      // Bugs first (descending rate), then features (ascending rate)
       if (a.test_type !== b.test_type) {
         return a.test_type === 'bug' ? -1 : 1;
       }
-      return b.rate - a.rate;
+      return a.test_type === 'bug' ? b.rate - a.rate : a.rate - b.rate;
     } else if (testSort.value === 'addRate') {
+      // Features first (descending rate), then bugs (ascending rate)
       if (a.test_type !== b.test_type) {
         return a.test_type === 'feature' ? -1 : 1;
       }
-      return b.rate - a.rate;
+      return a.test_type === 'feature' ? b.rate - a.rate : a.rate - b.rate;
     }
   });
 });
@@ -849,7 +852,7 @@ const calcFieldSumChange = (entity, field) => {
 }
 
 const defaultCoverageSort = (rows) => {
-  const top = ["works",  "sources", "institutions", "publishers", "authors", "funders", "topics"];
+  const top = ["works",  "sources", "institutions", "publishers", "topics","authors", "funders"];
 
   return rows.sort((a, b) => {
     const aIndex = top.indexOf(a.type);
@@ -929,7 +932,6 @@ const plotData = computed(() => {
 });
 
 const handlePlotPointClick = (point) => {
-  console.log(point);
   compareId.value = point.id;
 };
 
@@ -937,7 +939,6 @@ async function fetchSchema() {
   const apiUrl = `${metricsUrl}/schema`;
   const response = await axios.get(apiUrl);
   schema.value = response.data.tests_schema;
-  console.log("schema loaded");
 }
 
 async function fetchMetricsResponses() {
@@ -950,9 +951,6 @@ async function fetchMetricsResponses() {
   let testFilter = "";
   if (currentTest.value) {
     testFilter = `&filterTest=${currentTest.value.key}`;
-  } else {
-    console.log("testKey:", testKey.value);
-    console.log("No current test");
   }
 
   const apiUrl = `${metricsUrl}/responses/${entityType.value}?page=${page.value}${testFilter}&per_page=${pageSize.value}`;

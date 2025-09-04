@@ -98,14 +98,14 @@
               Prod
               <v-icon size="x-small" icon="mdi-open-in-new"></v-icon>
             </a>
-            <vue-json-pretty :data="prodResults" deep="1"></vue-json-pretty>
+            <vue-json-pretty :data="prodResults" :deep="1"></vue-json-pretty>
           </div>
           <div class="json-container">  
             <a :href="`https://api.openalex.org/${id}?data-version=2`" target="_blank" class="pb-3 font-weight-medium d-block sticky-top">
               Walden
               <v-icon size="x-small" icon="mdi-open-in-new"></v-icon>
             </a>
-            <vue-json-pretty :data="waldenResults" deep="1"></vue-json-pretty>
+            <vue-json-pretty :data="waldenResults" :deep="1"></vue-json-pretty>
           </div>
         </div>
       </div>
