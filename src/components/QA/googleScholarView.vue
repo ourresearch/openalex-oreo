@@ -56,12 +56,77 @@
         </template>
       </div>
     </template>
+
+    <!--Sources-->
+    <template v-else-if="entityType === 'sources'">
+      <div class="mb-0" style="font-size: 18px; cursor: pointer;" @click="emit('title-click', id)">
+        <span v-if="data.display_name">
+          {{ data.display_name }}
+        </span>
+        <span v-else class="text-red-lighten-2">Display Name Missing</span>
+        
+        <!--Type, Host, OA Status-->
+        <div class="text-caption text-grey-darken-2" style="font-size: 14px !important;">
+          <span>
+            {{  data.type }}
+          </span>
+          <span v-if="data.host_organization_name">
+            <span class="mx-1">•</span>
+            {{ data.host_organization_name }}
+          </span>
+          <span class="mx-1">•</span>
+          <span>
+            {{ data.is_oa ? 'open access' : 'closed access' }}
+          </span>
+        </div>
+        <div v-if="data.works_count" class="text-caption text-grey-darken-2" style="font-size: 14px !important;">
+          {{ data.works_count.toLocaleString() }} works
+        </div>
+      </div>
+    </template>
+
+    <!-- Institutions-->
+    <template v-else-if="entityType === 'institutions'">
+      <div class="mb-0" style="font-size: 18px; cursor: pointer;" @click="emit('title-click', id)">
+        <span v-if="data.display_name">
+          {{ data.display_name }}
+        </span>
+        <span v-else class="text-red-lighten-2">Display Name Missing</span>
+        
+        <!--Type, Host, OA Status-->
+        <div class="text-caption text-grey-darken-2" style="font-size: 14px !important;">
+          <span v-if="data.geo">
+            {{ data.geo.city }}, {{ data.geo.country }}
+            <span class="mx-1">•</span>
+          </span>
+          <span>
+            {{  data.type }}
+          </span>
+        </div>
+        <div v-if="data.works_count" class="text-caption text-grey-darken-2" style="font-size: 14px !important;">
+          {{ data.works_count.toLocaleString() }} works
+        </div>
+      </div>
+    </template>
+
+    <!-- Default -->
     <template v-else>
       <div class="mb-0" style="font-size: 18px; cursor: pointer;" @click="emit('title-click', id)">
         <span v-if="data.display_name">
           {{ data.display_name }}
         </span>
         <span v-else class="text-red-lighten-2">Display Name Missing</span>
+
+        <div v-if="data.works_count" class="text-caption text-grey-darken-2" style="font-size: 14px !important;">
+          {{ data.works_count.toLocaleString() }} works
+        </div>
+      </div>
+    </template>
+
+    <!-- Current Test Value-->
+    <template v-if="highlightTest">
+      <div class="mt-5" style="font-size: 14px;">
+        <code class="text-grey-darken-4">{{ highlightTest.field }}: {{ getShortValue(highlightTestValue, highlightTest) }}</code>
       </div>
     </template>
   </div>
@@ -75,15 +140,18 @@
 <script setup>
 
 import { computed } from 'vue';
+import { getShortValue } from '@/qa/fieldHelpers'; 
 
 defineOptions({ name: 'GoogleScholarView' });
 
-const { id, entityType, data, matches, compareData } = defineProps({
+const { id, entityType, data, matches, compareData, highlightTest, highlightTestValue } = defineProps({
   id: String,
   entityType: String,
   data: Object,
   matches: null,
   compareData: null,
+  highlightTest: null,
+  highlightTestValue: null,
 });
 
 const emit = defineEmits(['title-click']);

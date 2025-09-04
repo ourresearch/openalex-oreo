@@ -131,11 +131,6 @@ $bg-color: #EEF3FA;
 .v-card--link:focus:before {
   opacity: 0;
 }
-html, body {
-  // THIS IS REQUIRED to disable styles that Vuetify applies,
-  // which keep the v-scroll-lock directive from working.
-  overflow: initial;
-}
 .theme--dark.v-card {
   background-color: #444;
 }

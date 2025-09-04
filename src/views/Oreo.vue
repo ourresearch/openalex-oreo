@@ -18,7 +18,9 @@
                 <v-icon icon="mdi-open-in-new" class="ml-1"></v-icon>
               </v-btn>
             </div>
-              <div class="text-grey-darken-3 text-subtitle-1 mb-8" v-html="titles[mode].subtitle"></div>
+            <div class="mb-8">
+              <span class="text-grey-darken-3 text-subtitle-1" v-html="titles[mode].subtitle"></span>
+            </div>
           </div>
 
           <!-- List Count Above -->
@@ -34,7 +36,23 @@
 
           <!-- Tests Fitler, Sort, Count Above -->
           <div v-if="mode === 'tests' && dataLoaded" class="pt-0 pb-2">
-            <div class="mb-1">
+
+            <v-text-field
+              v-model="testsSearch"
+              variant="solo-filled"
+              bg-color="#dbe2eb"
+              flat
+              clearable
+              clear-icon="mdi-close"
+              hide-details
+              rounded="pill"
+              density="comfortable"
+              class="mb-2"
+              style="max-width: 450px;"
+              prepend-inner-icon="mdi-magnify"
+              placeholder="Search tests"
+            ></v-text-field>
+            <div class="mb-1 d-flex">
               <v-menu width="200">
                 <template v-slot:activator="{ props }">
                   <v-chip v-if="testTypeFilter === 'all'" v-bind="props" rounded="pill" color="grey-darken-2" variant="outlined" style="border: 1px solid #BDBDBD;" class="mr-1">
@@ -184,7 +202,7 @@
             </v-row>
           </v-card>
 
-          <v-card v-else flat class="pt-2 pb-0 px-4 rounded-o" style="overflow: hidden !important;">
+          <v-card v-else flat class="pb-0 px-4 rounded-o" style="overflow: hidden !important;">
 
             <!-- Results -->
             <div class="mx-n4 results-section">
@@ -222,7 +240,7 @@
 
                       <!-- List Table Rows -->
                       <template v-slot:item="{ item, columns }">
-                        <tr>
+                        <tr @click="compareId = item._id">
                           <td v-for="column in columns" :key="column.key">
                             
                             <div v-if="column.key === 'prod'" class="py-7 pr-4">
@@ -230,6 +248,8 @@
                                 :id="item._id"
                                 :entity-type="entityType"
                                 :data="prodResults[item._id]"
+                                :highlightTest="currentTest"
+                                :highlightTestValue="getTestValue(currentTest, prodResults[item._id], matches[item._id], 'prod')"
                                 @title-click="compareId = item._id" />
                             </div>
 
@@ -240,6 +260,8 @@
                                 :data="waldenResults[item._id]"
                                 :matches="matches[item._id]"
                                 :compare-data="prodResults[item._id]" 
+                                :highlightTest="currentTest"
+                                :highlightTestValue="getTestValue(currentTest, waldenResults[item._id], matches[item._id], 'walden')"
                                 @title-click="compareId = item._id"/>
                             </div>          
                           </td>
@@ -251,7 +273,7 @@
                     <v-pagination
                       v-model="page"
                       v-if="resultsMeta"
-                      :length="Math.floor((resultsMeta.count * scaledCoverage[entityType].bothExact) / pageSize)"
+                      :length="Math.ceil((resultsMeta.count * scaledCoverage[entityType].bothExact) / pageSize)"
                       :total-visible="10"
                       rounded
                       class="py-4"
@@ -307,11 +329,11 @@
                             </template>
 
                             <template v-else-if="column.key === 'category'">
-                              <v-chip color="black" variant="tonal" size="small" class="ml-2" @click.stop="testCategoryFilter = item.category">{{ item.category }}</v-chip>
                             </template>
 
                             <template v-else-if="column.key === 'description'">
-                              <span class="test-description" v-html="item.description"></span>
+                              <v-chip color="grey-darken-2" variant="tonal" size="small" class="mr-2" @click.stop="testCategoryFilter = item.category">{{ item.category }}</v-chip>
+                              <span :class="item.test_type === 'bug' ? 'bug' : 'feature'" class="test-description" v-html="item.description"></span>
                             </template>
 
                           </td>
@@ -445,6 +467,7 @@
       max-height="80vh"
       :model-value="!!compareId"
       scroll-strategy="block"
+      teleport="body"
       class="rounded-o"
       @update:model-value="(val) => { if (!val) compareId = null }"
     >
@@ -477,6 +500,7 @@ import CompareWork from '@/components/QA/CompareWork.vue';
 import GoogleScholarView from '@/components/QA/googleScholarView.vue';
 import SampleExplorer from '@/components/SampleExplorer.vue';
 import ScatterPlot from '@/components/QA/ScatterPlot.vue';
+import { getTestValue } from '@/qa/fieldHelpers';
 
 defineOptions({ name: 'Oreo' });
 
@@ -506,15 +530,16 @@ const { mode, entityType, testKey } = toRefs(props);
 
 const schema         = ref(null);
 
-const compareId            = useParams('compareId', 'string', null);
-const compareView          = useParams('compareView', 'string', 'tests');
 const pageSize             = useParams('pageSize', 'number', 20);
 const page                 = useParams('page', 'number', 1);
+const testsSearch          = useParams('testsSearch', 'string', '');
 const testSort             = useParams('testSort', 'string', 'failRate');
 const testTypeFilter       = useParams('testType', 'string', 'all');
 const testCategoryFilter   = useParams('testCategory', 'string', 'all');
 const compareTestId        = useParams('compareTestId', 'string', null);
 const compareTestKey       = useParams('compareTestKey', 'string', null);
+const compareId            = useParams('compareId', 'string', null);
+const compareView          = useParams('compareView', 'string', 'json');
 
 const prodResults          = reactive({});
 const waldenResults        = reactive({});
@@ -580,31 +605,6 @@ const breadcrumbs = computed(() => {
   return items;
 });
 
-const getTestValue = (id, testKey, source) => {
-  if (testKey in matches[id]["_test_values"]) {
-    return matches[id]["_test_values"][testKey][source];
-  }
-
-  const test = schema.value[entityType.value].find(t => t.key === testKey);
-
-  const obj = source === "prod" ? prodResults[id] : waldenResults[id];
-  return getFieldValue(obj, test.field);
-};
-
-const getFieldValue = (obj, field) => {
-  if (!obj) { return undefined; }
-  if (!field) { console.trace();return undefined; }
-
-  const keys = field.split(".");
-  let value = obj;
-  for (let i = 0; i < keys.length; i++) {
-    value = value !== null && typeof value === "object" ? value[keys[i]] : undefined;
-    if (value === undefined) {
-      return undefined;
-    }
-  }
-  return value;
-};
 
 const matchedIds = computed(() => {
   return matches ? Object.keys(matches) : [];
@@ -653,7 +653,7 @@ const resultsCountStr = computed(() => {
   } 
   const startNum = ((page.value-1) * pageSize.value + 1).toLocaleString();
   const endNum = (Math.min(page.value * pageSize.value, totalNum)).toLocaleString();
-  return `${startNum}-${endNum} of ${totalNum.toLocaleString()} results`;
+  return `${startNum}-${endNum} of ${totalNum.toLocaleString()} results (${matchRates[entityType.value][testKey.value]}%)`;
 });
 
 const testHeaders = computed(() => {
@@ -695,6 +695,10 @@ const sortedTestItems = computed(() => {
     items = items.filter(item => item.category === testCategoryFilter.value);
   }
 
+  if (testsSearch.value) {
+    items = items.filter(item => [item.display_name, item.category, item.description].join(" ").toLowerCase().includes(testsSearch.value.toLowerCase()));
+  }
+  
   return items.sort((a, b) => {
     if (testSort.value === 'alphabetical') {
       return a.display_name.localeCompare(b.display_name);
@@ -933,6 +937,7 @@ async function fetchSchema() {
   const apiUrl = `${metricsUrl}/schema`;
   const response = await axios.get(apiUrl);
   schema.value = response.data.tests_schema;
+  console.log("schema loaded");
 }
 
 async function fetchMetricsResponses() {
@@ -945,6 +950,9 @@ async function fetchMetricsResponses() {
   let testFilter = "";
   if (currentTest.value) {
     testFilter = `&filterTest=${currentTest.value.key}`;
+  } else {
+    console.log("testKey:", testKey.value);
+    console.log("No current test");
   }
 
   const apiUrl = `${metricsUrl}/responses/${entityType.value}?page=${page.value}${testFilter}&per_page=${pageSize.value}`;
@@ -1040,9 +1048,12 @@ const entityIcons = {
 
 onMounted(async () => {
   await fetchSchema();
-  fetchMetricsResponses();
   fetchMatchRates();
   fetchCoverage();
+  if (mode.value === "plots") {
+    pageSize.value = 1000;
+  }
+  fetchMetricsResponses();
 });
 
 watch(page, async () => {
@@ -1056,12 +1067,11 @@ watch(testKey, async () => {
 watch(mode, async () => {
   if (mode.value === "plots") {
     pageSize.value = 1000;
-    page.value = 1;
   } else {
     pageSize.value = 20;
   }
   await fetchMetricsResponses();
-}, { immediate: true });
+});
 
 watch(() => route.path, (newPath) => {
   currentRoute.value = newPath;
@@ -1083,6 +1093,12 @@ watch(() => route.path, (newPath) => {
   border-bottom: 1px solid #E0E0E0 !important;
   white-space: nowrap;
 }
+:deep(.results-table tbody tr) {
+  cursor: pointer;
+}
+:deep(.results-table tbody tr:hover) {
+  background-color: #F5F5F5;
+}
 .results-table td a {
   color: #555;
   text-decoration: none;
@@ -1090,11 +1106,6 @@ watch(() => route.path, (newPath) => {
 .results-table td a:hover {
   color: #555;
   text-decoration: underline;
-}
-.results-table .test-cell:hover {
- border: 1px solid #BDBDBD;
- background-color: white;
- opacity: 0.4;
 }
 .fixed-table >>> table {
   table-layout: fixed;
@@ -1166,6 +1177,10 @@ watch(() => route.path, (newPath) => {
   font-size: 0.95em;
   padding: 0.2em 0.4em;
   border-radius: 5px;
+}
+:deep(.test-description.feature code) {
+  background-color: #f5f5f5;
+  color: #22863a;
 }
 .v-card, .v-overlay {
   overflow: visible !important;

@@ -12,14 +12,16 @@
               </div>
               <div class="text-grey-darken-2 mt-1 mb-2" style="font-size: 12px;">
                 {{ id }}
-                <a :href="`https://api.openalex.org/${id}`" target="_blank" class="ml-2">
-                  Prod
-                  <v-icon size="x-small" icon="mdi-open-in-new"></v-icon>
-                </a>
-                <a :href="`https://api.openalex.org/${id}?data-version=2`" target="_blank" class="ml-2">
-                  Walden
-                  <v-icon size="x-small" icon="mdi-open-in-new"></v-icon>
-                </a>
+                <span v-if="mode === 'tests'">
+                  <a :href="`https://api.openalex.org/${id}`" target="_blank" class="ml-2">
+                    Prod
+                    <v-icon size="x-small" icon="mdi-open-in-new"></v-icon>
+                  </a>
+                  <a :href="`https://api.openalex.org/${id}?data-version=2`" target="_blank" class="ml-2">
+                    Walden
+                    <v-icon size="x-small" icon="mdi-open-in-new"></v-icon>
+                  </a>
+                </span>
               </div>
             </div>
             <v-btn-toggle
@@ -49,10 +51,10 @@
               <tr class="mb-2 text-grey-darken-3" style="font-size: 12px; border-bottom: 1px solid #f5f5f5;">
                 <th>Test</th>
                 <th>
-                  <span style="margin-left: 24px;">Prod Value</span>
+                  <span style="margin-left: 20px;">Prod Value</span>
                 </th>
                 <th>
-                  <span style="margin-left: 24px;">Walden Value</span>
+                  <span style="margin-left: 20px;">Walden Value</span>
                 </th>
               </tr>
             </thead>
@@ -71,15 +73,15 @@
                     <v-icon 
                       size="small"
                       class="mr-1 expand-icon"
-                      :style="{visibility: isObject(getTestValue(test, source)) ? 'visible' : 'hidden'}"
+                      :style="{visibility: isObject(getTestValueWrapper(test, source)) ? 'visible' : 'hidden'}"
                       @click="toggleExpanded(test.key)" 
                       :icon="expandedFields.has(test.key) ? 'mdi-menu-down' : 'mdi-menu-right'"
                     ></v-icon>
                     <span>
-                      <template v-if="isObject(getTestValue(test, source)) && !expandedFields.has(test.key)">
-                        <code style="white-space: pre-wrap">{{ getShortValue(getTestValue(test, source)) }}</code>
+                      <template v-if="isObject(getTestValueWrapper(test, source)) && !expandedFields.has(test.key)">
+                        <code style="white-space: pre-wrap">{{ getShortValue(getTestValueWrapper(test, source), test) }}</code>
                       </template>
-                      <code v-else style="white-space: pre-wrap">{{ displayValue(getTestValue(test, source)) }}</code>
+                      <code v-else style="white-space: pre-wrap">{{ displayValue(getTestValueWrapper(test, source), test) }}</code>
                     </span>
                   </div>
                   <div v-else>404</div>
@@ -91,10 +93,18 @@
 
         <!-- JSON -->
         <div v-else-if="mode === 'json'" class="d-flex">
-          <div class="json-container">  
+          <div class="json-container">
+            <a :href="`https://api.openalex.org/${id}`" target="_blank" class="pb-3 font-weight-medium d-block sticky-top">
+              Prod
+              <v-icon size="x-small" icon="mdi-open-in-new"></v-icon>
+            </a>
             <vue-json-pretty :data="prodResults" deep="1"></vue-json-pretty>
           </div>
           <div class="json-container">  
+            <a :href="`https://api.openalex.org/${id}?data-version=2`" target="_blank" class="pb-3 font-weight-medium d-block sticky-top">
+              Walden
+              <v-icon size="x-small" icon="mdi-open-in-new"></v-icon>
+            </a>
             <vue-json-pretty :data="waldenResults" deep="1"></vue-json-pretty>
           </div>
         </div>
@@ -109,6 +119,9 @@
 import { ref, reactive, computed, watch } from 'vue';
 import VueJsonPretty from 'vue-json-pretty';
 import 'vue-json-pretty/lib/styles.css';
+
+import { getTestValue, getShortValue, displayValue, isObject } from '@/qa/fieldHelpers';
+
 
 defineOptions({ name: 'CompareWork'});
 
@@ -130,8 +143,15 @@ const expandedFields = reactive(new Set());
 const isLoading = computed(() => !prodResults);
 
 const cleanedSchema = computed(() => {
-  return schema.filter(test => !test.is_pseudo);
+  let cleanedSchema = schema.filter(test => !test.is_pseudo);
+  cleanedSchema = cleanedSchema.sort((a, b) => matches[a.key] ? -1 : 1);
+  return cleanedSchema;
 });
+
+const getTestValueWrapper = (test, source) => {
+  const results = source === 'prod' ? prodResults : waldenResults;
+  return getTestValue(test, results, matches, source);
+}
 
 const toggleExpanded = (field) => {
   if (expandedFields.has(field)) {
@@ -140,65 +160,6 @@ const toggleExpanded = (field) => {
     expandedFields.add(field)
   }
 };
-
-const getTestValue = (test, source) => {
-  if (test.key in matches["_test_values"]) {
-    return matches["_test_values"][test.key][source];
-  }
-  const obj = source === "prod" ? prodResults : waldenResults;
-  return getFieldValue(obj, test.field);
-};
-
-const getFieldValue = (obj, field) => {
-  if (!obj) { return undefined; }
-  const keys = field.split(".");
-  let value = obj;
-  for (let i = 0; i < keys.length; i++) {
-    value = value !== null && typeof value === "object" ? value[keys[i]] : undefined;
-    if (value === undefined) {
-      return undefined;
-    }
-  }
-  return value;
-};
-
-const getShortValue = (value) => {
-  if (Array.isArray(value)) {
-    return `${value.length} items`;
-  } else if (typeof value === 'object' && value !== null) {
-    return `${Object.keys(value).length} keys`;
-  } else {
-    return displayValue(value);
-  }
-}
-
-const displayValue = (value) => {
-  if (value === undefined) {
-    return "missing";
-  }
-  if (value === null) {
-    return "null";
-  }
-  
-  if (typeof value === 'string' && value.includes("https://openalex.org/")) {
-    return value.replace("https://openalex.org/", "");
-  }
-
-  if (Array.isArray(value)) {
-    return JSON.stringify(value, null, 2)
-  }
-  return value;
-};
-
-function isObject(obj) {
-  if (Array.isArray(obj)) {
-    return true;
-  } else if (typeof obj === 'object' && obj !== null) {
-    return true;
-  } else {
-    return false;
-  }
-}
 
 function getDiffCellClass(test) {
   if (test.test_type === "feature" && matches[test.key]) {
@@ -236,7 +197,7 @@ a {
   overflow-y: scroll;
   overscroll-behavior: contain;
   max-height: 70vh;
-  padding: 8px 16px;
+  padding: 0px 16px;
   width: 50%;
 }
 .diff-table {
@@ -270,5 +231,12 @@ a {
 }
 code {
   white-space: pre-wrap; /* Preserves whitespace and allows wrapping */
+}
+.sticky-top {
+  position: sticky;
+  top: 0px;
+  padding-top: 8px;
+  background-color: #fff;
+  z-index: 100;
 }
 </style>
