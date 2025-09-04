@@ -46,7 +46,7 @@
         </span>
         <span class="mx-1">•</span>
         <template v-if="data.primary_location?.source?.display_name">
-          <span :class="isCompare && matches['source_id_lost'] ? 'text-red-lighten-2' : (isCompare && matches['source_id_added'] ? 'text-green-lighten-2' : '')">
+          <span :class="isCompare && matches['primary_source_lost'] ? 'text-red-lighten-2' : (isCompare && matches['primary_source_added'] ? 'text-green-lighten-2' : '')">
             {{ data.primary_location.source?.display_name }}
           </span> 
           <span v-if="!data.primary_location.source?.id" class="text-red-lighten-2 ml-1">- Source ID Missing</span>

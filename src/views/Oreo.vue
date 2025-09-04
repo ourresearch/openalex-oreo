@@ -302,7 +302,7 @@
 
               <!-- Home -->
               <div v-if="mode === 'home'">
-                <v-col v-if="coverageItems" cols="12" lg="9" xl="6">
+                <v-col v-if="coverageItems" cols="12" lg="10" xl="6">
                   <v-data-table
                     :headers="coverageHeaders"
                     :items="coverageItems"
@@ -318,6 +318,7 @@
                           :key="column.key"
                           :class="['font-weight-bold', column.align === 'end' ? 'text-right' : 'text-left']"
                           :style="column.width ? { width: column.width } : {}"
+                          style="font-size: 12px;"
                         >
                           {{ column.title }}
                         </th>
@@ -329,7 +330,19 @@
                           <tr v-bind="props" :class="[isHovering ? 'bg-grey-lighten-3' : '', 'cursor-pointer']" v-ripple @click="router.push(`/${item.type}`)">
                             <td v-for="column in columns" :key="column.key">
                               <template v-if="column.key === 'type'">
-                                <code>/{{ item.type }}</code>
+                                <v-icon :icon="entityIcons[item.type]" size="default" color="grey" class="mr-2 mb-1"></v-icon>
+                                <span class="font-weight-bold">{{ filters.titleCase(item.type) }}</span>
+                              </template>
+
+                              <template v-else-if="['worksCountChange', 'citationsCountChange'].includes(column.key)">
+                                <div class="text-right">
+                                  <div v-if="item[column.key] === '-'" class="text-grey-darken-1">-</div>
+                                  <div v-else :class="{'text-red': item[column.key] < 0, 'text-green': item[column.key] > 0}">
+                                    <code>
+                                      {{ item[column.key] !== "-" && item[column.key] > 0 ? "+" : "" }}{{ item[column.key] }}
+                                    </code>
+                                </div>
+                                </div>
                               </template>
 
                               <template v-else-if="column.key === 'sampleSize'">
@@ -732,6 +745,18 @@ const coverageHeaders = computed(() => {
       sortable: true,
     },
     { 
+      title: 'Works Count %', 
+      key: 'worksCountChange',
+      align: 'end',
+      sortable: true,
+    },
+    { 
+      title: 'Citations Count %', 
+      key: 'citationsCountChange',
+      align: 'end',
+      sortable: true,
+    },
+    { 
       title: 'Sample Size', 
       key: 'sampleSize',
       align: 'end',
@@ -745,11 +770,19 @@ const coverageItems = computed(() => {
   const rows = []; 
   Object.keys(coverage).forEach(entity => {
     let scaledCoverageItem = scaledCoverage.value[entity];
+    let worksCountChange = "-";
+    let citationsCountChange = "-";
+    if ("field_sums" in coverage[entity]["prod"]) {
+      worksCountChange = calcFieldSumChange(entity, "works_count");
+      citationsCountChange = calcFieldSumChange(entity, "cited_by_count");
+    }
     rows.push({
       type: entity,
       prodOnly: scaledCoverageItem.prodOnly,
       both: scaledCoverageItem.both,
       waldenOnly: scaledCoverageItem.waldenOnly,
+      worksCountChange: worksCountChange,
+      citationsCountChange: citationsCountChange,
       testFailRate: entity in matchRates ? matchRates[entity]["_average_bug"] : "-",
       sampleSize: coverage[entity]["prod"]["sampleSize"],
     });
@@ -757,8 +790,15 @@ const coverageItems = computed(() => {
   return defaultCoverageSort(rows);
 });
 
+const calcFieldSumChange = (entity, field) => {
+  if (coverage[entity]["prod"]["field_sums"][field] === 0) {
+    return "-";
+  }
+  return Math.round(((coverage[entity]["walden"]["field_sums"][field] - coverage[entity]["prod"]["field_sums"][field]) / coverage[entity]["prod"]["field_sums"][field]) * 100);
+}
+
 const defaultCoverageSort = (rows) => {
-  const top = ["works", "authors", "sources", "funders", "topics", "institutions", "publishers"];
+  const top = ["works",  "sources", "institutions", "publishers", "authors", "funders", "topics"];
 
   return rows.sort((a, b) => {
     const aIndex = top.indexOf(a.type);
@@ -785,7 +825,7 @@ const scaledCoverage = computed(() => {
 });
 
 const calcScaledCoverage = (data) => {
-  if (data.walden.coverage === "-") {
+  if (data.walden.coverage === "-" || !data.walden.count) {
     return {
       prodOnly: 100 - data.prod.coverage,
       waldenOnly: "-",
@@ -905,6 +945,29 @@ const addPseudoTests = () => {
   schema.value["works"].push(...worksPseudoTests);
   schema.value["sources"].push(...sourcesPseudoTests);
 };
+
+const entityIcons = {
+  authors: "mdi-account-outline",
+  continents: "mdi-earth",
+  countries: "mdi-earth",
+  domains: "mdi-tag-outline",
+  fields: "mdi-tag-outline",
+  funders: "mdi-cash-multiple",
+  "institution-types": "mdi-shape-outline",
+  institutions: "mdi-town-hall",
+  keywords: "mdi-tag-outline",
+  languages: "mdi-translate",
+  licenses: "mdi-lock-open-outline",
+  publishers: "mdi-domain",
+  sdgs: "mdi-sprout-outline",
+  "source-types": "mdi-shape-outline",
+  sources: "mdi-book-open-outline",
+  subfields: "mdi-tag-outline",
+  topics: "mdi-tag-outline",
+  "work-types": "mdi-shape-outline",
+  works: "mdi-file-document-outline"
+};
+
 
 onMounted(async () => {
   await fetchSchema();
