@@ -160,7 +160,8 @@
                     >
                       <v-card-title style="font-size: 28px;">Plots</v-card-title>
                       <v-card-text>
-                        <div v-if="dataLoaded" class="d-flex align-center">
+                        <div v-if="dataLoaded" class="d-flex align-center" style="font-size: 18px;">
+                          Scatter plots for <span v-if="entityType !== 'works'"><code class="mx-1">works_count</code> and </span><code class="mx-1">cited_by_count</code>
                         </div>
                         <v-skeleton-loader v-else type="list-item"></v-skeleton-loader>
                       </v-card-text>
@@ -234,6 +235,16 @@
                       </template>
                     </v-data-table>
                     <v-skeleton-loader v-else type="list-item-three-line@12"></v-skeleton-loader>
+                    
+                    <v-pagination
+                      v-model="page"
+                      v-if="resultsMeta"
+                      :length="Math.floor((resultsMeta.count * scaledCoverage[entityType].bothExact) / pageSize)"
+                      :total-visible="10"
+                      rounded
+                      class="py-4"
+                    ></v-pagination>
+                  
                   </div>
                 </v-col>
                 <v-skeleton-loader v-else type="list-item-three-line@12"></v-skeleton-loader>
@@ -300,6 +311,27 @@
                 <v-skeleton-loader type="list-item-three-line@12"></v-skeleton-loader>
               </template>
 
+              <!-- Plots -->
+              <div v-if="mode === 'plots'">
+                <div v-if="resultsMeta" class="text-center py-8">
+                  <scatter-plot
+                    v-if="entityType !== 'works'"
+                    title="Works Count"
+                    @click-point="handlePlotPointClick"
+                    :data="plotData.works_count"
+                  />
+                  <scatter-plot
+                    title="Cited by Count"
+                    :data="plotData.cited_by_count"
+                    @click-point="handlePlotPointClick"
+                  />
+                </div>
+                <div v-else style="height: 600px;" class="text-center">
+                  <v-progress-linear color="blue" class="mt-n2" indeterminate></v-progress-linear>
+                  <div style="font-size: 14px; color: #777; margin-top: 200px; font-style: italic;">Loading...</div>
+                </div>
+              </div>
+              
               <!-- Home -->
               <div v-if="mode === 'home'">
                 <v-col v-if="coverageItems" cols="12" lg="10" xl="6">
@@ -365,16 +397,6 @@
                 <v-skeleton-loader v-else type="list-item-three-line@12"></v-skeleton-loader>
               </div>
 
-              <!-- Pagination -->
-              <v-pagination
-                v-model="page"
-                v-if="mode === 'list' && testKey !== 'works_lost' && testKey !== 'works_added'"
-                :length="resultsMeta ? Math.floor((resultsMeta.count * scaledCoverage[entityType].bothExact) / pageSize) : 0"
-                :total-visible="10"
-                rounded
-                class="py-4"
-              ></v-pagination>
-
             </div>
           </v-card>
 
@@ -429,7 +451,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted, toRefs, nextTick } from 'vue';
+import { ref, reactive, computed, watch, onMounted, toRefs } from 'vue';
 import { useRoute, useRouter } from 'vue-router'
 import { useDisplay } from 'vuetify';
 import axios from 'axios';
@@ -440,6 +462,7 @@ import CompareField from '@/components/QA/CompareField.vue';
 import CompareWork from '@/components/QA/CompareWork.vue';
 import GoogleScholarView from '@/components/QA/googleScholarView.vue';
 import SampleExplorer from '@/components/SampleExplorer.vue';
+import ScatterPlot from '@/components/QA/ScatterPlot.vue';
 
 defineOptions({ name: 'Oreo' });
 
@@ -511,6 +534,10 @@ const titles = computed(() => {
       "title": filters.titleCase(entityType.value) + " Tests",
       "subtitle": "Total pass rates of key tests across the full sample set"
     },
+    "plots": {
+      "title": filters.titleCase(entityType.value) + " Plots",
+      "subtitle": "Scatter plots of works_count and cited_by_count between production and Walden"
+    },
     "home": {
       "title": "Home",
       "subtitle": "Explore coverage and test rates between production and Walden across all endpoints"
@@ -532,6 +559,9 @@ const breadcrumbs = computed(() => {
   } else if (mode.value === "tests") {
     items.push({ title: filters.titleCase(entityType.value), disabled: false, to: `/${entityType.value}` });
     items.push({ title: "Tests", disabled: true, to: `/${entityType.value}/tests` });
+  } else if (mode.value === "plots") {
+    items.push({ title: filters.titleCase(entityType.value), disabled: false, to: `/${entityType.value}` });
+    items.push({ title: "Plots", disabled: true, to: `/${entityType.value}/plots` });
   }
   return items;
 });
@@ -860,6 +890,28 @@ const calcScaledCoverage = (data) => {
   };
 };
 
+const plotData = computed(() => {
+  const fields = ["works_count", "cited_by_count"];
+  const data = {};
+  fields.forEach(field => {
+    data[field] = [];
+    matchedIds.value.forEach(id => {
+      data[field].push({
+        id: id,
+        display_name: prodResults[id].display_name,
+        prod: prodResults[id][field] || 0,
+        walden: waldenResults[id][field] || 0,
+      });
+    });
+  });
+  return data;
+});
+
+const handlePlotPointClick = (point) => {
+  console.log(point);
+  compareId.value = point.id;
+};
+
 async function fetchSchema() {
   const apiUrl = `${metricsUrl}/schema`;
   const response = await axios.get(apiUrl);
@@ -983,6 +1035,16 @@ watch(page, async () => {
 watch(testKey, async () => {
   await fetchMetricsResponses();
 });
+
+watch(mode, async () => {
+  if (mode.value === "plots") {
+    pageSize.value = 1000;
+    page.value = 1;
+  } else {
+    pageSize.value = 20;
+  }
+  await fetchMetricsResponses();
+}, { immediate: true });
 
 watch(() => route.path, (newPath) => {
   currentRoute.value = newPath;

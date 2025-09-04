@@ -26,12 +26,12 @@
               
               <div v-if="column.key === 'prod'" class="py-7 pr-4">
                 <div v-if="source.includes('walden-only')" class="text-grey">-</div>
-                <google-scholar-view v-else :id="item" :data="apiData[item]" @title-click="zoomId = $event"/>
+                <google-scholar-view v-else :entityType="entityType" :id="item" :data="apiData[item]" @title-click="zoomId = $event"/>
               </div>
 
               <div v-else-if="column.key === 'walden'" class="py-7 w-100">
                 <div v-if="source.includes('prod-only')" class="text-grey">-</div>
-                <google-scholar-view v-else :id="item" :data="apiData[item]" @title-click="zoomId = $event"/>
+                <google-scholar-view v-else :entityType="entityType" :id="item" :data="apiData[item]" @title-click="zoomId = $event"/>
               </div>
 
               <div v-else-if="column.key === 'matches' && source.includes('walden-only')" class="pt-7 text-caption">
@@ -67,7 +67,7 @@
       <v-pagination
         v-if="!isLoading"
         v-model="page"
-        :length="100"
+        :length="Math.ceil(sampleIds.length / pageSize)"
         :total-visible="10"
         rounded
         class="mt-8"

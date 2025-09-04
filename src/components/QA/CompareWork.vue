@@ -10,7 +10,17 @@
               <div class="card-title text-h6 mb-0">
                 {{ prodResults.display_name }}
               </div>
-              <div class="text-grey-darken-2 mt-1" style="font-size: 12px;">{{ id }}</div>
+              <div class="text-grey-darken-2 mt-1 mb-2" style="font-size: 12px;">
+                {{ id }}
+                <a :href="`https://api.openalex.org/${id}`" target="_blank" class="ml-2">
+                  Prod
+                  <v-icon size="x-small" icon="mdi-open-in-new"></v-icon>
+                </a>
+                <a :href="`https://api.openalex.org/${id}?data-version=2`" target="_blank" class="ml-2">
+                  Walden
+                  <v-icon size="x-small" icon="mdi-open-in-new"></v-icon>
+                </a>
+              </div>
             </div>
             <v-btn-toggle
               v-model="mode"
@@ -21,7 +31,7 @@
               class="mr-2 mode-toggle"
               style="flex-shrink: 0;"
             >
-              <v-btn value="diff">Tests</v-btn>
+              <v-btn value="tests">Tests</v-btn>
               <v-btn value="json">JSON</v-btn>
             </v-btn-toggle>
             <v-btn @click="emit('close')" size="default" icon variant="text" class="mt-n2">
@@ -32,23 +42,17 @@
           </table>       
         </div>
 
-        <!-- Diff -->
-        <div v-if="mode === 'diff'" class="diff-table-container">
+        <!-- Tests -->
+        <div v-if="mode === 'tests'" class="diff-table-container">
           <table class="diff-table pa-4" style="table-layout: fixed; max-width: 100%;">
             <thead>
-              <tr class="mb-2 text-grey-darken-3" style="border-bottom: 1px solid #f5f5f5;">
-                <th></th>
+              <tr class="mb-2 text-grey-darken-3" style="font-size: 12px; border-bottom: 1px solid #f5f5f5;">
+                <th>Test</th>
                 <th>
-                  <a :href="`https://api.openalex.org/${id}`" target="_blank">
-                    Prod
-                    <v-icon size="x-small" icon="mdi-open-in-new"></v-icon>
-                  </a>
+                  <span style="margin-left: 24px;">Prod Value</span>
                 </th>
                 <th>
-                  <a :href="`https://api.openalex.org/${id}?data-version=2`" target="_blank">
-                    Walden
-                    <v-icon size="x-small" icon="mdi-open-in-new"></v-icon>
-                  </a>
+                  <span style="margin-left: 24px;">Walden Value</span>
                 </th>
               </tr>
             </thead>
@@ -115,7 +119,7 @@ const { id, entityType, schema, prodResults, waldenResults, matches, compareView
   prodResults: null,
   waldenResults: null,
   matches: Object,
-  compareView: { type: String, default: 'diff' }
+  compareView: { type: String, default: 'tests' }
 });
 
 const emit = defineEmits(['update:compareView', 'close']);
@@ -219,6 +223,10 @@ watch(mode, (newMode) => {
 .mode-toggle {
   width: 145px;
 }
+a {
+  color: inherit;
+  text-decoration: none;
+}
 .diff-table-container {
   overflow-y: scroll;
   overscroll-behavior: contain;
@@ -242,14 +250,8 @@ watch(mode, (newMode) => {
 }
 .diff-table th {
   border-bottom: 1px solid #ccc;
-  padding-bottom: 8px;
+  padding: 8px;
   text-align: left;
-}
-.diff-table th a {
-  color: inherit;
-  text-decoration: none;
-  font-size: 14px;
-  margin-left: 28px;
 }
 .diff-table td {
   margin: 0 40px 0 0;

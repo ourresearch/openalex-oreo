@@ -21,6 +21,10 @@ const routes = [
       testKey: route.params.testKey,
       mode: 'list',
     })},
+    {path: '/:entity/plots', name: 'plots', component: Oreo, props: route => ({
+      entityType: route.params.entity,
+      mode: 'plots',
+    })},
     {path: '/:pathMatch(.*)*', name: "PageNotFound", component: PageNotFound},
 ];
 
