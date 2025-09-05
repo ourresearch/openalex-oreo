@@ -357,7 +357,7 @@
                             </template>
 
                             <template v-else-if="column.key === 'description'">
-                              <v-chip color="grey-darken-2" variant="tonal" size="small" class="mr-2" @click.stop="testCategoryFilter = item.category">{{ item.category }}</v-chip>
+                              <v-chip color="grey-darken-2" variant="tonal" size="small" rounded="sm" class="mr-2" @click.stop="testCategoryFilter = item.category">{{ item.category }}</v-chip>
                               <span :class="item.test_type === 'bug' ? 'bug' : 'feature'" class="test-description" v-html="item.description"></span>
                             </template>
 
