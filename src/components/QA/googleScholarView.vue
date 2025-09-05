@@ -31,7 +31,7 @@
           <v-tooltip :text="data.open_access?.oa_status" location="bottom">
             <template v-slot:activator="{ props }">
               <v-icon v-bind="props" v-if="data.open_access?.oa_status === 'closed'" size="x-small" icon="mdi-lock"></v-icon>
-              <v-icon v-bind="props" v-else size="x-small" icon="mdi-lock-open-outline"></v-icon>
+              <v-icon v-bind="props" v-else size="x-small" icon="mdi-lock-open-variant-outline"></v-icon>
             </template>
           </v-tooltip>
         </span>

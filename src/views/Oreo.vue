@@ -9,17 +9,90 @@
           <!-- Title, Subtitle, Breadcrumbs -->
           <div>
             <v-breadcrumbs v-if="breadcrumbs" :items="breadcrumbs" divider="›" class="px-0 mt-n10" />
-            <div class="d-flex align-end justify-space-between">
-              <div class="text-h3 mb-2">
-                {{ titles[mode].title }}
+            <div class="d-flex align-start justify-space-between">
+              <div class="d-flex align-center mb-2">
+                <v-icon v-if="currentTest" :icon="currentTest.test_type === 'bug' ? 'mdi-bug' : 'mdi-rocket'" size="46" :color="currentTest.test_type === 'bug' ? 'red' : 'green'"></v-icon>
+              
+                <span class="text-h3">
+                  {{ titles[mode].title }}
+                </span>
               </div>
-              <v-btn v-if="mode === 'tests'"  variant="text" href="https://github.com/ourresearch/openalex-metrics-api/blob/main/schema.py" target="_blank">
-                Tests on GitHub
-                <v-icon icon="mdi-open-in-new" class="ml-1"></v-icon>
-              </v-btn>
+              <!-- Tests Search -->
+              <v-text-field
+                v-if="mode === 'tests'"
+                v-model="testsSearch"
+                variant="solo-filled"
+                bg-color="#dbe2eb"
+                flat
+                clearable
+                clear-icon="mdi-close"
+                hide-details
+                rounded="pill"
+                density="comfortable"
+                class="mb-2"
+                style="max-width: 250px;"
+                prepend-inner-icon="mdi-magnify"
+                placeholder="Search tests"
+              ></v-text-field>
+
+              <!-- Current Test Rate -->
+              <div v-if="mode === 'list' && currentTest" class="d-flex align-center">
+                <span class="mr-2" style="font-size: 32px;">
+                  {{ testItem(currentTest.key)?.rate }}%
+                </span>
+                <v-progress-circular 
+                  size="50" 
+                  width="10" 
+                  :color="testItem(currentTest.key)?.test_type === 'bug' ? 'red' : 'green'" 
+                  :model-value="testItem(currentTest.key)?.rate">
+                </v-progress-circular>
+              </div>
+              <div v-if="mode === 'entity' && dataLoaded" class="mb-2 mx-4">
+                <div class="text-right mb-2" >
+                  <span class="entity-metric">
+                    <span class="entity-metric-value">{{ coverageItem(entityType).prodOnly }}%</span>
+                    <span class="entity-metric-label ml-1">Prod Only</span>
+                  </span>
+
+                  <span class="entity-metric">
+                    <span class="entity-metric-value">{{ coverageItem(entityType).both }}%</span>
+                    <span class="entity-metric-label ml-1">Both</span>
+                  </span>
+
+                  <span class="entity-metric">
+                    <span class="entity-metric-value">{{ coverageItem(entityType).waldenOnly }}%</span>
+                    <span class="entity-metric-label ml-1">Walden Only</span>
+                  </span>
+
+                  <span class="entity-metric" v-if="coverageItem(entityType).worksCountChange !== '-'">
+                    <span class="entity-metric-value" :class="{'text-red': coverageItem(entityType).worksCountChange < 0, 'text-green': coverageItem(entityType).worksCountChange > 0}">
+                      {{ !(coverageItem(entityType).worksCountChange < 0) ? "+" : "" }}{{ coverageItem(entityType).worksCountChange }}%
+                    </span>
+                    <span class="entity-metric-label ml-1">Works</span>
+                  </span>
+
+                  <span class="entity-metric" v-if="coverageItem(entityType).citationsCountChange !== '-'">
+                    <span class="entity-metric-value" :class="{'text-red': coverageItem(entityType).citationsCountChange < 0, 'text-green': coverageItem(entityType).citationsCountChange > 0}">
+                      {{ !(coverageItem(entityType).citationsCountChange <= 0) ? "+" : "" }}{{ coverageItem(entityType).citationsCountChange }}%
+                    </span>
+                    <span class="entity-metric-label ml-1">Citations</span>
+                  </span>
+                </div>
+              </div>
+
             </div>
             <div class="mb-8">
               <span class="text-grey-darken-3 text-subtitle-1" v-html="titles[mode].subtitle"></span>
+              <v-chip 
+                v-if="mode === 'list' && currentTest"
+                color="grey-darken-2"
+                variant="tonal"
+                size="small"
+                class="ml-1"
+                @click="router.push(`/${entityType}/tests?testCategory=${currentTest.category}`)"
+              >
+                {{ currentTest.category }}
+              </v-chip>
             </div>
           </div>
 
@@ -36,22 +109,6 @@
 
           <!-- Tests Fitler, Sort, Count Above -->
           <div v-if="mode === 'tests' && dataLoaded" class="pt-0 pb-2">
-
-            <v-text-field
-              v-model="testsSearch"
-              variant="solo-filled"
-              bg-color="#dbe2eb"
-              flat
-              clearable
-              clear-icon="mdi-close"
-              hide-details
-              rounded="pill"
-              density="comfortable"
-              class="mb-2"
-              style="max-width: 450px;"
-              prepend-inner-icon="mdi-magnify"
-              placeholder="Search tests"
-            ></v-text-field>
             <div class="mb-1 d-flex">
               <v-menu width="200">
                 <template v-slot:activator="{ props }">
@@ -160,7 +217,7 @@
                       <v-card-title style="font-size: 28px;">Tests</v-card-title>
                       <v-card-text>
                         <div v-if="dataLoaded">
-                          <span class="">
+                          <span>
                             <b style="font-size: 20px;" >{{ schema[entityType].length }}</b>
                             <span style="font-size: 18px;" class="ml-1">tests</span>
                             <span style="font-size: 16px;" class="mx-2">•</span>
@@ -191,7 +248,7 @@
                       <v-card-title style="font-size: 28px;">Plots</v-card-title>
                       <v-card-text>
                         <div v-if="dataLoaded" class="d-flex align-center" style="font-size: 18px;">
-                          Scatter plots for <span v-if="entityType !== 'works'"><code class="mx-1">works_count</code> and </span><code class="mx-1">cited_by_count</code>
+                          Scatter plots for {{ plotData.map(p => p.title.replace(' Count', '').toLowerCase()).join(' and ') }}
                         </div>
                         <v-skeleton-loader v-else type="list-item"></v-skeleton-loader>
                       </v-card-text>
@@ -205,18 +262,11 @@
           <!-- Plots -->
           <div v-else-if="mode === 'plots'">
             <div v-if="resultsMeta" class="text-center">
-              <v-card v-if="entityType !== 'works'" flat rounded="xl" class="py-8 mb-10">
+              <v-card v-for="plot in plotData" :key="plot.field" flat rounded="xl" class="py-8 mb-10">
                 <scatter-plot
-                  title="Works Count"
+                  :title="plot.title"
                   @click-point="handlePlotPointClick"
-                  :data="plotData.works_count"
-              />
-              </v-card>
-              <v-card flat rounded="xl" class="py-8">
-                <scatter-plot
-                  title="Cited by Count"
-                  :data="plotData.cited_by_count"
-                  @click-point="handlePlotPointClick"
+                  :data="plot.data"
                 />
               </v-card>
             </div>
@@ -374,7 +424,7 @@
               
               <!-- Home -->
               <div v-if="mode === 'home'">
-                <v-col v-if="coverageItems" cols="12" lg="10" xl="6">
+                <v-col v-if="coverageItems" cols="12" lg="11" xl="7">
                   <v-data-table
                     :headers="coverageHeaders"
                     :items="coverageItems"
@@ -390,7 +440,6 @@
                           :key="column.key"
                           :class="['font-weight-bold', column.align === 'end' ? 'text-right' : 'text-left']"
                           :style="column.width ? { width: column.width } : {}"
-                          style="font-size: 12px;"
                         >
                           {{ column.title }}
                         </th>
@@ -403,12 +452,14 @@
                             <td v-for="column in columns" :key="column.key">
                               <template v-if="column.key === 'type'">
                                 <v-icon :icon="entityIcons[item.type]" size="default" color="grey" class="mr-2 mb-1"></v-icon>
-                                <span class="font-weight-bold">{{ filters.titleCase(item.type.replace("-", " ")) }}</span>
+                                <span class="font-weight-bold" style="font-size: 16px;">{{ filters.titleCase(item.type.replace("-", " ")) }}</span>
                               </template>
 
                               <template v-else-if="['worksCountChange', 'citationsCountChange'].includes(column.key)">
                                 <div class="text-right">
                                   <div v-if="item[column.key] === '-'" class="text-grey-darken-1">-</div>
+                                  <div v-else-if="item[column.key] === '∞'" class="text-green">+∞</div>
+
                                   <div v-else :class="{'text-red': item[column.key] < 0, 'text-green': item[column.key] > 0}">
                                     <code>
                                       {{ item[column.key] !== "-" && item[column.key] > 0 ? "+" : "" }}{{ item[column.key] }}
@@ -519,8 +570,6 @@ const testsSearch          = useParams('testsSearch', 'string', '');
 const testSort             = useParams('testSort', 'string', 'failRate');
 const testTypeFilter       = useParams('testType', 'string', 'all');
 const testCategoryFilter   = useParams('testCategory', 'string', 'all');
-const compareTestId        = useParams('compareTestId', 'string', null);
-const compareTestKey       = useParams('compareTestKey', 'string', null);
 const compareId            = useParams('compareId', 'string', null);
 const compareView          = useParams('compareView', 'string', 'json');
 
@@ -549,7 +598,7 @@ const titles = computed(() => {
       "subtitle": "Explore tests and sample data from production and Walden"
     },
     "list": {
-      "title": currentTest.value ? currentTest.value.display_name : "",
+      "title": currentTest.value ? filters.titleCase(entityType.value) + ": " + currentTest.value.display_name : "",
       "subtitle": currentTest.value ? currentTest.value.description : ""
     },
     "tests": {
@@ -637,9 +686,7 @@ const resultsCountStr = computed(() => {
   const startNum = ((page.value-1) * pageSize.value + 1).toLocaleString();
   const endNum = (Math.min(page.value * pageSize.value, totalNum)).toLocaleString();
 
-  const matchRate = currentTest.value.rate || matchRates[entityType.value][testKey.value];
-
-  return `${startNum}-${endNum} of ${totalNum.toLocaleString()} results (${matchRate}%)`;
+  return `${startNum}-${endNum} of ${totalNum.toLocaleString()} results`;
 });
 
 const testHeaders = computed(() => {
@@ -666,6 +713,11 @@ const testItems = computed(() => {
   });
   return rows;
 });
+
+const testItem = (testKey) => {
+  if (!testItems.value) { return null; }
+  return testItems.value.find(test => test.key === testKey);
+};
 
 const sortedTestItems = computed(() => {
   let items = [...testItems.value];
@@ -729,33 +781,12 @@ const testsResultsStr = computed(() => {
   return parts.join(" • ");
 });
 
-const openCompareFieldDialog = (itemId, key) => {
-  compareTestId.value = itemId;
-  compareTestKey.value = key;
-}
-
-const closeCompareFieldDialog = () => {
-  compareTestId.value = null;
-  compareTestKey.value = null;
-}
-
-const showCompareFieldDialog = computed(() => {
-  return compareTestId.value !== null && compareTestKey.value !== null;
-});
-  
-const onShowComparison = (itemId, columnKey, event) => {
-  compareTestId.value = null;
-  compareTestKey.value = null;
-  compareId.value = event;
-}
-
 const coverageHeaders = computed(() => {
   return [
     { 
       title: 'Entity',
       key: 'type',
       align: 'right',
-      width: "200px",
       sortable: true,
     },
     { 
@@ -828,11 +859,22 @@ const coverageItems = computed(() => {
   return defaultCoverageSort(rows);
 });
 
+const coverageItem = (entity) => {
+  return coverageItems.value.find(item => item.type === entity);
+} 
+
 const calcFieldSumChange = (entity, field) => {
-  if (!coverage[entity]["prod"]["field_sums"][field] || coverage[entity]["prod"]["field_sums"][field] === 0) {
+  const prodValue = coverage[entity]["prod"]["field_sums"][field];
+  const waldenValue = coverage[entity]["walden"]["field_sums"][field];
+  
+  if (prodValue === 0 && typeof waldenValue === "number" && waldenValue > 0) {
+    return "∞";
+  }
+
+  if (!prodValue || !waldenValue) {
     return "-";
   }
-  return Math.round(((coverage[entity]["walden"]["field_sums"][field] - coverage[entity]["prod"]["field_sums"][field]) / coverage[entity]["prod"]["field_sums"][field]) * 100);
+  return Math.round(((waldenValue - prodValue) / prodValue) * 100);
 }
 
 const defaultCoverageSort = (rows) => {
@@ -899,18 +941,35 @@ const calcScaledCoverage = (data) => {
 };
 
 const plotData = computed(() => {
-  const fields = ["works_count", "cited_by_count"];
-  const data = {};
-  fields.forEach(field => {
-    data[field] = [];
+  
+  const works = {
+    title: "Work Count",
+    field: "works_count",
+  }
+  
+  const citations = {
+    title: "Citations Count",
+    field: "cited_by_count",
+  }
+  
+  const referenced_works = {
+    title: "Referenced Works Count",
+    field: "referenced_works_count",
+  }
+  
+  const plots = entityType.value === "works" ? [citations, referenced_works] : [works, citations];
+  const data = [];
+  plots.forEach(plot => {
+    plot.data = [];
     matchedIds.value.forEach(id => {
-      data[field].push({
+      plot.data.push({
         id: id,
         display_name: prodResults[id].display_name,
-        prod: prodResults[id][field] || 0,
-        walden: waldenResults[id][field] || 0,
+        prod: prodResults[id][plot.field] || 0,
+        walden: waldenResults[id][plot.field] || 0,
       });
     });
+    data.push(plot);
   });
   return data;
 });
@@ -1063,12 +1122,6 @@ watch(() => route.path, (newPath) => {
 
 
 <style scoped>
-.square-btn {
-  min-width: 40px !important;
-  width: 40px !important;
-  height: 40px !important;
-  padding: 0 !important;
-}
 :deep(.v-number-input input) {
   text-align: center;
 }
@@ -1119,39 +1172,22 @@ watch(() => route.path, (newPath) => {
 .fields-card {
   border-color: #BDBDBD;
 }
-.fixed-header {
-  position: fixed;
-  top: 0px;
-  left: 0;
-  width: auto;
-  background: white;
-  border-collapse: collapse;
-  z-index: 1000;
-  overflow-x: auto;
-  scrollbar-width: none; /* Firefox */
-  pointer-events: auto;
+.entity-metric {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  width: 90px;
 }
-.fixed-header::-webkit-scrollbar {
-  display: none; /* Chrome, Safari */
+.entity-metric-value {
+  font-weight: bold;
+  font-size: 18px;
 }
-.fixed-header table {
-  min-width: max-content;
-  width: max-content;
-  border-collapse: collapse;
-}
-.fixed-header th {
-  padding: 16px;
-  font-size: 14px;
-  font-weight: 500;
-  border-bottom: 2px solid #ccc;
-  white-space: nowrap;
-  text-align: left;
-}
-.sticky-controls {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  background: white;
+.entity-metric-label {
+  font-size: 11px;
+  color: #555;
+  text-transform: uppercase;
+  color: #757575;
+  letter-spacing: 1px;
 }
 :deep(.test-description code) {
   background-color: #f5f5f5;

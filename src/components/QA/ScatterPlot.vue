@@ -12,10 +12,6 @@
         <span class="metric-label">Spearman Rho</span>
       </div>
       <div class="metric">
-        <code class="metric-value">{{ identityLineR2.toFixed(2) }}</code>
-        <span class="metric-label">Identity Line R²</span>
-      </div>
-      <div class="metric">
         <code class="metric-value">{{ r2.r2.toFixed(2) }}</code>
         <span class="metric-label">R²</span>
       </div>
@@ -290,16 +286,16 @@ const spearmanRho = computed(() => {
   justify-content: center;
   align-items: center;
   width: 130px;
-  height: 90px;
-  border: 1px solid #e0e0e0;
-  background-color: #fafafa;
+  height: 100px;
+  background-color: #eee;
   margin-bottom: 12px;
+  border-radius: 24px;
 }
 .metric-label {
-  font-size: 14px;
+  font-size: 16px;
 }
 .metric-value {
-  font-size: 20px;
+  font-size: 28px;
   font-weight: bold;
 }
 </style>
