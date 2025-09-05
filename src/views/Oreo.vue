@@ -836,7 +836,7 @@ const calcFieldSumChange = (entity, field) => {
 }
 
 const defaultCoverageSort = (rows) => {
-  const top = ["works",  "sources", "institutions", "publishers", "topics", "keywords", "concepts", "countries", "languages", "licenses", "domains", "fields", "subfields", "sdgs", "institution-types", "continents", "authors", "funders"];
+  const top = ["works",  "sources", "institutions", "publishers", "topics", "keywords", "concepts", "countries", "languages", "licenses", "domains", "fields", "subfields", "sdgs", "institution-types", "work-types", "continents", "authors", "funders", "source-types"];
 
   return rows.sort((a, b) => {
     const aIndex = top.indexOf(a.type);
