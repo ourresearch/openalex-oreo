@@ -132,7 +132,7 @@ const chartOption = computed(() => ({
     type: 'log',
     name: 'Production',
     nameLocation: 'middle',
-    nameGap: 40,
+    nameGap: 50,
     nameTextStyle: {
       fontWeight: 'bold',
       fontSize: 14,
@@ -146,7 +146,7 @@ const chartOption = computed(() => ({
     type: 'log',
     name: 'Walden',
     nameLocation: 'middle',
-    nameGap: 50,
+    nameGap: 60,
     nameTextStyle: {
       fontWeight: 'bold',
       fontSize: 14,

@@ -202,6 +202,31 @@
             </v-row>
           </v-card>
 
+          <!-- Plots -->
+          <div v-else-if="mode === 'plots'">
+            <div v-if="resultsMeta" class="text-center">
+              <v-card v-if="entityType !== 'works'" flat rounded="xl" class="py-8 mb-10">
+                <scatter-plot
+                  title="Works Count"
+                  @click-point="handlePlotPointClick"
+                  :data="plotData.works_count"
+              />
+              </v-card>
+              <v-card flat rounded="xl" class="py-8">
+                <scatter-plot
+                  title="Cited by Count"
+                  :data="plotData.cited_by_count"
+                  @click-point="handlePlotPointClick"
+                />
+              </v-card>
+            </div>
+            <v-card v-else flat rounded="xl" class="text-center" style="height: 600px; overflow: hidden !important;">
+              <v-progress-linear color="blue" class="" indeterminate></v-progress-linear>
+              <div style="font-size: 14px; color: #777; margin-top: 280px; font-style: italic;">Loading...</div>
+            </v-card>
+          </div>
+
+
           <v-card v-else flat class="pb-0 px-4 rounded-o" style="overflow: hidden !important;">
 
             <!-- Results -->
@@ -346,28 +371,6 @@
               <template v-else-if="mode === 'tests'">
                 <v-skeleton-loader type="list-item-three-line@12"></v-skeleton-loader>
               </template>
-
-              <!-- Plots -->
-              <div v-if="mode === 'plots'">
-                <div v-if="resultsMeta" class="text-center py-10">
-                  <scatter-plot
-                    v-if="entityType !== 'works'"
-                    title="Works Count"
-                    @click-point="handlePlotPointClick"
-                    :data="plotData.works_count"
-                    style="margin-bottom: 80px;"
-                  />
-                  <scatter-plot
-                    title="Cited by Count"
-                    :data="plotData.cited_by_count"
-                    @click-point="handlePlotPointClick"
-                  />
-                </div>
-                <div v-else style="height: 600px;" class="text-center">
-                  <v-progress-linear color="blue" class="" indeterminate></v-progress-linear>
-                  <div style="font-size: 14px; color: #777; margin-top: 200px; font-style: italic;">Loading...</div>
-                </div>
-              </div>
               
               <!-- Home -->
               <div v-if="mode === 'home'">
@@ -826,14 +829,14 @@ const coverageItems = computed(() => {
 });
 
 const calcFieldSumChange = (entity, field) => {
-  if (coverage[entity]["prod"]["field_sums"][field] === 0) {
+  if (!coverage[entity]["prod"]["field_sums"][field] || coverage[entity]["prod"]["field_sums"][field] === 0) {
     return "-";
   }
   return Math.round(((coverage[entity]["walden"]["field_sums"][field] - coverage[entity]["prod"]["field_sums"][field]) / coverage[entity]["prod"]["field_sums"][field]) * 100);
 }
 
 const defaultCoverageSort = (rows) => {
-  const top = ["works",  "sources", "institutions", "publishers", "topics", "countries", "continents", "languages", "licenses", "domains", "fields", "subfields"];
+  const top = ["works",  "sources", "institutions", "publishers", "topics", "countries", "languages", "licenses", "domains", "fields", "subfields", "continents"];
 
   return rows.sort((a, b) => {
     const aIndex = top.indexOf(a.type);

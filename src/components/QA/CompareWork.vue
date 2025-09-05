@@ -33,8 +33,8 @@
               class="mr-2 mode-toggle"
               style="flex-shrink: 0;"
             >
-              <v-btn value="tests">Tests</v-btn>
               <v-btn value="json">JSON</v-btn>
+              <v-btn value="tests">Tests</v-btn>
             </v-btn-toggle>
             <v-btn @click="emit('close')" size="default" icon variant="text" class="mt-n2">
               <v-icon size="default" variant="plain" icon="mdi-close"></v-icon>
@@ -93,7 +93,7 @@
 
         <!-- JSON -->
         <div v-else-if="mode === 'json'" class="d-flex">
-          <div class="json-container">
+          <div class="json-container pb-4">
             <a :href="`https://api.openalex.org/${id}`" target="_blank" class="pb-3 font-weight-medium d-block sticky-top">
               Prod
               <v-icon size="x-small" icon="mdi-open-in-new"></v-icon>

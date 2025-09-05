@@ -125,8 +125,13 @@
 
     <!-- Current Test Value-->
     <template v-if="highlightTest">
-      <div class="mt-5" style="font-size: 14px;">
-        <code class="text-grey-darken-4">{{ highlightTest.field }}: {{ getShortValue(highlightTestValue, highlightTest) }}</code>
+      <div class="mt-3" style="font-size: 14px;">
+        <code class="text-grey-darken-4">
+          {{ highlightTest.field }}: 
+          <span :class="testValueClass">
+            {{ getShortValue(highlightTestValue, highlightTest) }}
+          </span>
+        </code>
       </div>
     </template>
   </div>
@@ -157,6 +162,15 @@ const { id, entityType, data, matches, compareData, highlightTest, highlightTest
 const emit = defineEmits(['title-click']);
 
 const isCompare = computed(() => !!compareData && !!matches);
+
+const testValueClass = computed(() => {
+  if (!isCompare.value) return '';
+  if (highlightTest.test_type === 'bug') {
+    return 'text-red';
+  } else {
+    return 'text-green-darken-1';
+  }
+});
 
 </script>
 
