@@ -836,7 +836,7 @@ const calcFieldSumChange = (entity, field) => {
 }
 
 const defaultCoverageSort = (rows) => {
-  const top = ["works",  "sources", "institutions", "publishers", "topics", "countries", "languages", "licenses", "domains", "fields", "subfields", "continents"];
+  const top = ["works",  "sources", "institutions", "publishers", "topics", "keywords", "concepts", "countries", "languages", "licenses", "domains", "fields", "subfields", "sdgs", "institution-types", "continents", "authors", "funders"];
 
   return rows.sort((a, b) => {
     const aIndex = top.indexOf(a.type);
@@ -1009,6 +1009,7 @@ const entityIcons = {
   authors: "mdi-account-outline",
   continents: "mdi-earth",
   countries: "mdi-earth",
+  concepts: "mdi-lightbulb-outline",
   domains: "mdi-tag-outline",
   fields: "mdi-tag-outline",
   funders: "mdi-cash-multiple",
