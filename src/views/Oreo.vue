@@ -1167,7 +1167,7 @@ const addPseudoTests = () => {
       "category": "other",
       "is_pseudo": true,
       "sample_source": "works-walden-only",
-      "rate": coverage["works"]["walden"]["coverage"],
+      "rate": 100 - coverage["works"]["walden"]["coverage"],
       "description": "Works that are in Walden but not in prod",
     },
   ];
@@ -1179,7 +1179,7 @@ const addPseudoTests = () => {
       "category": "other",
       "is_pseudo": true,
       "sample_source": "sources-walden-only",
-      "rate": coverage["sources"]["walden"]["coverage"],
+      "rate": 100 - coverage["sources"]["walden"]["coverage"],
       "description": "Sources that are in Walden but not in prod",
     },
   ];
