@@ -16,6 +16,9 @@
         />
         <span class="logo-text" style="color: #000">OpenAlex OREO</span>
       </router-link>
+      <span class="ml-2 mt-2 text-grey" style="font-size: 14px;">
+        OpenAlex Rewrite Evaluation Overview
+      </span>
     </v-app-bar>
     <div>
     </div>

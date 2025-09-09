@@ -1,12 +1,12 @@
 <template>
-  <div class="d-flex align-top justify-center">
+  <div class="d-flex align-top justify-space-between">
     <v-chart 
       :option="chartOption" 
-      :style="{ width: '900px', height: '700px' }"
+      :style="{ width: chartWidth, height: '700px' }"
       autoresize 
       @click="handleChartClick"
     />
-    <div class="metrics" style="margin-top: 50px;">
+    <div class="metrics ml-4" style="margin-top: 50px;">
       <div class="metric">
         <code class="metric-value">{{ spearmanRho.toFixed(2) }}</code>
         <span class="metric-label">Spearman Rho</span>
@@ -21,6 +21,7 @@
 
 <script setup>
 import { computed } from 'vue';
+import { useDisplay } from 'vuetify';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { ScatterChart, LineChart } from 'echarts/charts';
@@ -32,16 +33,7 @@ import {
 } from 'echarts/components';
 import VChart from 'vue-echarts';
 
-// Register ECharts components
-use([
-  CanvasRenderer,
-  ScatterChart,
-  LineChart,
-  TitleComponent,
-  TooltipComponent,
-  GridComponent,
-  DataZoomComponent,
-]);
+const { smAndDown, mdAndDown, lgAndDown, xlAndDown } = useDisplay();
 
 const props = defineProps({
   title: {
@@ -55,6 +47,25 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['click-point']);
+
+const chartWidth = computed(() => {
+  if (smAndDown.value) return '100%';
+  if (mdAndDown.value) return '600px';
+  if (lgAndDown.value) return '800px';
+  if (xlAndDown.value) return '1000px';
+  return '1200px';
+});
+
+// Register ECharts components
+use([
+  CanvasRenderer,
+  ScatterChart,
+  LineChart,
+  TitleComponent,
+  TooltipComponent,
+  GridComponent,
+  DataZoomComponent,
+]);
 
 const handleChartClick = (params) => {
   if (params.componentType === 'series' && params.seriesType === 'scatter') {
@@ -142,7 +153,7 @@ const chartOption = computed(() => ({
     type: 'log',
     name: 'Walden',
     nameLocation: 'middle',
-    nameGap: 60,
+    nameGap: 40,
     nameTextStyle: {
       fontWeight: 'bold',
       fontSize: 14,
@@ -277,9 +288,6 @@ const spearmanRho = computed(() => {
 </script>
 
 <style scoped>
-.metrics {
-  margin-right: 20px;
-}
 .metric {
   display: flex;
   flex-direction: column;

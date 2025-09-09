@@ -21,8 +21,9 @@ const routes = [
       testKey: route.params.testKey,
       mode: 'list',
     })},
-    {path: '/:entity/plots', name: 'plots', component: Oreo, props: route => ({
+    {path: '/:entity/plots/:plotKey', name: 'plots', component: Oreo, props: route => ({
       entityType: route.params.entity,
+      plotKey: route.params.plotKey,
       mode: 'plots',
     })},
     {path: '/:pathMatch(.*)*', name: "PageNotFound", component: PageNotFound},
@@ -34,7 +35,10 @@ const router = createRouter({
     scrollBehavior(to, from, savedPosition) {
       if (savedPosition) {
         return savedPosition; // Restore saved scroll position on back/forward
-      } else {
+      } else if (to.name === 'plots' || from.name === 'plots') {
+        return false; // don't scroll
+      }
+      else {
         return { left: 0, top: 0 }; // Scroll to top for new pages
       }
     },

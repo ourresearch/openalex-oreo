@@ -11,57 +11,75 @@
             <v-breadcrumbs v-if="breadcrumbs" :items="breadcrumbs" divider="›" class="px-0 mt-n10" />
             <div class="d-flex align-start justify-space-between">
               <div class="d-flex align-center mb-2">
-                <v-icon v-if="currentTest" :icon="currentTest.test_type === 'bug' ? 'mdi-bug' : 'mdi-rocket'" size="46" :color="currentTest.test_type === 'bug' ? 'red' : 'green'"></v-icon>
+                <v-icon 
+                  v-if="currentTest" 
+                  :icon="currentTest.test_type === 'bug' ? 'mdi-bug' : 'mdi-rocket'" 
+                  size="46" 
+                  :color="testItem(currentTest.key)?.color"
+                ></v-icon>
               
                 <span class="text-h3">
                   {{ titles[mode].title }}
                 </span>
               </div>
               <!-- Tests Search -->
-              <v-text-field
-                v-if="mode === 'tests'"
-                v-model="testsSearch"
-                variant="solo-filled"
-                bg-color="#dbe2eb"
-                flat
-                clearable
-                clear-icon="mdi-close"
-                hide-details
-                rounded="pill"
-                density="comfortable"
-                class="mb-2"
-                style="max-width: 250px;"
-                prepend-inner-icon="mdi-magnify"
-                placeholder="Search tests"
-              ></v-text-field>
-
+              <div v-if="mode === 'tests'">
+                <v-btn
+                  v-if="!showTestsSearch"
+                  @click="showTestsSearch = true"
+                  variant="icon"
+                  size="large"
+                  class="mb-2"
+                  density="comfortable"
+                  color="grey-darken-2"
+                  icon="mdi-magnify"
+                ></v-btn>
+                <v-slide-x-reverse-transition>
+                  <v-text-field
+                    v-if="showTestsSearch"
+                    v-model="testsSearch"
+                    variant="solo-filled"
+                    bg-color="#dbe2eb"
+                    flat
+                    clearable
+                    clear-icon="mdi-close"
+                    hide-details
+                    rounded="pill"
+                    density="comfortable"
+                    class="mb-2"
+                    style="width: 250px;"
+                    prepend-inner-icon="mdi-magnify"
+                    placeholder="Search tests"
+                  ></v-text-field>
+                </v-slide-x-reverse-transition>
+              </div>
               <!-- Current Test Rate -->
               <div v-if="mode === 'list' && currentTest" class="d-flex align-center">
-                <span class="mr-2" style="font-size: 32px;">
-                  {{ testItem(currentTest.key)?.rate }}%
-                </span>
                 <v-progress-circular 
                   size="50" 
                   width="10" 
-                  :color="testItem(currentTest.key)?.test_type === 'bug' ? 'red' : 'green'" 
+                  :color="testItem(currentTest.key)?.color"
                   :model-value="testItem(currentTest.key)?.rate">
                 </v-progress-circular>
+                <span class="ml-2" style="font-size: 32px;">
+                  {{ testItem(currentTest.key)?.rate }}%
+                </span>
               </div>
-              <div v-if="mode === 'entity' && dataLoaded" class="mb-2 mx-4">
-                <div class="text-right mb-2" >
+              <div v-if="mode === 'entity' && dataLoaded" class="mx-4">
+                <div class="text-right" >
                   <span class="entity-metric">
-                    <span class="entity-metric-value">{{ coverageItem(entityType).prodOnly }}%</span>
-                    <span class="entity-metric-label ml-1">Prod Only</span>
+                    <span class="entity-metric-value" :class="{'text-red': coverageItem(entityType).missing > 0}">{{ coverageItem(entityType).missing }}%</span>
+                    <span class="entity-metric-label ml-1">Missing</span>
                   </span>
 
                   <span class="entity-metric">
-                    <span class="entity-metric-value">{{ coverageItem(entityType).both }}%</span>
-                    <span class="entity-metric-label ml-1">Both</span>
+                    <span class="entity-metric-value" :class="{'text-green': coverageItem(entityType).new > 0}">{{ coverageItem(entityType).new }}%</span>
+                    <span class="entity-metric-label ml-1">New</span>
                   </span>
 
                   <span class="entity-metric">
-                    <span class="entity-metric-value">{{ coverageItem(entityType).waldenOnly }}%</span>
-                    <span class="entity-metric-label ml-1">Walden Only</span>
+                    <span class="entity-metric-value" :class="{'text-red': coverageItem(entityType).failingTests > 0}">{{ coverageItem(entityType).failingTests }}</span>
+                    <span class="entity-metric-label ml-1">Failing Tests</span>
                   </span>
 
                   <span class="entity-metric" v-if="coverageItem(entityType).worksCountChange !== '-'">
@@ -164,7 +182,19 @@
                   </v-list-item>
                 </v-list>
               </v-menu>
+
+              <div>
+                <v-chip v-if="!testBigChangeFilter" rounded="pill" color="grey-darken-2" variant="outlined" style="border: 1px solid #BDBDBD;" class="mr-1" @click="testBigChangeFilter = true">
+                  Big Change
+                </v-chip>
+                <v-chip v-else rounded="pill" color="blue-darken-1" variant="tonal" class="mr-1">
+                  Big Change
+                  <v-icon icon="mdi-close" @click.stop="testBigChangeFilter = false"></v-icon>
+                </v-chip>
+              </div>
             </div>
+
+
             <div class="d-flex align-end ml-3">
               <div class="text-grey-darken-2" style="font-size: 14px;">
                 {{ testsResultsStr }}
@@ -243,11 +273,11 @@
                       v-bind="props" 
                       :class="isHovering ? 'bg-blue-lighten-5' : 'bg-grey-lighten-3'"
                       class="pa-4 mx-1 fill-height"
-                      @click="router.push(`/${entityType}/plots`)"
+                      @click="router.push(resultsMeta ? `/${entityType}/plots/${plotData[0].field}` : '#')"
                     >
                       <v-card-title style="font-size: 28px;">Plots</v-card-title>
                       <v-card-text>
-                        <div v-if="dataLoaded" class="d-flex align-center" style="font-size: 18px;">
+                        <div v-if="resultsMeta" class="d-flex align-center" style="font-size: 18px;">
                           Scatter plots for {{ plotData.map(p => p.title.replace(' Count', '').toLowerCase()).join(' and ') }}
                         </div>
                         <v-skeleton-loader v-else type="list-item"></v-skeleton-loader>
@@ -259,14 +289,20 @@
             </v-row>
           </v-card>
 
+          
           <!-- Plots -->
           <div v-else-if="mode === 'plots'">
             <div v-if="resultsMeta" class="text-center">
-              <v-card v-for="plot in plotData" :key="plot.field" flat rounded="xl" class="py-8 mb-10">
+              <v-card flat rounded="xl" class="py-8 mb-10 d-flex align-start">
+                <v-list class="text-left pt-12 mr-2" style="width: 180px">
+                  <v-list-item v-for="plot in plotData" :key="plot.field" :to="`/${entityType}/plots/${plot.field}`" class="plot-nav-item">
+                    <v-list-item-title>{{ plot.title.replace(' Count', '') }}</v-list-item-title>
+                  </v-list-item>
+                </v-list>
                 <scatter-plot
-                  :title="plot.title"
+                  :title="currentPlot.title"
                   @click-point="handlePlotPointClick"
-                  :data="plot.data"
+                  :data="currentPlot.data"
                 />
               </v-card>
             </div>
@@ -385,7 +421,8 @@
                               <v-progress-circular 
                                 size="24" 
                                 width="10" 
-                                :color="item.test_type === 'bug' ? 'red' : 'green'" :model-value="item.rate">
+                                :color="item.color" 
+                                :model-value="item.rate">
                               </v-progress-circular>
                             </template>
 
@@ -396,7 +433,7 @@
                             </template>
 
                             <template v-if="column.key === 'type'">
-                              <v-icon :icon="item.test_type === 'bug' ? 'mdi-bug' : 'mdi-rocket-launch'" :color="item.test_type === 'bug' ? 'red' : 'green'" />
+                              <v-icon :icon="item.test_type === 'bug' ? 'mdi-bug' : 'mdi-rocket-launch'" :color="item.color" />
                             </template>
 
                             <template v-else-if="column.key === 'display_name'">
@@ -450,9 +487,37 @@
                         <template v-slot:default="{ isHovering, props }">
                           <tr v-bind="props" :class="[isHovering ? 'bg-grey-lighten-3' : '', 'cursor-pointer']" v-ripple @click="router.push(`/${item.type}`)">
                             <td v-for="column in columns" :key="column.key">
+                              
                               <template v-if="column.key === 'type'">
                                 <v-icon :icon="entityIcons[item.type]" size="default" color="grey" class="mr-2 mb-1"></v-icon>
                                 <span class="font-weight-bold" style="font-size: 16px;">{{ filters.titleCase(item.type.replace("-", " ")) }}</span>
+                              </template>
+
+                              <template v-else-if="column.key === 'missing'">
+                                <div class="text-right">
+                                  <div v-if="item[column.key] === '-'" class="text-grey-darken-1">-</div>
+                                  <div v-else :class="{'text-red': item[column.key] > 0}">
+                                    <code>{{ item[column.key] }}</code>
+                                  </div>
+                                </div>
+                              </template>
+
+                              <template v-else-if="column.key === 'new'">
+                                <div class="text-right">
+                                  <div v-if="item[column.key] === '-'" class="text-grey-darken-1">-</div>
+                                  <div v-else :class="{'text-green': item[column.key] > 0}">
+                                    <code>{{ item[column.key] }}</code>
+                                  </div>
+                                </div>
+                              </template>
+
+                              <template v-else-if="column.key === 'failingTests'">
+                                <div class="text-right">
+                                  <div v-if="item[column.key] === '-'" class="text-grey-darken-1">-</div>
+                                  <div v-else :class="{'text-red': item[column.key] > 0}">
+                                    <code>{{ item[column.key] }}</code>
+                                  </div>
+                                </div>
                               </template>
 
                               <template v-else-if="['worksCountChange', 'citationsCountChange'].includes(column.key)">
@@ -472,12 +537,6 @@
                                 <div class="text-right"><code>{{ item.sampleSize.toLocaleString() }}</code></div>
                               </template>
 
-                              <template v-else>
-                                <div class="text-right">
-                                  <div v-if="item[column.key] === '-'" class="text-grey-darken-1">-</div>
-                                  <div v-else><code>{{ item[column.key] }}</code></div>
-                                </div>
-                              </template>
                             </td>
                           </tr>
                         </template>
@@ -551,6 +610,10 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  plotKey: {
+    type: String,
+    default: null,
+  },
 });
 
 const route = useRoute()
@@ -560,7 +623,7 @@ const currentRoute = ref(route.path)
 const metricsUrl   = `https://metrics-api.openalex.org`;
 //const metricsUrl   = `http://localhost:5006`;
 
-const { mode, entityType, testKey } = toRefs(props);
+const { mode, entityType, testKey, plotKey } = toRefs(props);
 
 const schema         = ref(null);
 
@@ -570,8 +633,10 @@ const testsSearch          = useParams('testsSearch', 'string', '');
 const testSort             = useParams('testSort', 'string', 'failRate');
 const testTypeFilter       = useParams('testType', 'string', 'all');
 const testCategoryFilter   = useParams('testCategory', 'string', 'all');
+const testBigChangeFilter  = useParams('testBigChange', 'boolean', false);
 const compareId            = useParams('compareId', 'string', null);
 const compareView          = useParams('compareView', 'string', 'json');
+const showTestsSearch      = ref(false);
 
 const prodResults          = reactive({});
 const waldenResults        = reactive({});
@@ -599,7 +664,7 @@ const titles = computed(() => {
     },
     "list": {
       "title": currentTest.value ? filters.titleCase(entityType.value) + ": " + currentTest.value.display_name : "",
-      "subtitle": currentTest.value ? currentTest.value.description : ""
+      "subtitle": currentTest.value ? `<span class='test-description ${currentTest.value.test_type}'>${currentTest.value.description}</span>` : ""
     },
     "tests": {
       "title": filters.titleCase(entityType.value) + " Tests",
@@ -705,9 +770,11 @@ const testItems = computed(() => {
 
   const rows = []; 
   schema.value[entityType.value].forEach(test => {
+    let rate = test.rate || matchRates[entityType.value][test.key];
     rows.push({
       ...test,
-      rate: test.rate || matchRates[entityType.value][test.key],
+      rate: rate,
+      color: rate > 5 ? (test.test_type === 'bug' ? 'red' : 'green') : "grey",
       filterUrl: `/${entityType.value}/tests/${test.key}`,
     });
   });
@@ -730,6 +797,10 @@ const sortedTestItems = computed(() => {
 
   if (testCategoryFilter.value !== 'all') {
     items = items.filter(item => item.category === testCategoryFilter.value);
+  }
+
+  if (testBigChangeFilter.value) {
+    items = items.filter(item => item.rate > 5);
   }
 
   if (testsSearch.value) {
@@ -790,37 +861,31 @@ const coverageHeaders = computed(() => {
       sortable: true,
     },
     { 
-      title: 'Prod Only %', 
-      key: 'prodOnly',
+      title: 'Missing %', 
+      key: 'missing',
       align: 'end',
-      isLink: true,
-      width: "125px",
       sortable: true,
     },
     { 
-      title: 'Both %', 
-      key: 'both',
+      title: 'New %', 
+      key: 'new',
       align: 'end',
-      isLink: true,
-      width: "125px",
       sortable: true,
     },
     { 
-      title: 'Walden Only %', 
-      key: 'waldenOnly',
+      title: 'Failing Tests', 
+      key: 'failingTests',
       align: 'end',
-      isLink: true,
-      width: "125px",
       sortable: true,
     },
     { 
-      title: 'Works Count %', 
+      title: 'Works %', 
       key: 'worksCountChange',
       align: 'end',
       sortable: true,
     },
     { 
-      title: 'Citations Count %', 
+      title: 'Citations %', 
       key: 'citationsCountChange',
       align: 'end',
       sortable: true,
@@ -838,7 +903,6 @@ const coverageItems = computed(() => {
   if (!Object.keys(coverage).length) { return null; }
   const rows = []; 
   Object.keys(coverage).forEach(entity => {
-    let scaledCoverageItem = scaledCoverage.value[entity];
     let worksCountChange = "-";
     let citationsCountChange = "-";
     if ("field_sums" in coverage[entity]["prod"]) {
@@ -847,9 +911,9 @@ const coverageItems = computed(() => {
     }
     rows.push({
       type: entity,
-      prodOnly: scaledCoverageItem.prodOnly,
-      both: scaledCoverageItem.both,
-      waldenOnly: scaledCoverageItem.waldenOnly,
+      missing: 100 - coverage[entity]["prod"]["coverage"],
+      new: 100 - coverage[entity]["walden"]["coverage"],
+      failingTests: nFailingTests(entity),
       worksCountChange: worksCountChange,
       citationsCountChange: citationsCountChange,
       testFailRate: entity in matchRates ? matchRates[entity]["_average_bug"] : "-",
@@ -862,6 +926,12 @@ const coverageItems = computed(() => {
 const coverageItem = (entity) => {
   return coverageItems.value.find(item => item.type === entity);
 } 
+
+const nFailingTests = (entity) => {
+  if (!matchRates[entity]) { return 0; }
+  const bugKeys = schema.value[entity].filter(test => test.test_type === "bug").map(test => test.key);
+  return bugKeys.filter(key => matchRates[entity][key] > 0).length;
+}
 
 const calcFieldSumChange = (entity, field) => {
   const prodValue = coverage[entity]["prod"]["field_sums"][field];
@@ -943,21 +1013,44 @@ const calcScaledCoverage = (data) => {
 const plotData = computed(() => {
   
   const works = {
-    title: "Work Count",
+    title: "Works Count",
     field: "works_count",
-  }
+  };
   
   const citations = {
     title: "Citations Count",
     field: "cited_by_count",
-  }
+  };
   
-  const referenced_works = {
+  const referencedWorks = {
     title: "Referenced Works Count",
     field: "referenced_works_count",
-  }
+  };
+
+  const fwci = {
+    title: "FWCI",
+    field: "fwci",
+  };
+
+  const countries = {
+    title: "Countries Count",
+    field: "countries_distinct_count",
+  };
+
+  const institutions = {
+    title: "Institutions Count",
+    field: "institutions_distinct_count",
+  };
   
-  const plots = entityType.value === "works" ? [citations, referenced_works] : [works, citations];
+  const locations = {
+    title: "Locations Count",
+    field: "locations_count",
+  };
+  
+  const plots = entityType.value === "works" ? 
+    [citations, referencedWorks, fwci, locations, countries, institutions] : 
+    [works, citations];
+
   const data = [];
   plots.forEach(plot => {
     plot.data = [];
@@ -972,6 +1065,11 @@ const plotData = computed(() => {
     data.push(plot);
   });
   return data;
+});
+
+const currentPlot = computed(() => {
+  if (!resultsMeta.value) { return null; }
+  return plotData.value.find(plot => plot.field === plotKey.value);
 });
 
 const handlePlotPointClick = (point) => {
@@ -1109,10 +1207,22 @@ watch(testKey, async () => {
 watch(mode, async () => {
   if (mode.value === "plots") {
     pageSize.value = 1000;
+    await fetchMetricsResponses();
   } else {
     pageSize.value = 20;
   }
-  await fetchMetricsResponses();
+  showTestsSearch.value = false;
+});
+
+watch(showTestsSearch, () => {
+  if (showTestsSearch.value) {
+    setTimeout(() => {
+      const searchInput = document.querySelector('input[placeholder="Search tests"]');
+      if (searchInput) {
+        searchInput.focus();
+      }
+    }, 500);
+  }
 });
 
 watch(() => route.path, (newPath) => {
@@ -1176,11 +1286,11 @@ watch(() => route.path, (newPath) => {
   display: inline-flex;
   flex-direction: column;
   align-items: center;
-  width: 90px;
+  width: 100px;
 }
 .entity-metric-value {
   font-weight: bold;
-  font-size: 18px;
+  font-size: 24px;
 }
 .entity-metric-label {
   font-size: 11px;
@@ -1200,6 +1310,11 @@ watch(() => route.path, (newPath) => {
 :deep(.test-description.feature code) {
   background-color: #f5f5f5;
   color: #22863a;
+}
+.plot-nav-item {
+  padding-inline-start: 24px !important;
+  border-top-right-radius: 9999px !important;
+  border-bottom-right-radius: 9999px !important;
 }
 .v-card, .v-overlay {
   overflow: visible !important;
