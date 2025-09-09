@@ -750,9 +750,9 @@ const resultsCountStr = computed(() => {
 
   const scale = scaledCoverage.value[entityType.value];
   let totalNum;
-  if (testKey.value === "works_lost") {
+  if (testKey.value === "lost_works") {
     totalNum = Math.round(10000 * scale.prodOnlyExact);
-  } else if (testKey.value === "works_added") {
+  } else if (testKey.value === "new_works") {
     totalNum = Math.round(10000 * scale.waldenOnlyExact);
   } else {
     totalNum = Math.round(resultsMeta.value.count * scale.bothExact);
@@ -1151,8 +1151,8 @@ async function fetchCoverage() {
 const addPseudoTests = () => {
   const worksPseudoTests = [
     {
-      "display_name": "Works Lost",
-      "key": "works_lost",
+      "display_name": "Lost Works",
+      "key": "lost_work",
       "test_type": "bug",
       "category": "other",
       "is_pseudo": true,
@@ -1161,8 +1161,8 @@ const addPseudoTests = () => {
       "description": "Works that are in prod but not in Walden",
     },
     {
-      "display_name": "Works Added",
-      "key": "works_added",
+      "display_name": "New Works",
+      "key": "new_works",
       "test_type": "feature",
       "category": "other",
       "is_pseudo": true,
@@ -1173,8 +1173,8 @@ const addPseudoTests = () => {
   ];
   const sourcesPseudoTests = [
     {
-      "display_name": "Sources Added",
-      "key": "sources_added",
+      "display_name": "New Sources",
+      "key": "new_sources",
       "test_type": "feature",
       "category": "other",
       "is_pseudo": true,
