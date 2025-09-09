@@ -445,7 +445,7 @@
 
                             <template v-else-if="column.key === 'description'">
                               <v-chip color="grey-darken-2" variant="tonal" size="small" rounded="sm" class="mr-2" @click.stop="testCategoryFilter = item.category">{{ item.category }}</v-chip>
-                              <span :class="item.test_type === 'bug' ? 'bug' : 'feature'" class="test-description" v-html="item.description"></span>
+                              <span :class="item.colorClass" class="test-description" v-html="item.description"></span>
                             </template>
 
                           </td>
@@ -507,6 +507,15 @@
                                   <div v-if="item[column.key] === '-'" class="text-grey-darken-1">-</div>
                                   <div v-else :class="{'text-green': item[column.key] > 0}">
                                     <code>{{ item[column.key] }}</code>
+                                  </div>
+                                </div>
+                              </template>
+
+                              <template v-else-if="['worksCorrelation', 'citationsCorrelation'].includes(column.key)">
+                                <div class="text-right">
+                                  <div v-if="item[column.key] === '-'" class="text-grey-darken-1">-</div>
+                                  <div v-else>
+                                    <code>{{ item[column.key].toFixed(2) }}</code>
                                   </div>
                                 </div>
                               </template>
@@ -664,7 +673,7 @@ const titles = computed(() => {
     },
     "list": {
       "title": currentTest.value ? filters.titleCase(entityType.value) + ": " + currentTest.value.display_name : "",
-      "subtitle": currentTest.value ? `<span class='test-description ${currentTest.value.test_type}'>${currentTest.value.description}</span>` : ""
+      "subtitle": currentTest.value ? `<span class='test-description ${testItem(currentTest.value.key).colorClass}'>${currentTest.value.description}</span>` : ""
     },
     "tests": {
       "title": filters.titleCase(entityType.value) + " Tests",
@@ -775,6 +784,7 @@ const testItems = computed(() => {
       ...test,
       rate: rate,
       color: rate > 5 ? (test.test_type === 'bug' ? 'red' : 'green') : "grey",
+      colorClass: rate > 5 ? (test.test_type === 'bug' ? 'bug' : 'feature') : "",
       filterUrl: `/${entityType.value}/tests/${test.key}`,
     });
   });
@@ -858,6 +868,7 @@ const coverageHeaders = computed(() => {
       title: 'Entity',
       key: 'type',
       align: 'right',
+      width: '200px',
       sortable: true,
     },
     { 
@@ -885,8 +896,20 @@ const coverageHeaders = computed(() => {
       sortable: true,
     },
     { 
+      title: 'Works Correlation', 
+      key: 'worksCorrelation',
+      align: 'end',
+      sortable: true,
+    },
+    { 
       title: 'Citations %', 
       key: 'citationsCountChange',
+      align: 'end',
+      sortable: true,
+    },
+    { 
+      title: 'Citations Correlation', 
+      key: 'citationsCorrelation',
       align: 'end',
       sortable: true,
     },
@@ -916,6 +939,8 @@ const coverageItems = computed(() => {
       failingTests: nFailingTests(entity),
       worksCountChange: worksCountChange,
       citationsCountChange: citationsCountChange,
+      worksCorrelation: coverage[entity]["correlations"]["works_count"] || "-",
+      citationsCorrelation: coverage[entity]["correlations"]["cited_by_count"] || "-",
       testFailRate: entity in matchRates ? matchRates[entity]["_average_bug"] : "-",
       sampleSize: coverage[entity]["prod"]["sampleSize"],
     });
@@ -948,7 +973,7 @@ const calcFieldSumChange = (entity, field) => {
 }
 
 const defaultCoverageSort = (rows) => {
-  const top = ["works",  "sources", "institutions", "publishers", "topics", "keywords", "concepts", "countries", "languages", "licenses", "domains", "fields", "subfields", "sdgs", "institution-types", "work-types", "continents", "authors", "funders", "source-types"];
+  const top = ["works",  "sources", "institutions", "publishers", "topics", "keywords", "concepts", "countries", "languages", "licenses", "domains", "fields", "subfields", "sdgs", "institution-types", "source-types", "work-types", "continents", "authors", "funders",];
 
   return rows.sort((a, b) => {
     const aIndex = top.indexOf(a.type);
@@ -1301,7 +1326,7 @@ watch(() => route.path, (newPath) => {
 }
 :deep(.test-description code) {
   background-color: #f5f5f5;
-  color: #d73a49;
+  color: #555;
   font-family: monospace;
   font-size: 0.95em;
   padding: 0.2em 0.4em;
@@ -1310,6 +1335,10 @@ watch(() => route.path, (newPath) => {
 :deep(.test-description.feature code) {
   background-color: #f5f5f5;
   color: #22863a;
+}
+:deep(.test-description.bug code) {
+  background-color: #f5f5f5;
+  color: #d73a49;
 }
 .plot-nav-item {
   padding-inline-start: 24px !important;
