@@ -9,14 +9,14 @@
       :extended="smAndDown && $route.name === 'Serp'"
       extension-height="70"
     >
-      <router-link to="/" class="logo-link ml-3">
+      <router-link to="/" class="logo-link ml-2 mr-2">
         <img
           src="@/assets/openalex-logo-icon-black-and-white.png"
           class="logo-icon mr-0 colorizable"
         />
-        <span class="logo-text" style="color: #000">OpenAlex OREO</span>
+        <span class="logo-text" style="color: #000">OREO</span>
       </router-link>
-      <span class="ml-2 mt-2 text-grey" style="font-size: 14px;">
+      <span class="logo-subtext text-grey">
         OpenAlex Rewrite Evaluation Overview
       </span>
     </v-app-bar>
@@ -178,16 +178,18 @@ $logo-link-height: 35px;
     //margin-top: -5px;
   }
   .logo-text {
-    //padding: 0 14px;
     padding-left: .3em;
     line-height: 1.2;
-    //border-left: 1px solid #333;
     color: #000;
     font-family: Dosis;
     font-size: $logo-link-height * 0.75;
     font-weight: 500;
   }
 }
+.logo-subtext {
+    font-family: Dosis;
+    font-size: $logo-link-height * 0.65;
+  }
 body {
   font-family: Roboto, sans-serif;
   line-height: 1.5;

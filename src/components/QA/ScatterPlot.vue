@@ -6,16 +6,6 @@
       autoresize 
       @click="handleChartClick"
     />
-    <div class="metrics ml-4" style="margin-top: 50px;">
-      <div class="metric">
-        <code class="metric-value">{{ spearmanRho.toFixed(2) }}</code>
-        <span class="metric-label">Spearman Rho</span>
-      </div>
-      <div class="metric">
-        <code class="metric-value">{{ r2.r2.toFixed(2) }}</code>
-        <span class="metric-label">R²</span>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -200,111 +190,8 @@ const chartOption = computed(() => ({
 
 }));
 
-function calcR2(points) {
-  const n = points.length;
-  const sumX = points.reduce((sum, p) => sum + p.x, 0);
-  const sumY = points.reduce((sum, p) => sum + p.y, 0);
-  const xbar = sumX / n;
-  const ybar = sumY / n;
-
-  const { sxx, syy, sxy } = points.reduce((acc, {x, y}) => {
-    acc.sxx += (x - xbar) ** 2;
-    acc.syy += (y - ybar) ** 2;
-    acc.sxy += (x - xbar) * (y - ybar);
-    return acc;
-  }, { sxx: 0, syy: 0, sxy: 0 });
-
-  const slope = sxy / sxx;
-  const intercept = ybar - slope * xbar;
-
-  const ssRes = points.reduce(
-    (res, {x, y}) => res + (y - (slope * x + intercept)) ** 2,
-    0
-  );
-  const r2 = 1 - ssRes / syy;
-
-  return { slope, intercept, r2 };
-}
-
-function calceR2AgainstIdentity(points) {
-  const n = points.length;
-  const meanY = points.reduce((s,p)=>s+p.y,0) / n;
-
-  let ssTot = 0, ssRes = 0;
-  for (const {x, y} of points) {
-    ssTot += (y - meanY) ** 2;
-    ssRes += (y - x) ** 2;   // distance from y = x
-  }
-  return 1 - ssRes / ssTot;
-}
-
-function calcSpearmanRho(points) {
-  const n = points.length;
-
-  // Extract X and Y arrays
-  const xs = points.map(p => p.x);
-  const ys = points.map(p => p.y);
-
-  // Rank helper
-  function rank(arr) {
-    const sorted = [...arr].slice().sort((a,b)=>a-b);
-    return arr.map(v => sorted.indexOf(v) + 1); // simple rank, no tie-handling
-  }
-
-  const rx = rank(xs);
-  const ry = rank(ys);
-
-  // Compute Pearson correlation of ranks
-  const mean = arr => arr.reduce((a,b)=>a+b,0)/arr.length;
-  const mx = mean(rx), my = mean(ry);
-
-  let num = 0, dx = 0, dy = 0;
-  for (let i=0; i<n; i++) {
-    num += (rx[i]-mx)*(ry[i]-my);
-    dx  += (rx[i]-mx)**2;
-    dy  += (ry[i]-my)**2;
-  }
-
-  return num / Math.sqrt(dx*dy);
-}
-
-const r2Data = computed(() => {
-  return (chartData.value.map(d => ({ x: d.prod, y: d.walden })));
-});
-
-const r2 = computed(() => {
-  return calcR2(r2Data.value);
-});
-
-const identityLineR2 = computed(() => {
-  return calceR2AgainstIdentity(r2Data.value);
-});
-
-const spearmanRho = computed(() => {
-  return calcSpearmanRho(r2Data.value);
-});
-
-
 </script>
 
 <style scoped>
-.metric {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  width: 130px;
-  height: 100px;
-  background-color: #eee;
-  margin-bottom: 12px;
-  border-radius: 24px;
-}
-.metric-label {
-  font-size: 16px;
-}
-.metric-value {
-  font-size: 28px;
-  font-weight: bold;
-}
 </style>
 

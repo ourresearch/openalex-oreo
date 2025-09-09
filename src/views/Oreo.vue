@@ -10,18 +10,34 @@
           <div>
             <v-breadcrumbs v-if="breadcrumbs" :items="breadcrumbs" divider="›" class="px-0 mt-n10" />
             <div class="d-flex align-start justify-space-between">
-              <div class="d-flex align-center mb-2">
-                <v-icon 
-                  v-if="currentTest" 
-                  :icon="currentTest.test_type === 'bug' ? 'mdi-bug' : 'mdi-rocket'" 
-                  size="46" 
-                  :color="testItem(currentTest.key)?.color"
-                ></v-icon>
-              
-                <span class="text-h3">
-                  {{ titles[mode].title }}
-                </span>
+              <div>
+                <div class="d-flex align-center mb-2">
+                  <v-icon 
+                    v-if="currentTest" 
+                    :icon="currentTest.test_type === 'bug' ? 'mdi-bug' : 'mdi-rocket'" 
+                    size="46" 
+                    :color="testItem(currentTest.key)?.color"
+                  ></v-icon>
+                  <span class="text-h3">
+                    {{ titles[mode].title }}
+                  </span>
+                </div>
+                <!-- Subtitle -->
+                <div class="mb-8">
+                  <span class="text-grey-darken-3 text-subtitle-1" v-html="titles[mode].subtitle"></span>
+                  <v-chip 
+                    v-if="mode === 'list' && currentTest"
+                    color="grey-darken-2"
+                    variant="tonal"
+                    size="small"
+                    class="ml-1"
+                    @click="router.push(`/${entityType}/tests?testCategory=${currentTest.category}`)"
+                  >
+                    {{ currentTest.category }}
+                  </v-chip>
+                </div>
               </div>
+
               <!-- Tests Search -->
               <div v-if="mode === 'tests'">
                 <v-btn
@@ -53,7 +69,8 @@
                   ></v-text-field>
                 </v-slide-x-reverse-transition>
               </div>
-              <!-- Current Test Rate -->
+
+              <!-- Test Rate -->
               <div v-if="mode === 'list' && currentTest" class="d-flex align-center">
                 <v-progress-circular 
                   size="50" 
@@ -61,10 +78,12 @@
                   :color="testItem(currentTest.key)?.color"
                   :model-value="testItem(currentTest.key)?.rate">
                 </v-progress-circular>
-                <span class="ml-2" style="font-size: 32px;">
+                <span class="ml-2 font-weight-bold" style="font-size: 46px;">
                   {{ testItem(currentTest.key)?.rate }}%
                 </span>
               </div>
+
+              <!-- Entity Metrics-->
               <div v-if="mode === 'entity' && dataLoaded" class="mx-4">
                 <div class="text-right" >
                   <span class="entity-metric">
@@ -98,19 +117,16 @@
                 </div>
               </div>
 
-            </div>
-            <div class="mb-8">
-              <span class="text-grey-darken-3 text-subtitle-1" v-html="titles[mode].subtitle"></span>
-              <v-chip 
-                v-if="mode === 'list' && currentTest"
-                color="grey-darken-2"
-                variant="tonal"
-                size="small"
-                class="ml-1"
-                @click="router.push(`/${entityType}/tests?testCategory=${currentTest.category}`)"
-              >
-                {{ currentTest.category }}
-              </v-chip>
+              <!-- Plot Correlation-->
+              <div v-if="mode === 'plots' && dataLoaded" class="mx-4">
+                <div class="text-right" >
+                  <span class="entity-metric big">
+                    <span class="entity-metric-value">{{ coverage[entityType]["correlations"][plotKey] ? coverage[entityType]["correlations"][plotKey].toFixed(2) : '-' }}</span>
+                    <span class="entity-metric-label ml-1">Correlation</span>
+                  </span>
+                </div>
+              </div>
+
             </div>
           </div>
 
@@ -130,32 +146,66 @@
             <div class="mb-1 d-flex">
               <v-menu width="200">
                 <template v-slot:activator="{ props }">
-                  <v-chip v-if="testTypeFilter === 'all'" v-bind="props" rounded="pill" color="grey-darken-2" variant="outlined" style="border: 1px solid #BDBDBD;" class="mr-1">
-                    Type
+                  <v-chip v-if="testDirectionFilter === 'all'" v-bind="props" rounded="pill" color="grey-darken-2" variant="outlined" style="border: 1px solid #BDBDBD;" class="mr-1">
+                    Direction
                     <v-icon icon="mdi-menu-down"></v-icon>
                   </v-chip>
                   <v-chip v-else v-bind="props" rounded="pill" color="blue-darken-1" variant="tonal" class="mr-1">
-                    Type: <b class="ml-1">{{ {bugs: 'Bugs', features: 'Features'}[testTypeFilter] }}</b>
-                    <v-icon icon="mdi-close" @click.stop="testTypeFilter = 'all'"></v-icon>
+                    Direction: <b class="ml-1">{{ filters.titleCase(testDirectionFilter) }}</b>
+                    <v-icon icon="mdi-close" @click.stop="testDirectionFilter = 'all'"></v-icon>
                   </v-chip>
                 </template>
                 <v-list>
-                  <v-list-item @click="testTypeFilter = 'all'">
+                  <v-list-item @click="testDirectionFilter = 'all'">
                     <div class="d-flex align-center">
-                      <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testTypeFilter === 'all' ? '' : 'opacity-0']"></v-icon>
+                      <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testDirectionFilter === 'all' ? '' : 'opacity-0']"></v-icon>
                       All
                     </div>
                   </v-list-item>
-                  <v-list-item @click="testTypeFilter = 'bugs'">
+                  <v-list-item @click="testDirectionFilter = 'better'">
                     <div class="d-flex align-center">
-                      <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testTypeFilter === 'bugs' ? '' : 'opacity-0']"></v-icon>
-                      Bugs
+                      <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testDirectionFilter === 'better' ? '' : 'opacity-0']"></v-icon>
+                      Better
                     </div>
                   </v-list-item>
-                  <v-list-item @click="testTypeFilter = 'features'">
+                  <v-list-item @click="testDirectionFilter = 'worse'">
                     <div class="d-flex align-center">
-                      <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testTypeFilter === 'features' ? '' : 'opacity-0']"></v-icon>
-                      Features
+                      <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testDirectionFilter === 'worse' ? '' : 'opacity-0']"></v-icon>
+                      Worse
+                      <v-spacer></v-spacer>
+                    </div>
+                  </v-list-item>
+                </v-list>
+              </v-menu>
+
+              <v-menu width="200">
+                <template v-slot:activator="{ props }">
+                  <v-chip v-if="testSizeFilter === 'all'" v-bind="props" rounded="pill" color="grey-darken-2" variant="outlined" style="border: 1px solid #BDBDBD;" class="mr-1">
+                    Size
+                    <v-icon icon="mdi-menu-down"></v-icon>
+                  </v-chip>
+                  <v-chip v-else v-bind="props" rounded="pill" color="blue-darken-1" variant="tonal" class="mr-1">
+                    Size: <b class="ml-1">{{ filters.titleCase(testSizeFilter) }}</b>
+                    <v-icon icon="mdi-close" @click.stop="testSizeFilter = 'all'"></v-icon>
+                  </v-chip>
+                </template>
+                <v-list>
+                  <v-list-item @click="testSizeFilter = 'all'">
+                    <div class="d-flex align-center">
+                      <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testSizeFilter === 'all' ? '' : 'opacity-0']"></v-icon>
+                      All
+                    </div>
+                  </v-list-item>
+                  <v-list-item @click="testSizeFilter = 'small'">
+                    <div class="d-flex align-center">
+                      <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testSizeFilter === 'small' ? '' : 'opacity-0']"></v-icon>
+                      Small
+                    </div>
+                  </v-list-item>
+                  <v-list-item @click="testSizeFilter = 'big'">
+                    <div class="d-flex align-center">
+                      <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testSizeFilter === 'big' ? '' : 'opacity-0']"></v-icon>
+                      Big
                       <v-spacer></v-spacer>
                     </div>
                   </v-list-item>
@@ -183,15 +233,6 @@
                 </v-list>
               </v-menu>
 
-              <div>
-                <v-chip v-if="!testBigChangeFilter" rounded="pill" color="grey-darken-2" variant="outlined" style="border: 1px solid #BDBDBD;" class="mr-1" @click="testBigChangeFilter = true">
-                  Big Change
-                </v-chip>
-                <v-chip v-else rounded="pill" color="blue-darken-1" variant="tonal" class="mr-1">
-                  Big Change
-                  <v-icon icon="mdi-close" @click.stop="testBigChangeFilter = false"></v-icon>
-                </v-chip>
-              </div>
             </div>
 
 
@@ -204,18 +245,14 @@
                 <template v-slot:activator="{ props }">
                   <v-btn v-bind="props" rounded="pill" color="blue-darken-1" variant="text">
                     Sort:
-                    {{ {alphabetical: 'Alphabetical', category: 'Category', failRate: 'Fail Rate', addRate: 'Add Rate'}[testSort] }}
+                    {{ filters.titleCase(testSort) }}
                     <v-icon icon="mdi-menu-down"></v-icon>
                   </v-btn>
                 </template>
                 <v-list>
-                  <v-list-item @click="testSort = 'failRate'">
-                    <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testSort === 'failRate' ? '' : 'opacity-0']"></v-icon>
-                    Fail Rate
-                  </v-list-item>
-                  <v-list-item @click="testSort = 'addRate'">
-                    <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testSort === 'addRate' ? '' : 'opacity-0']"></v-icon>
-                    Add Rate
+                  <v-list-item @click="testSort = 'size'">
+                    <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testSort === 'size' ? '' : 'opacity-0']"></v-icon>
+                    Size
                   </v-list-item>
                   <v-list-item @click="testSort = 'category'">
                     <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testSort === 'category' ? '' : 'opacity-0']"></v-icon>
@@ -278,7 +315,8 @@
                       <v-card-title style="font-size: 28px;">Plots</v-card-title>
                       <v-card-text>
                         <div v-if="resultsMeta" class="d-flex align-center" style="font-size: 18px;">
-                          Scatter plots for {{ plotData.map(p => p.title.replace(' Count', '').toLowerCase()).join(' and ') }}
+                          <b style="font-size: 20px;" class="mr-1">{{ plotData.length }}</b>
+                          scatter plots for numeric fields
                         </div>
                         <v-skeleton-loader v-else type="list-item"></v-skeleton-loader>
                       </v-card-text>
@@ -411,12 +449,18 @@
                       <template v-slot:default="{ isHovering, props }">
                         <tr 
                           v-bind="props" 
-                          :class="[isHovering ? 'bg-grey-lighten-3' : '', 'cursor-pointer']" 
+                          :class="[isHovering ? 'bg-grey-lighten-3' : '', 'cursor-pointer', 'row-is-link']" 
                           v-ripple 
                           @click="router.push(item.filterUrl)"
                         >
                           <td v-for="column in columns" :key="column.key" :style="{width: column.width || 'auto'}" :class="column.tight ? 'px-1' : ''">
-      
+                                             
+                            <RouterLink
+                              v-if="column.key === 'donut'"
+                              :to="item.filterUrl"
+                              class="row-link-overlay"
+                            />
+
                             <template v-if="column.key === 'donut'">
                               <v-progress-circular 
                                 size="24" 
@@ -639,13 +683,13 @@ const schema         = ref(null);
 const pageSize             = useParams('pageSize', 'number', 20);
 const page                 = useParams('page', 'number', 1);
 const testsSearch          = useParams('testsSearch', 'string', '');
-const testSort             = useParams('testSort', 'string', 'failRate');
-const testTypeFilter       = useParams('testType', 'string', 'all');
+const testSort             = useParams('testSort', 'string', 'size');
+const testDirectionFilter  = useParams('testDirection', 'string', 'all');
+const testSizeFilter       = useParams('testSize', 'string', 'all');
 const testCategoryFilter   = useParams('testCategory', 'string', 'all');
-const testBigChangeFilter  = useParams('testBigChange', 'boolean', false);
+const showTestsSearch      = ref(false);
 const compareId            = useParams('compareId', 'string', null);
 const compareView          = useParams('compareView', 'string', 'json');
-const showTestsSearch      = ref(false);
 
 const prodResults          = reactive({});
 const waldenResults        = reactive({});
@@ -673,7 +717,7 @@ const titles = computed(() => {
     },
     "list": {
       "title": currentTest.value ? filters.titleCase(entityType.value) + ": " + currentTest.value.display_name : "",
-      "subtitle": currentTest.value ? `<span class='test-description ${testItem(currentTest.value.key).colorClass}'>${currentTest.value.description}</span>` : ""
+      "subtitle": currentTest.value ? `<span class='test-description ${testItem(currentTest.value.key)?.colorClass}'>${currentTest.value.description}</span>` : ""
     },
     "tests": {
       "title": filters.titleCase(entityType.value) + " Tests",
@@ -799,18 +843,20 @@ const testItem = (testKey) => {
 const sortedTestItems = computed(() => {
   let items = [...testItems.value];
   
-  if (testTypeFilter.value === 'bugs') {
+  if (testDirectionFilter.value === 'worse') {
     items = items.filter(item => item.test_type === 'bug');
-  } else if (testTypeFilter.value === 'features') {
+  } else if (testDirectionFilter.value === 'better') {
     items =  items.filter(item => item.test_type === 'feature');
+  }
+
+  if (testSizeFilter.value === 'big') {
+    items = items.filter(item => item.rate > 5);
+  } else if (testSizeFilter.value === 'small') {
+    items = items.filter(item => item.rate < 5);
   }
 
   if (testCategoryFilter.value !== 'all') {
     items = items.filter(item => item.category === testCategoryFilter.value);
-  }
-
-  if (testBigChangeFilter.value) {
-    items = items.filter(item => item.rate > 5);
   }
 
   if (testsSearch.value) {
@@ -822,18 +868,17 @@ const sortedTestItems = computed(() => {
       return a.display_name.localeCompare(b.display_name);
     } else if (testSort.value === 'category') {
       return a.category.localeCompare(b.category);
-    } else if (testSort.value === 'failRate') {
+    } else if (testSort.value === 'size') {
+      
+      if (testDirectionFilter.value === 'better') {
+        return b.rate - a.rate;        
+      }
+
       // Bugs first (descending rate), then features (ascending rate)
       if (a.test_type !== b.test_type) {
         return a.test_type === 'bug' ? -1 : 1;
       }
       return a.test_type === 'bug' ? b.rate - a.rate : a.rate - b.rate;
-    } else if (testSort.value === 'addRate') {
-      // Features first (descending rate), then bugs (ascending rate)
-      if (a.test_type !== b.test_type) {
-        return a.test_type === 'feature' ? -1 : 1;
-      }
-      return a.test_type === 'feature' ? b.rate - a.rate : a.rate - b.rate;
     }
   });
 });
@@ -847,19 +892,7 @@ const testCategoryOptions = computed(() => {
 });
 
 const testsResultsStr = computed(() => {
-
-  const parts = [];
-  if (testTypeFilter.value === "all") {
-    parts.push(`${schema.value[entityType.value].length} tests`);
-    parts.push(`${schema.value[entityType.value].filter(test => test.test_type === "bug").length} bug tests`);
-    parts.push(`${schema.value[entityType.value].filter(test => test.test_type === "feature").length} feature tests`);
-  } else if (testTypeFilter.value === "bugs") {
-    parts.push(`${schema.value[entityType.value].filter(test => test.test_type === "bug").length} bug tests`);
-  } else if (testTypeFilter.value === "features") {
-    parts.push(`${schema.value[entityType.value].filter(test => test.test_type === "feature").length} feature tests`);
-  }
-
-  return parts.join(" • ");
+  return `${sortedTestItems.value.length} tests`;
 });
 
 const coverageHeaders = computed(() => {
@@ -942,7 +975,7 @@ const coverageItems = computed(() => {
       worksCorrelation: coverage[entity]["correlations"]["works_count"] || "-",
       citationsCorrelation: coverage[entity]["correlations"]["cited_by_count"] || "-",
       testFailRate: entity in matchRates ? matchRates[entity]["_average_bug"] : "-",
-      sampleSize: coverage[entity]["prod"]["sampleSize"],
+      sampleSize: "both" in coverage[entity] ? coverage[entity]["both"]["sampleSize"] : "-",
     });
   });
   return defaultCoverageSort(rows);
@@ -1229,15 +1262,19 @@ watch(testKey, async () => {
   await fetchMetricsResponses();
 });
 
-watch(mode, async () => {
-  if (mode.value === "plots") {
+watch(mode, async (to, from) => {
+  if (to === "plots") {
     pageSize.value = 1000;
     await fetchMetricsResponses();
   } else {
     pageSize.value = 20;
+  } 
+  if (to === "tests" && testsSearch.value) {
+    showTestsSearch.value = true;
+  } else {
+    showTestsSearch.value = false;
   }
-  showTestsSearch.value = false;
-});
+}); 
 
 watch(showTestsSearch, () => {
   if (showTestsSearch.value) {
@@ -1317,12 +1354,18 @@ watch(() => route.path, (newPath) => {
   font-weight: bold;
   font-size: 24px;
 }
+.entity-metric.big .entity-metric-value {
+  font-size: 36px;
+}
 .entity-metric-label {
   font-size: 11px;
   color: #555;
   text-transform: uppercase;
   color: #757575;
   letter-spacing: 1px;
+}
+.entity-metric.big .entity-metric-label {
+  font-size: 14px;
 }
 :deep(.test-description code) {
   background-color: #f5f5f5;
@@ -1348,4 +1391,22 @@ watch(() => route.path, (newPath) => {
 .v-card, .v-overlay {
   overflow: visible !important;
 }
+.v-data-table tbody tr.row-is-link {
+  position: relative;
+}
+.v-data-table tbody tr.row-is-link > td {
+  position: static !important;
+}
+.v-data-table tbody tr.row-is-link .row-link-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+.v-data-table tbody tr.row-is-link:hover .row-link-overlay {
+  cursor: pointer;
+}
+
 </style>
