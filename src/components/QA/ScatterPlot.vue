@@ -1,5 +1,5 @@
 <template>
-  <div class="d-flex align-top justify-space-between">
+  <div>
     <v-chart 
       :option="chartOption" 
       :style="{ width: chartWidth, height: '700px' }"
@@ -41,8 +41,8 @@ const emit = defineEmits(['click-point']);
 const chartWidth = computed(() => {
   if (smAndDown.value) return '100%';
   if (mdAndDown.value) return '600px';
-  if (lgAndDown.value) return '800px';
-  if (xlAndDown.value) return '1000px';
+  if (lgAndDown.value) return '900px';
+  if (xlAndDown.value) return '1200px';
   return '1200px';
 });
 
@@ -94,15 +94,6 @@ const diagonalLineData = computed(() => {
 });
 
 const chartOption = computed(() => ({
-  title: {
-    text: props.title,
-    left: 'center',
-    top: 0,
-    textStyle: {
-      fontSize: 20,
-      fontWeight: 'bold',
-    },
-  },
   tooltip: {
     trigger: 'item',
     formatter: (params) => {
@@ -119,10 +110,10 @@ const chartOption = computed(() => ({
     hideDelay: 500,
   },
   grid: {
-    left: '20px',
-    right: '20px',
-    bottom: '50px',
-    top: '50px',
+    left: '50px',
+    right: '50px',
+    bottom: '60px',
+    top: '30px',
     containLabel: true,
   },
   xAxis: {

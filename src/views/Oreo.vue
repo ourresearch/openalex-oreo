@@ -1,8 +1,20 @@
 <template>
-  <div :class="['bg-color py-0 py-sm-12', mode]" style="min-height: calc(100vh - 70px);">
+  <div :class="['py-0 py-sm-12', mode]" style="min-height: calc(100vh - 70px);">
     <v-container :fluid="smAndDown" :class="['pa-0', 'pa-sm-4']">
       <v-row>
 
+        <!-- Plot Nav -->
+        <v-navigation-drawer v-if="mode === 'plots'" permanent absolute class="plot-nav bg-color" style="border-right: none;">
+          <v-list class="text-left mr-2" bg-color="transparent">
+            <v-list-item class="plot-nav-title">
+              <v-list-item-title>Plots</v-list-item-title>
+            </v-list-item>
+            <v-list-item v-for="plot in plotData" :key="plot.field" :to="`/${entityType}/plots/${plot.field}`" class="plot-nav-item">
+              <v-list-item-title>{{ plot.title.replace(' Count', '') }}</v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </v-navigation-drawer>
+        
         <!-- Main Content -->
         <v-col cols="12">
           
@@ -11,6 +23,7 @@
             <v-breadcrumbs v-if="breadcrumbs" :items="breadcrumbs" divider="›" class="px-0 mt-n10" />
             <div class="d-flex align-start justify-space-between">
               <div>
+                <!-- Title -->
                 <div class="d-flex align-center mb-2">
                   <v-icon 
                     v-if="currentTest" 
@@ -71,16 +84,21 @@
               </div>
 
               <!-- Test Rate -->
-              <div v-if="mode === 'list' && currentTest" class="d-flex align-center">
-                <v-progress-circular 
-                  size="50" 
-                  width="10" 
-                  :color="testItem(currentTest.key)?.color"
-                  :model-value="testItem(currentTest.key)?.rate">
-                </v-progress-circular>
-                <span class="ml-2 font-weight-bold" style="font-size: 46px;">
-                  {{ testItem(currentTest.key)?.rate }}%
-                </span>
+              <div v-if="mode === 'list' && currentTest" class="d-flex flex-column align-center">
+                <div class="d-flex align-center">
+                  <v-progress-circular 
+                    size="50" 
+                    width="10" 
+                    :color="testItem(currentTest.key)?.color"
+                    :model-value="testItem(currentTest.key)?.rate">
+                  </v-progress-circular>
+                  <span class="ml-2 font-weight-bold" style="font-size: 46px;">
+                    {{ testItem(currentTest.key)?.rate }}%
+                  </span>
+                </div>
+                <div class="text-grey-darken-1" style="font-size: 14px;">
+                  of {{ entityType }} have gotten {{ currentTest.test_type === 'bug' ? 'worse' : 'better' }}
+                </div>
               </div>
 
               <!-- Entity Metrics-->
@@ -267,6 +285,28 @@
             </div>
           </div>
 
+          <div v-if="mode === 'plots' && dataLoaded && coverage[entityType].both.sampleSize > 1000" class="text-right mt-n4">
+            <v-menu>
+              <template v-slot:activator="{ props }">
+                <v-btn v-bind="props" rounded="pill" color="blue-darken-1" variant="text">
+                  Sample page:
+                  {{ page }}
+                  <v-icon icon="mdi-menu-down"></v-icon>
+                </v-btn>
+              </template>
+              <v-list>
+                <v-list-item 
+                  v-for="pageNum in Math.ceil(coverage[entityType].both.sampleSize / 1000)" 
+                  :key="pageNum"
+                  @click="page = pageNum"
+                >
+                  <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', page === pageNum ? '' : 'opacity-0']"></v-icon>
+                  {{ pageNum }}
+                </v-list-item>
+              </v-list>
+            </v-menu>
+          </div>
+
           <!-- Entity -->
           <v-card v-if="mode === 'entity'" flat rounded="xl" class="px-6 py-10">
             <v-row>
@@ -330,21 +370,20 @@
           
           <!-- Plots -->
           <div v-else-if="mode === 'plots'">
-            <div v-if="resultsMeta" class="text-center">
-              <v-card flat rounded="xl" class="py-8 mb-10 d-flex align-start">
-                <v-list class="text-left pt-12 mr-2" style="width: 180px">
-                  <v-list-item v-for="plot in plotData" :key="plot.field" :to="`/${entityType}/plots/${plot.field}`" class="plot-nav-item">
-                    <v-list-item-title>{{ plot.title.replace(' Count', '') }}</v-list-item-title>
-                  </v-list-item>
-                </v-list>
+            <div v-if="resultsMeta">
+              <v-card flat rounded="xl" class="py-4">
                 <scatter-plot
                   :title="currentPlot.title"
                   @click-point="handlePlotPointClick"
                   :data="currentPlot.data"
                 />
+                <div v-if="plotTests && plotTests.length">
+                  <div class="related-tests-title text-grey-darken-2 mb-2">Related Tests</div>
+                  <tests-table :items="plotTests"></tests-table>
+                </div>
               </v-card>
             </div>
-            <v-card v-else flat rounded="xl" class="text-center" style="height: 600px; overflow: hidden !important;">
+            <v-card v-else flat rounded="xl" class="text-center" style="height: 700px; overflow: hidden !important;">
               <v-progress-linear color="blue" class="" indeterminate></v-progress-linear>
               <div style="font-size: 14px; color: #777; margin-top: 280px; font-style: italic;">Loading...</div>
             </v-card>
@@ -363,7 +402,6 @@
                     <sample-explorer 
                       :source="currentTest.sample_source"
                       :entityType="entityType" 
-                      :fractionToShow="currentTest.sample_source.includes('prod-only') ? scaledCoverage[entityType].prodOnlyExact : scaledCoverage[entityType].waldenOnlyExact"
                     />
                   </div>
 
@@ -435,69 +473,7 @@
 
               <!-- Tests  -->
               <div v-else-if="mode == 'tests' && dataLoaded">
-                <v-data-table
-                  v-if="testItems"
-                  :headers="testHeaders"
-                  :items="sortedTestItems"
-                  :items-per-page="-1"
-                  flat
-                  hide-default-header
-                  hide-default-footer
-                >
-                  <template v-slot:item="{ item, columns }">
-                    <v-hover>
-                      <template v-slot:default="{ isHovering, props }">
-                        <tr 
-                          v-bind="props" 
-                          :class="[isHovering ? 'bg-grey-lighten-3' : '', 'cursor-pointer', 'row-is-link']" 
-                          v-ripple 
-                          @click="router.push(item.filterUrl)"
-                        >
-                          <td v-for="column in columns" :key="column.key" :style="{width: column.width || 'auto'}" :class="column.tight ? 'px-1' : ''">
-                                             
-                            <RouterLink
-                              v-if="column.key === 'donut'"
-                              :to="item.filterUrl"
-                              class="row-link-overlay"
-                            />
-
-                            <template v-if="column.key === 'donut'">
-                              <v-progress-circular 
-                                size="24" 
-                                width="10" 
-                                :color="item.color" 
-                                :model-value="item.rate">
-                              </v-progress-circular>
-                            </template>
-
-                            <template v-if="column.key === 'rate'">
-                              <div class="text-right">
-                                <code>{{ item.rate }}%</code>
-                              </div>
-                            </template>
-
-                            <template v-if="column.key === 'type'">
-                              <v-icon :icon="item.test_type === 'bug' ? 'mdi-bug' : 'mdi-rocket-launch'" :color="item.color" />
-                            </template>
-
-                            <template v-else-if="column.key === 'display_name'">
-                              <span class="font-weight-medium">{{ item.display_name }}</span>
-                            </template>
-
-                            <template v-else-if="column.key === 'category'">
-                            </template>
-
-                            <template v-else-if="column.key === 'description'">
-                              <v-chip color="grey-darken-2" variant="tonal" size="small" rounded="sm" class="mr-2" @click.stop="testCategoryFilter = item.category">{{ item.category }}</v-chip>
-                              <span :class="item.colorClass" class="test-description" v-html="item.description"></span>
-                            </template>
-
-                          </td>
-                        </tr>
-                      </template>
-                    </v-hover>
-                  </template>
-                </v-data-table>
+                <tests-table v-if="testItems" :items="sortedTestItems"/>
               </div>
               <template v-else-if="mode === 'tests'">
                 <v-skeleton-loader type="list-item-three-line@12"></v-skeleton-loader>
@@ -646,6 +622,7 @@ import CompareWork from '@/components/QA/CompareWork.vue';
 import GoogleScholarView from '@/components/QA/googleScholarView.vue';
 import SampleExplorer from '@/components/SampleExplorer.vue';
 import ScatterPlot from '@/components/QA/ScatterPlot.vue';
+import TestsTable from '@/components/testsTable.vue';
 import { getTestValue } from '@/qa/fieldHelpers';
 
 defineOptions({ name: 'Oreo' });
@@ -711,25 +688,25 @@ const { smAndDown, mdAndDown } = useDisplay();
 
 const titles = computed(() => {
   return {
-    "entity": {
-      "title": filters.titleCase(entityType.value),
-      "subtitle": "Explore tests and sample data from production and Walden"
-    },
-    "list": {
-      "title": currentTest.value ? filters.titleCase(entityType.value) + ": " + currentTest.value.display_name : "",
-      "subtitle": currentTest.value ? `<span class='test-description ${testItem(currentTest.value.key)?.colorClass}'>${currentTest.value.description}</span>` : ""
-    },
-    "tests": {
-      "title": filters.titleCase(entityType.value) + " Tests",
-      "subtitle": "Total pass rates of key tests across the full sample set"
-    },
-    "plots": {
-      "title": filters.titleCase(entityType.value) + " Plots",
-      "subtitle": "Scatter plots of works_count and cited_by_count between production and Walden"
-    },
     "home": {
       "title": "Home",
       "subtitle": "Explore coverage and test rates between production and Walden across all endpoints"
+    },
+    "entity": {
+      "title": filters.titleCase(entityType.value.replace("-", " ")),
+      "subtitle": "Explore tests and sample data from production and Walden"
+    },
+    "tests": {
+      "title": filters.titleCase(entityType.value.replace("-", " ")) + " Tests",
+      "subtitle": "Total pass rates of key tests across the full sample set"
+    },
+    "list": {
+      "title": currentTest.value ? filters.titleCase(entityType.value.replace("-", " ")) + ": " + currentTest.value.display_name : "",
+      "subtitle": currentTest.value ? `<span class='test-description ${testItem(currentTest.value.key)?.colorClass}'>${currentTest.value.description}</span>` : ""
+    },
+    "plots": {
+      "title": filters.titleCase(entityType.value.replace("-", " ")) + ": " + plotTypes.find(p => p.field === plotKey.value)?.title,
+      "subtitle": `Scatter plots of <code>${plotTypes.find(p => p.field === plotKey.value)?.field}</code> between production and Walden`
     }
   };
 });
@@ -792,30 +769,18 @@ const makeRow = (id) => {
 const resultsCountStr = computed(() => {
   if (!resultsMeta.value) { return null; }
 
-  const scale = scaledCoverage.value[entityType.value];
   let totalNum;
   if (testKey.value === "lost_works") {
-    totalNum = Math.round(10000 * scale.prodOnlyExact);
+    totalNum = Math.round(10000);
   } else if (testKey.value === "new_works") {
-    totalNum = Math.round(10000 * scale.waldenOnlyExact);
+    totalNum = Math.round(10000);
   } else {
-    totalNum = Math.round(resultsMeta.value.count * scale.bothExact);
+    totalNum = Math.round(resultsMeta.value.count);
   } 
   const startNum = ((page.value-1) * pageSize.value + 1).toLocaleString();
   const endNum = (Math.min(page.value * pageSize.value, totalNum)).toLocaleString();
 
   return `${startNum}-${endNum} of ${totalNum.toLocaleString()} results`;
-});
-
-const testHeaders = computed(() => {
-  return [
-    { title: '', key: 'donut', width: "35px", tight: false },
-    { title: '', key: 'rate', width: "35px", tight: true },
-    { title: '', key: 'type', width: "35px", tight: true },
-    { title: '', key: 'display_name' },
-    { title: '', key: 'category' },
-    { title: '', key: 'description' },
-  ];
 });
 
 const testItems = computed(() => {
@@ -841,6 +806,7 @@ const testItem = (testKey) => {
 };
 
 const sortedTestItems = computed(() => {
+  if (!testItems.value) { return null; }
   let items = [...testItems.value];
   
   if (testDirectionFilter.value === 'worse') {
@@ -1068,46 +1034,49 @@ const calcScaledCoverage = (data) => {
   };
 };
 
-const plotData = computed(() => {
-  
-  const works = {
+const plotTypes = [
+  {
     title: "Works Count",
     field: "works_count",
-  };
-  
-  const citations = {
+    forEntity: ["nonworks"],
+  },
+  {
     title: "Citations Count",
     field: "cited_by_count",
-  };
-  
-  const referencedWorks = {
+    forEntity: ["works", "nonworks"],
+  },
+  {
     title: "Referenced Works Count",
     field: "referenced_works_count",
-  };
-
-  const fwci = {
+    forEntity: ["works"]
+  },
+  {
     title: "FWCI",
     field: "fwci",
-  };
-
-  const countries = {
+    forEntity: ["works"]
+  },
+  {
     title: "Countries Count",
     field: "countries_distinct_count",
-  };
-
-  const institutions = {
+    forEntity: ["works"]
+  },
+  {
     title: "Institutions Count",
     field: "institutions_distinct_count",
-  };
-  
-  const locations = {
+    forEntity: ["works"]
+  },
+  {
     title: "Locations Count",
     field: "locations_count",
-  };
-  
+    forEntity: ["works"]
+  },
+];
+
+const plotData = computed(() => {
+
   const plots = entityType.value === "works" ? 
-    [citations, referencedWorks, fwci, locations, countries, institutions] : 
-    [works, citations];
+    plotTypes.filter(plot => plot.forEntity.includes("works")) : 
+    plotTypes.filter(plot => plot.forEntity.includes("nonworks"));
 
   const data = [];
   plots.forEach(plot => {
@@ -1128,6 +1097,11 @@ const plotData = computed(() => {
 const currentPlot = computed(() => {
   if (!resultsMeta.value) { return null; }
   return plotData.value.find(plot => plot.field === plotKey.value);
+});
+
+const plotTests = computed(() => {
+  if (!testItems.value) { return null; }
+  return testItems.value.filter(test => test.field === plotKey.value);
 });
 
 const handlePlotPointClick = (point) => {
@@ -1274,7 +1248,13 @@ watch(mode, async (to, from) => {
   } else {
     showTestsSearch.value = false;
   }
-}); 
+});
+
+watch(plotKey, async () => {
+  if (plotKey.value) {
+    pageSize.value = 1000;
+  }
+});
 
 watch(showTestsSearch, () => {
   if (showTestsSearch.value) {
@@ -1367,46 +1347,32 @@ watch(() => route.path, (newPath) => {
 .entity-metric.big .entity-metric-label {
   font-size: 14px;
 }
-:deep(.test-description code) {
-  background-color: #f5f5f5;
-  color: #555;
-  font-family: monospace;
-  font-size: 0.95em;
-  padding: 0.2em 0.4em;
-  border-radius: 5px;
+.plot-nav {
+ padding-top: 22px; 
+ width: 200px !important;
 }
-:deep(.test-description.feature code) {
-  background-color: #f5f5f5;
-  color: #22863a;
+.plot-nav-title {
+  padding-inline-start: 24px !important;
 }
-:deep(.test-description.bug code) {
-  background-color: #f5f5f5;
-  color: #d73a49;
+.plot-nav-title .v-list-item-title {
+  color: #757575;
+  font-weight: bold;
 }
 .plot-nav-item {
   padding-inline-start: 24px !important;
   border-top-right-radius: 9999px !important;
   border-bottom-right-radius: 9999px !important;
 }
+.sample-page-select {
+  width: 170px;
+}
+.related-tests-title {
+  font-size: 14px;
+  border-bottom: 1px solid #E0E0E0;
+  padding-left: 20px;
+  padding-bottom: 10px;
+}
 .v-card, .v-overlay {
   overflow: visible !important;
 }
-.v-data-table tbody tr.row-is-link {
-  position: relative;
-}
-.v-data-table tbody tr.row-is-link > td {
-  position: static !important;
-}
-.v-data-table tbody tr.row-is-link .row-link-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  display: block;
-  text-decoration: none;
-  color: inherit;
-}
-.v-data-table tbody tr.row-is-link:hover .row-link-overlay {
-  cursor: pointer;
-}
-
 </style>

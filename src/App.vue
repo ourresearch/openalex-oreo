@@ -23,7 +23,7 @@
     <div>
     </div>
 
-    <v-main class="ma-0 pb-0">
+    <v-main class="ma-0 pb-0 bg-color">
       <router-view></router-view>
     </v-main>
   </v-app>
