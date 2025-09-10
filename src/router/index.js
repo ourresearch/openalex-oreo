@@ -44,4 +44,18 @@ const router = createRouter({
     },
 });
 
+// Query keys to persist globally
+const PERSIST = ['sample']
+
+router.beforeEach((to, from) => {
+
+  // carry missing keys from the previous route
+  const q = { ...to.query }; 
+  let changed = false;
+  for (const k of PERSIST) if (q[k] == null && from.query?.[k] != null) {
+    q[k] = from.query[k]; changed = true
+  }
+  return changed ? { ...to, query: q, replace: true } : true
+})
+
 export default router;

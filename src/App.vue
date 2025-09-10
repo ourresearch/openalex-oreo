@@ -19,9 +19,31 @@
       <span class="logo-subtext text-grey">
         OpenAlex Rewrite Evaluation Overview
       </span>
+      <v-spacer></v-spacer>
+      <v-menu width="150">
+        <template v-slot:activator="{ props }">
+          <v-chip  v-bind="props" rounded="pill" color="blue-darken-1" variant="tonal" class="mr-1">
+            Sample: <b class="ml-1">{{ filters.titleCase(sampleFilter.replace('-',' ')) }}</b>
+            <v-icon icon="mdi-menu-down"></v-icon>
+          </v-chip>
+        </template>
+        <v-list>
+          <v-list-item @click="sampleFilter = 'all'">
+            <div class="d-flex align-center">
+              <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', sampleFilter === 'all' ? '' : 'opacity-0']"></v-icon>
+              All
+            </div>
+          </v-list-item>
+          <v-list-item @click="sampleFilter = 'last-week'">
+            <div class="d-flex align-center">
+              <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', sampleFilter === 'last-week' ? '' : 'opacity-0']"></v-icon>
+              Last Week
+            </div>
+          </v-list-item>
+        </v-list>
+      </v-menu>
     </v-app-bar>
-    <div>
-    </div>
+
 
     <v-main class="ma-0 pb-0 bg-color">
       <router-view></router-view>
@@ -35,6 +57,11 @@ defineOptions({ name: 'App' });
 
 import { smAndDown } from 'vuetify';
 import { useHead } from '@unhead/vue';
+
+import filters from "@/filters";
+import { useParams } from '@/composables/useStorage';
+
+const sampleFilter = useParams('sample', 'string', 'all');
 
 // Head
 useHead({

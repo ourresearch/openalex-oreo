@@ -671,6 +671,7 @@ const testDirectionFilter  = useParams('testDirection', 'string', 'all');
 const testSizeFilter       = useParams('testSize', 'string', 'all');
 const testCategoryFilter   = useParams('testCategory', 'string', 'all');
 const showTestsSearch      = ref(false);
+const sampleFilter         = useParams('sample', 'string', 'all');
 const compareId            = useParams('compareId', 'string', null);
 const compareView          = useParams('compareView', 'string', 'json');
 
@@ -786,7 +787,7 @@ const resultsCountStr = computed(() => {
 
   let resultsStr = `${totalNum.toLocaleString()} results`;
 
-  if (totalNum) { resultsStr = `${startNum}-${endNum} of` + resultsStr; }
+  if (totalNum) { resultsStr = `${startNum}-${endNum} of ` + resultsStr; }
 
   return resultsStr;
 });
@@ -941,8 +942,8 @@ const coverageItems = computed(() => {
     }
     rows.push({
       type: entity,
-      missing: 100 - coverage[entity]["prod"]["coverage"],
-      new: 100 - coverage[entity]["walden"]["coverage"],
+      missing: coverage[entity]["prod"]["coverage"] == "-" ? "-" : 100 - coverage[entity]["prod"]["coverage"],
+      new: coverage[entity]["walden"]["coverage"] == "-" ? "-" : 100 - coverage[entity]["walden"]["coverage"],
       failingTests: nFailingTests(entity),
       worksCountChange: worksCountChange,
       citationsCountChange: citationsCountChange,
@@ -960,7 +961,7 @@ const coverageItem = (entity) => {
 } 
 
 const nFailingTests = (entity) => {
-  if (!matchRates[entity]) { return 0; }
+  if (!matchRates[entity]) { return "-"; }
   const bugKeys = schema.value[entity].filter(test => test.test_type === "bug").map(test => test.key);
   return bugKeys.filter(key => matchRates[entity][key] > 0).length;
 }
@@ -1117,24 +1118,27 @@ const handlePlotPointClick = (point) => {
 };
 
 async function fetchSchema() {
-  const apiUrl = `${metricsUrl}/schema`;
+  const apiUrl = `${metricsUrl}/schema?sample=${sampleFilter.value}`;
   const response = await axios.get(apiUrl);
   schema.value = response.data.tests_schema;
 }
 
-async function fetchMetricsResponses() {
+const clearResponsesData = () => {
   // Clear existing data safely
   prodResults && Object.keys(prodResults).forEach(key => delete prodResults[key]);
   waldenResults && Object.keys(waldenResults).forEach(key => delete waldenResults[key]);
   matches && Object.keys(matches).forEach(key => delete matches[key]);
   resultsMeta.value = null;
-  
+}
+
+async function fetchMetricsResponses() {
+  clearResponsesData();
   let testFilter = "";
   if (currentTest.value) {
     testFilter = `&filterTest=${currentTest.value.key}`;
   }
 
-  const apiUrl = `${metricsUrl}/responses/${entityType.value}?page=${page.value}${testFilter}&per_page=${pageSize.value}`;
+  const apiUrl = `${metricsUrl}/responses/${entityType.value}?page=${page.value}${testFilter}&per_page=${pageSize.value}&sample=${sampleFilter.value}`;
   const response = await axios.get(apiUrl);
   response.data.results.forEach((item) => {
     prodResults[item.id] = item.prod;
@@ -1145,7 +1149,7 @@ async function fetchMetricsResponses() {
 }
 
 async function fetchMatchRates() {
-  const apiUrl = `${metricsUrl}/match-rates`;
+  const apiUrl = `${metricsUrl}/match-rates?sample=${sampleFilter.value}`;
   const response = await axios.get(apiUrl);
   Object.keys(response.data.data).forEach(key => {
     matchRates[key] = response.data.data[key];
@@ -1154,7 +1158,7 @@ async function fetchMatchRates() {
 }
 
 async function fetchCoverage() {
-  const apiUrl = `${metricsUrl}/coverage`;
+  const apiUrl = `${metricsUrl}/coverage?sample=${sampleFilter.value}`;
   const response = await axios.get(apiUrl);
   Object.keys(response.data.data).forEach(key => {
     coverage[key] = response.data.data[key];
@@ -1164,8 +1168,9 @@ async function fetchCoverage() {
 }
 
 const addPseudoTests = () => {
-  
   Object.keys(schema.value).forEach(entity => {
+    schema.value[entity] = schema.value[entity].filter(test => !test.is_pseudo);
+    
     schema.value[entity].push({
       "display_name": "New " + filters.titleCase(entity),
       "key": "new_" + entity,
@@ -1186,8 +1191,7 @@ const addPseudoTests = () => {
       "rate": 100 - coverage[entity]["prod"]["coverage"],
       "description": `${filters.titleCase(entity)} that are in prod but not in Walden`,
     });
-  });
-    
+  });  
 };
 
 const entityIcons = {
@@ -1250,6 +1254,12 @@ watch(plotKey, async () => {
   if (plotKey.value) {
     pageSize.value = 1000;
   }
+});
+
+watch(sampleFilter, async () => {
+  fetchMatchRates();
+  fetchCoverage();
+  fetchMetricsResponses();
 });
 
 watch(showTestsSearch, () => {
