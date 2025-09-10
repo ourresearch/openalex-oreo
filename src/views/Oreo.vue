@@ -454,6 +454,11 @@
                           </td>
                         </tr>
                       </template>
+
+                      <template v-slot:no-data>
+                        <div class="mt-12 text-grey-darken-2">No {{ entityType }} to show</div>
+                      </template>
+
                     </v-data-table>
                     <v-skeleton-loader v-else type="list-item-three-line@12"></v-skeleton-loader>
                     
@@ -624,6 +629,7 @@ import SampleExplorer from '@/components/SampleExplorer.vue';
 import ScatterPlot from '@/components/QA/ScatterPlot.vue';
 import TestsTable from '@/components/testsTable.vue';
 import { getTestValue } from '@/qa/fieldHelpers';
+import { samples } from '@/qa/samples';
 
 defineOptions({ name: 'Oreo' });
 
@@ -767,20 +773,22 @@ const makeRow = (id) => {
 };
 
 const resultsCountStr = computed(() => {
-  if (!resultsMeta.value) { return null; }
+  if (!resultsMeta.value || !currentTest.value) { return null; }
 
   let totalNum;
-  if (testKey.value === "lost_works") {
-    totalNum = Math.round(10000);
-  } else if (testKey.value === "new_works") {
-    totalNum = Math.round(10000);
+  if (currentTest.value.is_pseudo) {
+    totalNum = currentTest.value.sample_source in samples ? samples[currentTest.value.sample_source].ids.length : 0;
   } else {
     totalNum = Math.round(resultsMeta.value.count);
   } 
   const startNum = ((page.value-1) * pageSize.value + 1).toLocaleString();
   const endNum = (Math.min(page.value * pageSize.value, totalNum)).toLocaleString();
 
-  return `${startNum}-${endNum} of ${totalNum.toLocaleString()} results`;
+  let resultsStr = `${totalNum.toLocaleString()} results`;
+
+  if (totalNum) { resultsStr = `${startNum}-${endNum} of` + resultsStr; }
+
+  return resultsStr;
 });
 
 const testItems = computed(() => {
@@ -788,7 +796,7 @@ const testItems = computed(() => {
 
   const rows = []; 
   schema.value[entityType.value].forEach(test => {
-    let rate = test.rate || matchRates[entityType.value][test.key];
+    let rate = typeof test.rate === "number" ? test.rate : matchRates[entityType.value][test.key];
     rows.push({
       ...test,
       rate: rate,
@@ -1156,42 +1164,30 @@ async function fetchCoverage() {
 }
 
 const addPseudoTests = () => {
-  const worksPseudoTests = [
-    {
-      "display_name": "Lost Works",
-      "key": "lost_work",
+  
+  Object.keys(schema.value).forEach(entity => {
+    schema.value[entity].push({
+      "display_name": "New " + filters.titleCase(entity),
+      "key": "new_" + entity,
+      "test_type": "feature",
+      "category": "other",
+      "is_pseudo": true,
+      "sample_source": entity + "WaldenOnly",
+      "rate": 100 - coverage[entity]["walden"]["coverage"],
+      "description": `${filters.titleCase(entity)} that are in Walden but not in prod` 
+    });
+    schema.value[entity].push({
+      "display_name": "Lost " + filters.titleCase(entity),
+      "key": "lost_" + entity,
       "test_type": "bug",
       "category": "other",
       "is_pseudo": true,
-      "sample_source": "works-prod-only",
-      "rate": 100 - coverage["works"]["prod"]["coverage"],
-      "description": "Works that are in prod but not in Walden",
-    },
-    {
-      "display_name": "New Works",
-      "key": "new_works",
-      "test_type": "feature",
-      "category": "other",
-      "is_pseudo": true,
-      "sample_source": "works-walden-only",
-      "rate": 100 - coverage["works"]["walden"]["coverage"],
-      "description": "Works that are in Walden but not in prod",
-    },
-  ];
-  const sourcesPseudoTests = [
-    {
-      "display_name": "New Sources",
-      "key": "new_sources",
-      "test_type": "feature",
-      "category": "other",
-      "is_pseudo": true,
-      "sample_source": "sources-walden-only",
-      "rate": 100 - coverage["sources"]["walden"]["coverage"],
-      "description": "Sources that are in Walden but not in prod",
-    },
-  ];
-  schema.value["works"].push(...worksPseudoTests);
-  schema.value["sources"].push(...sourcesPseudoTests);
+      "sample_source": entity + "ProdOnly",
+      "rate": 100 - coverage[entity]["prod"]["coverage"],
+      "description": `${filters.titleCase(entity)} that are in prod but not in Walden`,
+    });
+  });
+    
 };
 
 const entityIcons = {

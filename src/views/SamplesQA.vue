@@ -178,7 +178,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import axios from 'axios';
 
 import { samples } from '@/qa/samples';
@@ -302,31 +302,33 @@ function sampleUrl() {
   return url;
 }
 
+const filterIdField = computed(() => {
+  const usesId = ["keywords", "domains", "fields", "subfields", "continents", "countries", "languages", "licenses", "sdgs", "work-types", "source-types", "institution-types"]
+  return usesId.includes(entityType.value) ? "id" : "ids.openalex";
+})
+
 async function removeProdIds(ids) {
-  const filterKey = 'ids.openalex'
   const selectFields = ['id'];
   const filter = ids.map(id => encodeURIComponent(id)).join('|');
-  const url = `https://api.openalex.org/${entityType.value}?filter=${filterKey}:${filter}&select=${selectFields.join(',')}&per_page=100`;
+  const url = `https://api.openalex.org/${entityType.value}?filter=${filterIdField.value}:${filter}&select=${selectFields.join(',')}&per_page=100`;
   const response = await axios.get(url, axiosConfig);
   const prodIds = response.data.results.map(result => extractID(result.id));
   return ids.filter(id => !prodIds.includes(id));
 }
 
 async function removeWaldenIds(ids) {
-  const filterKey = 'ids.openalex'
   const selectFields = ['id'];
   const filter = ids.map(id => encodeURIComponent(id)).join('|');
-  const url = `https://api.openalex.org/${entityType.value}?filter=${filterKey}:${filter}&select=${selectFields.join(',')}&per_page=100&data-version=2`;
+  const url = `https://api.openalex.org/${entityType.value}?filter=${filterIdField.value}:${filter}&select=${selectFields.join(',')}&per_page=100&data-version=2`;
   const response = await axios.get(url, axiosConfig);
   const waldenIds = response.data.results.map(result => extractID(result.id));
   return ids.filter(id => !waldenIds.includes(id));
 }
 
 async function removeMissingWaldenIds(ids) {
-  const filterKey = 'ids.openalex'
   const selectFields = ['id'];
   const filter = ids.map(id => encodeURIComponent(id)).join('|');
-  const url = `https://api.openalex.org/${entityType.value}?filter=${filterKey}:${filter}&select=${selectFields.join(',')}&per_page=100&data-version=2`;
+  const url = `https://api.openalex.org/${entityType.value}?filter=${filterIdField.value}:${filter}&select=${selectFields.join(',')}&per_page=100&data-version=2`;
   const response = await axios.get(url, axiosConfig);
   const waldenIds = response.data.results.map(result => extractID(result.id));
   return ids.filter(id => waldenIds.includes(id));
