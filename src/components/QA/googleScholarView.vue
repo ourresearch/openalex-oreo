@@ -1,5 +1,6 @@
 <template>
   <div v-if="data" class="w-100">
+    <!-- Work -->
     <template v-if="entityType === 'works'">
       <div class="mb-0" style="font-size: 18px; cursor: pointer;" @click="emit('title-click', id)">
         <span v-if="data.title" :class="isCompare && matches['title_changed'] ? 'text-red-lighten-2' : ''">
@@ -8,7 +9,7 @@
         <span v-else class="text-red-lighten-2">Title Missing</span>
       </div>
 
-      <!--Authors-->
+      <!-- Work Authors-->
       <div class="authors-line text-grey-darken-2" style="line-height: 1;">
         <template v-if="data.authorships && data.authorships.length">
           <span 
@@ -24,7 +25,7 @@
         </template>
       </div>
 
-      <!--Publication Year, Type, Source-->
+      <!-- WorkPublication Year, Type, Source-->
       <div class="text-caption text-grey-darken-2" style="font-size: 14px !important;">
 
         <span :class="isCompare && matches['oa_status_changed'] ? 'text-red-lighten-2' : 'text-grey-lighten-1'">
@@ -54,6 +55,13 @@
         <template v-else>
           <span class="text-red-lighten-2">Source Missing</span>
         </template>
+        <a :href="data.primary_location?.landing_page_url" target="_blank" @click.stop class="ml-1">
+          <v-icon size="x-small" icon="mdi-open-in-new"></v-icon>
+        </a>
+        <a v-if="data.open_access.is_oa && data.best_oa_location && data.primary_location.id !== data.best_oa_location.id" :href="data.best_oa_location.landing_page_url" target="_blank" @click.stop class="ml-2">
+          repo
+          <v-icon size="x-small" icon="mdi-open-in-new"></v-icon>
+        </a>
       </div>
     </template>
 
@@ -181,5 +189,12 @@ const testValueClass = computed(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
 }
 </style>
