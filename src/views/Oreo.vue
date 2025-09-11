@@ -104,17 +104,17 @@
               <!-- Entity Metrics-->
               <div v-if="mode === 'entity' && dataLoaded" class="mx-4">
                 <div class="text-right" >
-                  <span class="entity-metric">
+                  <span class="entity-metric" v-if="coverageItem(entityType).missing !== '-'">
                     <span class="entity-metric-value" :class="{'text-red': coverageItem(entityType).missing > 0}">{{ coverageItem(entityType).missing }}%</span>
                     <span class="entity-metric-label ml-1">Missing</span>
                   </span>
 
-                  <span class="entity-metric">
+                  <span class="entity-metric" v-if="coverageItem(entityType).new !== '-'">
                     <span class="entity-metric-value" :class="{'text-green': coverageItem(entityType).new > 0}">{{ coverageItem(entityType).new }}%</span>
                     <span class="entity-metric-label ml-1">New</span>
                   </span>
 
-                  <span class="entity-metric">
+                  <span class="entity-metric" v-if="coverageItem(entityType).failingTests !== '-'">
                     <span class="entity-metric-value" :class="{'text-red': coverageItem(entityType).failingTests > 0}">{{ coverageItem(entityType).failingTests }}</span>
                     <span class="entity-metric-label ml-1">Failing Tests</span>
                   </span>
@@ -981,7 +981,7 @@ const calcFieldSumChange = (entity, field) => {
 }
 
 const defaultCoverageSort = (rows) => {
-  const top = ["works",  "sources", "institutions", "publishers", "funders", "topics", "keywords", "concepts", "countries", "languages", "licenses", "domains", "fields", "subfields", "sdgs", "institution-types", "source-types", "work-types", "continents", "authors",];
+  const top = ["works",  "sources", "institutions", "publishers", "funders", "topics", "keywords", "concepts", "countries", "languages", "licenses", "domains", "fields", "subfields", "sdgs", "awards", "institution-types", "source-types", "work-types", "continents", "authors",];
 
   return rows.sort((a, b) => {
     const aIndex = top.indexOf(a.type);
@@ -1150,6 +1150,8 @@ async function fetchMetricsResponses() {
 }
 
 async function fetchMatchRates() {
+  matchRatesLoaded.value = false;
+  matchRates && Object.keys(matchRates).forEach(key => delete matchRates[key]);
   const apiUrl = `${metricsUrl}/match-rates?sample=${sampleFilter.value}`;
   const response = await axios.get(apiUrl);
   Object.keys(response.data.data).forEach(key => {
@@ -1159,6 +1161,8 @@ async function fetchMatchRates() {
 }
 
 async function fetchCoverage() {
+  coverageLoaded.value = false;
+  coverage && Object.keys(coverage).forEach(key => delete coverage[key]);
   const apiUrl = `${metricsUrl}/coverage?sample=${sampleFilter.value}`;
   const response = await axios.get(apiUrl);
   Object.keys(response.data.data).forEach(key => {
