@@ -981,7 +981,7 @@ const calcFieldSumChange = (entity, field) => {
 }
 
 const defaultCoverageSort = (rows) => {
-  const top = ["works",  "sources", "institutions", "publishers", "topics", "keywords", "concepts", "countries", "languages", "licenses", "domains", "fields", "subfields", "sdgs", "institution-types", "source-types", "work-types", "continents", "authors", "funders",];
+  const top = ["works",  "sources", "institutions", "publishers", "funders", "topics", "keywords", "concepts", "countries", "languages", "licenses", "domains", "fields", "subfields", "sdgs", "institution-types", "source-types", "work-types", "continents", "authors",];
 
   return rows.sort((a, b) => {
     const aIndex = top.indexOf(a.type);
@@ -1140,6 +1140,7 @@ async function fetchMetricsResponses() {
 
   const apiUrl = `${metricsUrl}/responses/${entityType.value}?page=${page.value}${testFilter}&per_page=${pageSize.value}&sample=${sampleFilter.value}`;
   const response = await axios.get(apiUrl);
+
   response.data.results.forEach((item) => {
     prodResults[item.id] = item.prod;
     waldenResults[item.id] = item.walden;
@@ -1172,24 +1173,24 @@ const addPseudoTests = () => {
     schema.value[entity] = schema.value[entity].filter(test => !test.is_pseudo);
     
     schema.value[entity].push({
-      "display_name": "New " + filters.titleCase(entity),
+      "display_name": "New " + filters.titleCase(entity.replace("-", " ")),
       "key": "new_" + entity,
       "test_type": "feature",
       "category": "other",
       "is_pseudo": true,
       "sample_source": entity + "WaldenOnly",
       "rate": 100 - coverage[entity]["walden"]["coverage"],
-      "description": `${filters.titleCase(entity)} that are in Walden but not in prod` 
+      "description": `${filters.titleCase(entity.replace("-", " "))} that are in Walden but not in prod` 
     });
     schema.value[entity].push({
-      "display_name": "Lost " + filters.titleCase(entity),
+      "display_name": "Lost " + filters.titleCase(entity.replace("-", " ")),
       "key": "lost_" + entity,
       "test_type": "bug",
       "category": "other",
       "is_pseudo": true,
       "sample_source": entity + "ProdOnly",
       "rate": 100 - coverage[entity]["prod"]["coverage"],
-      "description": `${filters.titleCase(entity)} that are in prod but not in Walden`,
+      "description": `${filters.titleCase(entity.replace("-", " "))} that are in prod but not in Walden`,
     });
   });  
 };

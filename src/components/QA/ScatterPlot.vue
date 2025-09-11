@@ -2,7 +2,7 @@
   <div>
     <v-chart 
       :option="chartOption" 
-      :style="{ width: chartWidth, height: '700px' }"
+      :style="{ width: '100%', height: '700px', maxWidth: '1200px' }"
       autoresize 
       @click="handleChartClick"
     />
@@ -38,13 +38,6 @@ const props = defineProps({
 
 const emit = defineEmits(['click-point']);
 
-const chartWidth = computed(() => {
-  if (smAndDown.value) return '100%';
-  if (mdAndDown.value) return '600px';
-  if (lgAndDown.value) return '900px';
-  if (xlAndDown.value) return '1200px';
-  return '1200px';
-});
 
 // Register ECharts components
 use([
