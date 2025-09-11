@@ -1201,6 +1201,7 @@ const addPseudoTests = () => {
 
 const entityIcons = {
   authors: "mdi-account-outline",
+  awards: "mdi-trophy-outline",
   continents: "mdi-earth",
   countries: "mdi-earth",
   concepts: "mdi-lightbulb-outline",
