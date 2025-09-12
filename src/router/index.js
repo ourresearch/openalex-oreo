@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 
 import Oreo from "@/views/Oreo.vue";
+import XpacFacets from "@/views/XpacFacets.vue";
 import SamplesQA from "@/views/SamplesQA.vue";
 
 import PageNotFound from "@/views/PageNotFound.vue";
@@ -8,6 +9,8 @@ import PageNotFound from "@/views/PageNotFound.vue";
 const routes = [
     {path: '/', name: 'overview', component: Oreo, props: {mode: 'home'}},
     {path: '/samples', name: 'samples-qa', component: SamplesQA},
+    {path: '/works/xpac-facets', name: 'xpac-facets', component: XpacFacets},
+
     {path: '/:entity', name: 'entity', component: Oreo, props: route => ({
         entityType: route.params.entity,
         mode: 'entity',
