@@ -97,7 +97,7 @@
                   </span>
                 </div>
                 <div class="text-grey-darken-1" style="font-size: 14px;">
-                  of {{ entityType }} have gotten {{ currentTest.test_type === 'bug' ? 'worse' : 'better' }}
+                  of {{ entityType }} got {{ currentTest.test_type === 'bug' ? 'worse' : 'better' }}
                 </div>
               </div>
 
@@ -594,8 +594,6 @@
       max-width="80vw" 
       max-height="80vh"
       :model-value="!!compareId"
-      scroll-strategy="block"
-      teleport="body"
       class="rounded-o"
       @update:model-value="(val) => { if (!val) compareId = null }"
     >
@@ -616,7 +614,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted, toRefs } from 'vue';
+import { ref, reactive, computed, watch, onMounted, toRefs, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router'
 import { useDisplay } from 'vuetify';
 import { useHead } from '@unhead/vue';
@@ -686,6 +684,7 @@ const coverage             = reactive({});
 const matchRatesLoaded     = ref(false);
 const coverageLoaded       = ref(false);
 const dataLoaded           = computed(() => matchRatesLoaded.value && coverageLoaded.value);
+const savedScrollPosition = ref(0);
 
 const currentTest = computed(() => {
   if (!testKey.value || !schema.value || !schema.value[entityType.value]) { return null; }
@@ -1283,6 +1282,24 @@ watch(showTestsSearch, () => {
 watch(() => route.path, (newPath) => {
   currentRoute.value = newPath;
 });
+
+// Watch compareId to handle scroll preservation
+watch(() => compareId.value, (newVal, oldVal) => {
+  if (typeof window !== 'undefined') {
+    if (newVal && !oldVal) {
+      // Dialog opening - save current scroll position
+      savedScrollPosition.value = window.scrollY;
+      console.log('Dialog opening, saved scroll position:', savedScrollPosition.value);
+    } else if (!newVal && oldVal) {
+      // Dialog closing - restore scroll position
+      setTimeout(() => {
+        console.log('Dialog closing, restoring scroll position:', savedScrollPosition.value);
+        window.scrollTo(0, savedScrollPosition.value);
+      }, 50); // Longer delay to ensure useParams finishes first
+    }
+  }
+});
+
 </script>
 
 
