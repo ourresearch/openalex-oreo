@@ -23,7 +23,6 @@ import {
 } from 'echarts/components';
 import VChart from 'vue-echarts';
 
-const { smAndDown, mdAndDown, lgAndDown, xlAndDown } = useDisplay();
 
 const props = defineProps({
   title: {

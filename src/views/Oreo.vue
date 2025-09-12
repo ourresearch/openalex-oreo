@@ -619,6 +619,7 @@
 import { ref, reactive, computed, watch, onMounted, toRefs } from 'vue';
 import { useRoute, useRouter } from 'vue-router'
 import { useDisplay } from 'vuetify';
+import { useHead } from '@unhead/vue';
 import axios from 'axios';
 
 import filters from "@/filters";
@@ -712,7 +713,7 @@ const titles = computed(() => {
       "subtitle": currentTest.value ? `<span class='test-description ${testItem(currentTest.value.key)?.colorClass}'>${currentTest.value.description}</span>` : ""
     },
     "plots": {
-      "title": filters.titleCase(entityType.value.replace("-", " ")) + ": " + plotTypes.find(p => p.field === plotKey.value)?.title,
+      "title": filters.titleCase(entityType.value.replace("-", " ")) + " Plots: " + plotTypes.find(p => p.field === plotKey.value)?.title,
       "subtitle": `Scatter plots of <code>${plotTypes.find(p => p.field === plotKey.value)?.field}</code> between production and Walden`
     }
   };
@@ -1223,6 +1224,9 @@ const entityIcons = {
   works: "mdi-file-document-outline"
 };
 
+useHead({
+  title: computed(() => titles.value[mode.value]?.title || 'OpenAlex Oreo'),
+});
 
 onMounted(async () => {
   await fetchSchema();
