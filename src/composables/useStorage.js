@@ -115,7 +115,6 @@ export function useParams(name, type, defaultValue = null) {
     router.replace({ query }).then(() => {
       // Restore scroll position after navigation
       requestAnimationFrame(() => {
-        console.log('Restoring scroll position to', currentScroll);
         window.scrollTo(0, currentScroll);
       });
     });
