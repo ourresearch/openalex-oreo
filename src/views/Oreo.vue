@@ -31,7 +31,7 @@
                     size="46" 
                     :color="testItem(currentTest.key)?.color"
                   ></v-icon>
-                  <span class="text-h3">
+                  <span class="text-h3" :class="currentTest ? `text-${testItem(currentTest.key)?.color}` : ''">
                     {{ titles[mode].title }}
                   </span>
                 </div>
@@ -735,7 +735,7 @@ const breadcrumbs = computed(() => {
     items.push({ title: "Tests", disabled: true, to: `/${entityType.value}/tests` });
   } else if (mode.value === "plots") {
     items.push({ title: filters.titleCase(entityType.value), disabled: false, to: `/${entityType.value}` });
-    items.push({ title: "Plots", disabled: true, to: `/${entityType.value}/plots` });
+    items.push({ title: "Plot: " + plotTypes.find(p => p.field === plotKey.value)?.title, disabled: true, to: `/${entityType.value}/plots` });
   }
   return items;
 });
@@ -889,12 +889,6 @@ const coverageHeaders = computed(() => {
     { 
       title: 'New %', 
       key: 'new',
-      align: 'end',
-      sortable: true,
-    },
-    { 
-      title: 'Failing Tests', 
-      key: 'failingTests',
       align: 'end',
       sortable: true,
     },
@@ -1225,7 +1219,10 @@ const entityIcons = {
 };
 
 useHead({
-  title: computed(() => titles.value[mode.value]?.title || 'OpenAlex Oreo'),
+  title: computed(() => {
+    if (!titles.value[mode.value]) { return 'OpenAlex Oreo'; }
+    return titles.value[mode.value].title.replace(":", "");
+  }),
 });
 
 onMounted(async () => {

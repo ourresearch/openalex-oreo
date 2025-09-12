@@ -17,7 +17,7 @@
         <span class="logo-text" style="color: #000">OREO</span>
       </router-link>
       <span class="logo-subtext text-grey">
-        OpenAlex Rewrite Evaluation Overview
+        OpenAlex rewrite evaluation overview
       </span>
       <v-spacer></v-spacer>
       <v-menu width="150">
