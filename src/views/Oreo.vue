@@ -178,7 +178,7 @@
             </div>
           </div>
 
-          <!-- List Count Above -->
+          <!-- List above Card: Count  -->
           <div v-if="mode === 'list' && dataLoaded">  
             <div class="pt-0 pb-1">
               <div class="px-4 pt-2 pb-1 text-grey-darken-2">
@@ -189,7 +189,7 @@
             </div>
           </div>
 
-          <!-- Tests Fitler, Sort, Count Above -->
+          <!-- Tests above Card: Fitler, Sort, Count -->
           <div v-if="mode === 'tests' && dataLoaded" class="pt-0 pb-2">
             <div class="mb-1 d-flex">
               <v-menu width="200">
@@ -315,6 +315,7 @@
             </div>
           </div>
 
+          <!-- Plots above Card: Sample Page -->
           <div v-if="mode === 'plots' && dataLoaded && coverage[entityType].both.sampleSize > 1000" class="text-right mt-n4">
             <v-menu>
               <template v-slot:activator="{ props }">
@@ -396,6 +397,11 @@
               </v-col>
             </v-row>
           </v-card>
+          <div v-if="mode === 'entity' && entityType === 'works'" class="mt-8 ml-4">
+            <RouterLink :to="`/works/xpac-facets`" class="text-grey-darken-2" style="text-decoration: none; color: inherit;">
+              Xpac Facets Explorer<v-icon icon="mdi-chevron-right"></v-icon>
+            </RouterLink>
+          </div>
 
           
           <!-- Plots -->

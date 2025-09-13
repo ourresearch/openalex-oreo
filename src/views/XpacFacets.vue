@@ -3,10 +3,16 @@
     <v-container :fluid="smAndDown" :class="['pa-0', 'pa-sm-4']">
       <v-row>
         <v-col cols="12">
-          <div class="d-flex justify-space-between">
+          <div v-if="breadcrumbs" class="d-flex align-start mt-n6">
+            <v-breadcrumbs :items="breadcrumbs" divider="›" class="px-0 pt-0 pb-2" />
+          </div>
+          <div class="d-flex align-center">
             <div class="text-h3 mb-1">
               Xpac Facets
             </div>
+            <v-spacer></v-spacer>
+            <v-btn variant="flat" rounded="pill" class="mr-1" @click="visibleFacets = [...facets]">All</v-btn>
+            <v-btn variant="flat" rounded="pill" class="mr-2" @click="resetToDefaults">Defaults</v-btn>
             <v-btn icon="mdi-plus" variant="flat" size="default" color="primary" @click="showFacetsDialog = true"></v-btn>
           </div>
         </v-col>
@@ -60,8 +66,6 @@
         </v-card-text>
         
         <v-card-actions class="pa-4">
-          <v-btn variant="flat" rounded="pill" @click="visibleFacets = [...facets]">All</v-btn>
-          <v-btn variant="flat" rounded="pill" @click="resetToDefaults">Defaults</v-btn>
           <v-spacer></v-spacer>
           <v-btn variant="flat" color="primary" rounded="pill" @click="showFacetsDialog = false">Close</v-btn>
         </v-card-actions>
@@ -87,6 +91,7 @@ const defaultFacets = [
     "institutions.type",
     "institutions.country_code",
     "institutions.is_global_south",
+    "best_oa_location.source.id",
     "concepts.id",
 ];
 
@@ -94,6 +99,12 @@ const visibleFacets = useParams('facets', 'array', defaultFacets);
 
 const showFacetsDialog = ref(false);
 const { smAndDown } = useDisplay();
+
+const breadcrumbs = [
+    { title: "Home", disabled: false, to: "/" },
+    { title: "Works", disabled: false, to: `/works` },
+    { title: "Xpac Facets", disabled: true, to: `/works/xpac-facets` },
+];
 
 const facets = [
   "apc_list.currency",
@@ -115,11 +126,9 @@ const facets = [
   "best_oa_location.version",
   "concept.id",
   "concepts.id",
-  "grants.funder",
   "has_abstract",
   "has_doi",
   "has_fulltext",
-  "has_oa_submitted_version",
   "has_orcid",
   "has_pdf_url",
   "has_pmcid",
@@ -135,7 +144,6 @@ const facets = [
   "is_oa",
   "is_paratext",
   "is_retracted",
-  "is_xpac",
   "journal",
   "keywords.id",
   "language",
@@ -144,7 +152,6 @@ const facets = [
   "locations.is_published",
   "locations.license",
   "locations.license_id",
-  "locations.source.has_issn",
   "locations.source.host_organization",
   "locations.source.id",
   "locations.source.is_core",
