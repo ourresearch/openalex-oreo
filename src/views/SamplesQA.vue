@@ -51,7 +51,7 @@
                       <v-btn value="prod">Prod</v-btn>
                       <v-btn value="walden">Walden</v-btn>
                       <v-btn value="both">Both</v-btn>
-                      <v-btn value="walden-only">Xpac</v-btn>
+                      <v-btn value="walden-only">Walden Only</v-btn>
                       <v-btn value="prod-only">Prod Only</v-btn>
 
                     </v-btn-toggle>                

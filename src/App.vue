@@ -19,6 +19,16 @@
         OpenAlex rewrite evaluation overview
       </span>
 
+      <v-spacer></v-spacer>
+
+      <v-btn
+        to="/changelog"
+        variant="text"
+        class="text-none"
+      >
+        Changelog
+      </v-btn>
+
     </v-app-bar>
 
 

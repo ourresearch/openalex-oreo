@@ -397,11 +397,6 @@
               </v-col>
             </v-row>
           </v-card>
-          <div v-if="mode === 'entity' && entityType === 'works'" class="mt-8 ml-4">
-            <RouterLink :to="`/works/xpac-facets`" class="text-grey-darken-2" style="text-decoration: none; color: inherit;">
-              Xpac Facets Explorer<v-icon icon="mdi-chevron-right"></v-icon>
-            </RouterLink>
-          </div>
 
           
           <!-- Plots -->

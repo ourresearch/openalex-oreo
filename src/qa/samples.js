@@ -1,7 +1,7 @@
 const samples = {
   worksWaldenOnly: {
     name: "worksWaldenOnly",
-    description: "Xpac-only works, no filters #4",
+    description: "Walden-only works, no filters #4",
     date: "2025-08-21",
     ids: [
       "W6935303939",

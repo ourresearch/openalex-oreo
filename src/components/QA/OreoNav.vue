@@ -31,17 +31,11 @@ const sections = [
   { title: 'Works', to: '/works', icon: "mdi-file-document-multiple-outline"},
   { title: 'Summary', to: '/summary', icon: "mdi-chart-donut" },
   { title: 'Coverage', to: '/coverage', icon: "mdi-poll" },
-  { title: 'Xpac', to: '/xpac?source=xpac', icon: "mdi-file-document-plus-outline", source: 'xpac' },
-  { title: 'Prod Only', to: '/xpac?source=prod-only', icon: "mdi-factory", source: 'prod-only' },
 ];
 
 function isActive(section) {
   if (route.path === section.to) {
     return true;
-  }
-  if (route.path === '/xpac') {
-    if (section.source === 'xpac' && (!route.query.source || route.query.source === 'xpac')) { return true }
-    if (section.source === 'prod-only' && route.query.source === 'prod-only') { return true }
   }
   return false
 }
