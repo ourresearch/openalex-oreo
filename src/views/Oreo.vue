@@ -22,32 +22,6 @@
           <div>
             <div v-if="breadcrumbs" class="d-flex align-start mt-n6">
               <v-breadcrumbs :items="breadcrumbs" divider="›" class="px-0 pt-0 pb-2" />
-              <v-spacer></v-spacer>
-              <!-- Sample Selector -->
-              <div v-if="mode !== 'home' && entityType === 'works'">
-                <v-menu width="150">
-                  <template v-slot:activator="{ props }">
-                    <v-chip  v-bind="props" rounded="pill" color="blue-darken-1" variant="tonal" class="mr-1">
-                      Sample: <b class="ml-1">{{ filters.titleCase(sampleFilter.replace('-',' ')) }}</b>
-                      <v-icon icon="mdi-menu-down"></v-icon>
-                    </v-chip>
-                  </template>
-                  <v-list>
-                    <v-list-item @click="sampleFilter = 'all'">
-                      <div class="d-flex align-center">
-                        <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', sampleFilter === 'all' ? '' : 'opacity-0']"></v-icon>
-                        All
-                      </div>
-                    </v-list-item>
-                    <v-list-item @click="sampleFilter = 'last-week'">
-                      <div class="d-flex align-center">
-                        <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', sampleFilter === 'last-week' ? '' : 'opacity-0']"></v-icon>
-                        Last Week
-                      </div>
-                    </v-list-item>
-                  </v-list>
-                </v-menu>
-              </div>
             </div>
             <div class="d-flex align-start">
               <div>
@@ -701,7 +675,7 @@ const testDirectionFilter  = useParams('testDirection', 'string', 'all');
 const testSizeFilter       = useParams('testSize', 'string', 'all');
 const testCategoryFilter   = useParams('testCategory', 'string', 'all');
 const showTestsSearch      = ref(false);
-const sampleFilter         = useParams('sample', 'string', 'all');
+const sampleFilter         = ref('all');
 const compareId            = useParams('compareId', 'string', null);
 const compareView          = useParams('compareView', 'string', 'json');
 
@@ -1280,9 +1254,6 @@ watch(mode, async (to, from) => {
   } else {
     pageSize.value = 20;
   }
-  if (to === 'home') {
-    sampleFilter.value = 'all';
-  }
   if (to === "tests" && testsSearch.value) {
     showTestsSearch.value = true;
   } else {
@@ -1296,11 +1267,6 @@ watch(plotKey, async () => {
   }
 });
 
-watch(sampleFilter, async () => {
-  fetchMatchRates();
-  fetchCoverage();
-  fetchMetricsResponses();
-});
 
 watch(showTestsSearch, () => {
   if (showTestsSearch.value) {

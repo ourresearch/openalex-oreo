@@ -48,7 +48,7 @@ const router = createRouter({
 });
 
 // Query keys to persist globally
-const PERSIST = ['sample']
+const PERSIST = []
 
 router.beforeEach((to, from) => {
 
