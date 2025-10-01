@@ -4,47 +4,66 @@
       <v-row>
         
         <!-- Main Content -->
-        <v-col cols="12">
+        <v-col cols="12" style="padding-top: 22px;">
           
           <!-- Title, Subtitle -->
           <div>
-            <div class="d-flex align-start">
-              <div>
-                <!-- Title -->
-                <div class="d-flex align-center mb-2">
-                  <v-icon 
-                    v-if="currentTest" 
-                    :icon="currentTest.test_type === 'bug' ? 'mdi-emoticon-sad-outline' : 'mdi-emoticon-happy-outline'" 
-                    size="46" 
-                    :color="testItem(currentTest.key)?.color"
-                  ></v-icon>
-                  <span class="text-h3" :class="currentTest ? `text-${testItem(currentTest.key)?.color}` : ''">
-                    {{ titles[mode].title }}
-                  </span>
+            <div class="d-flex align-start justify-space-between mb-8">
+              <!-- Left column: Title, Subtitle, Tags -->
+              <div style="flex: 1;">
+                <div class="text-h3 mb-1">
+                  {{ titles[mode].title }}
                 </div>
-                <!-- Subtitle -->
-                <div class="mb-8">
-                  <div>
-                    <span class="text-grey-darken-3 text-subtitle-1" v-html="titles[mode].subtitle"></span>
-                  </div>
-                  <div v-if="mode === 'list' && currentTest" class="mt-2">
-                    <v-chip 
-                      label
-                      color="grey"
-                      variant="outlined"
-                      size="small"
-                      @click="router.push(`/${entityType}/tests?testCategory=${currentTest.category}`)"
-                    >
-                      {{ currentTest.category }}
-                    </v-chip>
-                  </div>
+                <div class="mb-2">
+                  <span class="text-grey-darken-3 text-subtitle-1" v-html="titles[mode].subtitle"></span>
+                </div>
+                <div v-if="mode === 'list' && currentTest">
+                  <v-chip 
+                    label
+                    :color="currentTest.test_type === 'bug' ? 'red' : 'green'"
+                    variant="outlined"
+                    size="small"
+                    class="mr-2"
+                  >
+                    <v-icon size="small" class="mr-1">
+                      {{ currentTest.test_type === 'bug' ? 'mdi-emoticon-sad-outline' : 'mdi-emoticon-happy-outline' }}
+                    </v-icon>
+                    {{ currentTest.test_type === 'bug' ? 'Bad' : 'Good' }}
+                  </v-chip>
+                  <v-chip 
+                    label
+                    color="grey"
+                    variant="outlined"
+                    size="small"
+                    @click="router.push(`/${entityType}/tests?testCategory=${currentTest.category}`)"
+                  >
+                    {{ currentTest.category }}
+                  </v-chip>
                 </div>
               </div>
 
-              <v-spacer></v-spacer>
+              <!-- Right column: Test Rate -->
+              <div v-if="mode === 'list' && currentTest" class="d-flex flex-column align-end ml-4">
+                <div class="d-flex align-center">
+                  <v-progress-circular 
+                    size="40" 
+                    width="8" 
+                    color="black"
+                    :model-value="testItem(currentTest.key)?.rate">
+                  </v-progress-circular>
+                  <span class="ml-2 font-weight-bold text-h3">
+                    {{ testItem(currentTest.key)?.rate }}%
+                  </span>
+                </div>
+                <div class="text-grey-darken-1" style="font-size: 14px; text-align: left; width: 100%;">
+                  {{ filters.capitalize(entityType.replace('-', ' ')) }} changed
+                </div>
+              </div>
+            </div>
+          </div>
 
-              <!-- Tests Search -->
-              <div v-if="mode === 'tests'">
+          <!-- Tests Search -->
+          <div v-if="mode === 'tests'" class="d-flex align-start mb-4">
                 <v-btn
                   v-if="!showTestsSearch"
                   @click="showTestsSearch = true"
@@ -65,31 +84,12 @@
                     clearable
                     clear-icon="mdi-close"
                     hide-details
-                    density="comfortable"
                     class="mb-2"
                     style="width: 250px;"
                     prepend-inner-icon="mdi-magnify"
                     placeholder="Search tests"
                   ></v-text-field>
                 </v-slide-x-reverse-transition>
-              </div>
-
-              <!-- Test Rate -->
-              <div v-if="mode === 'list' && currentTest" class="d-flex flex-column align-center">
-                <div class="d-flex align-center">
-                  <v-progress-circular 
-                    size="50" 
-                    width="10" 
-                    :color="testItem(currentTest.key)?.color"
-                    :model-value="testItem(currentTest.key)?.rate">
-                  </v-progress-circular>
-                  <span class="ml-2 font-weight-bold" :class="`text-${testItem(currentTest.key)?.color}`" style="font-size: 46px;">
-                    {{ testItem(currentTest.key)?.rate }}%
-                  </span>
-                </div>
-                <div class="text-grey-darken-1" style="font-size: 14px;">
-                  of {{ entityType }} got more {{ currentTest.test_type === 'bug' ? 'bad' : 'good' }}
-                </div>
               </div>
 
               <!-- Entity Metrics-->
@@ -120,9 +120,6 @@
                   </span>
                 </div>
               </div>
-
-            </div>
-          </div>
 
           <!-- List above Card: Count  -->
           <div v-if="mode === 'list' && dataLoaded">  
@@ -631,7 +628,20 @@ const titles = computed(() => {
     },
     "list": {
       "title": currentTest.value ? currentTest.value.display_name : "",
-      "subtitle": currentTest.value ? `<span class='test-description ${testItem(currentTest.value.key)?.colorClass}'>${currentTest.value.description}</span>` : ""
+      "subtitle": (() => {
+        if (!currentTest.value) return "";
+        
+        // Calculate percentage changed
+        const sampleSize = coverage[entityType.value]?.both?.sampleSize || 0;
+        const totalChanged = resultsMeta.value ? Math.round(resultsMeta.value.count) : 0;
+        const percentChanged = sampleSize > 0 ? Math.round((totalChanged / sampleSize) * 100) : 0;
+        
+        // Get plural entity type
+        const entityTypePlural = filters.pluralize(entityType.value.replace('-', ' '), 2);
+        
+        const baseDescription = `<span class='test-description ${testItem(currentTest.value.key)?.colorClass}'>${currentTest.value.description}</span>`;
+        return `${baseDescription} in ${percentChanged}% of ${entityTypePlural}`;
+      })()
     },
     "plots": {
       "title": filters.titleCase(entityType.value.replace("-", " ")) + " " + plotTypes.find(p => p.field === plotKey.value)?.title,
@@ -686,9 +696,15 @@ const resultsCountStr = computed(() => {
   const startNum = ((page.value-1) * pageSize + 1).toLocaleString();
   const endNum = (Math.min(page.value * pageSize, totalNum)).toLocaleString();
 
-  let resultsStr = `${totalNum.toLocaleString()} results`;
+  // Get sample size from coverage
+  const sampleSize = coverage[entityType.value]?.both?.sampleSize || 0;
+  const percentChanged = sampleSize > 0 ? Math.round((totalNum / sampleSize) * 100) : 0;
+  
+  // Use pluralize for proper pluralization
+  const entityTypePlural = filters.pluralize(entityType.value.replace('-', ' '), totalNum);
+  const entityTypeSingular = filters.pluralize(entityType.value.replace('-', ' '), 1);
 
-  if (totalNum) { resultsStr = `${startNum}-${endNum} of ` + resultsStr; }
+  let resultsStr = `Showing ${startNum}-${endNum} of ${totalNum.toLocaleString()} changed ${entityTypePlural} (${percentChanged}% of our ${sampleSize.toLocaleString()}-${entityTypeSingular} sample)`;
 
   return resultsStr;
 });

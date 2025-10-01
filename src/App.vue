@@ -136,6 +136,7 @@
       width="200"
       :location="'left'"
       style="left: 240px;"
+      color="#fafafa"
     >
       <v-list nav :opened="['plots']">
         <v-list-subheader>{{ currentEntityTitle }}</v-list-subheader>
@@ -143,6 +144,7 @@
           :to="`/${currentEntity}/tests`"
           title="Tests"
           prepend-icon="mdi-clipboard-check-outline"
+          :active="route.path.includes('/tests')"
         />
         
         <!-- Plots group -->
