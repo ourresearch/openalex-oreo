@@ -535,16 +535,15 @@
             <!-- Xpac Known Issues Card (right column on lg+, second on md-) -->
             <v-col cols="12" lg="4">
               <v-card variant="outlined" class="pa-6">
-                <div class="text-h5 font-weight-bold mb-4">Xpac Known Issues</div>
-                <p class="mb-4">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-                </p>
-                <p class="mb-4">
-                  Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-                </p>
-                <p class="mb-0">
-                  Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.
-                </p>
+                <div class="text-h5 font-weight-bold mb-4">Known Issues</div>
+                <ul>
+                  <li>
+                    Institution lineages aren't done in Walden, so grouping by institution lineages will return very low numbers.
+                  </li>
+                  <li>
+                    Fulltext indexes aren't fully ported to Walden yet, so fulltext searches will return way fewer resutls.
+                  </li>
+                </ul>
               </v-card>
             </v-col>
           </v-row>

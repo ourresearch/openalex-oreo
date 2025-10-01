@@ -62,7 +62,7 @@
         <v-list-item
           to="/changelog"
           title="Changelog"
-          prepend-icon="mdi-text-box-outline"
+          prepend-icon="mdi-timeline-clock-outline"
         />
         
         <v-list-subheader class="font-weight-bold text-black">Entities</v-list-subheader>
