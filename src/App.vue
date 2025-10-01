@@ -29,11 +29,12 @@
       <v-spacer></v-spacer>
 
       <v-btn
-        to="/changelog"
+        href="https://openalex.org"
+        target="_blank"
         variant="text"
         class="text-none"
       >
-        Changelog
+        OpenAlex Home
       </v-btn>
 
     </v-app-bar>
@@ -49,6 +50,23 @@
           title="Overview"
           prepend-icon="mdi-home-outline"
         />
+        
+        <!-- Xpac link -->
+        <v-list-item
+          to="/xpac"
+          title="Xpac"
+          prepend-icon="mdi-lightning-bolt-circle"
+        />
+        
+        <!-- Changelog link -->
+        <v-list-item
+          to="/changelog"
+          title="Changelog"
+          prepend-icon="mdi-text-box-outline"
+        />
+        
+        <v-list-subheader class="font-weight-bold text-black">Entities</v-list-subheader>
+        <v-divider class="mb-2"></v-divider>
         
         <!-- Core category -->
         <v-list-group value="core">
@@ -199,8 +217,10 @@ const { isLoading } = useLoading();
 
 const currentEntity = computed(() => {
   // Extract entity from route path (e.g., /works, /works/tests, /works/plots)
+  // Exclude non-entity pages
+  const nonEntityPages = ['changelog', 'xpac', 'samples'];
   const pathParts = route.path.split('/').filter(Boolean);
-  if (pathParts.length > 0 && pathParts[0] !== 'changelog') {
+  if (pathParts.length > 0 && !nonEntityPages.includes(pathParts[0])) {
     return pathParts[0];
   }
   return null;
@@ -481,6 +501,10 @@ body {
 
 .v-list-group__items {
   --indent-padding: 25px !important;
+}
+
+.v-data-table thead th {
+  background-color: #fafafa !important;
 }
 
 .v-application {
