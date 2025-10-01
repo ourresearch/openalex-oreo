@@ -42,7 +42,7 @@
       permanent
       width="240"
     >
-      <v-list nav>
+      <v-list nav :opened="openedGroups">
         <!-- Core category -->
         <v-list-group value="core">
           <template v-slot:activator="{ props }">
@@ -53,6 +53,7 @@
             :key="entity.id"
             :to="`/${entity.id}/tests`"
             :title="entity.title"
+            :active="currentEntity === entity.id"
           />
         </v-list-group>
 
@@ -66,6 +67,7 @@
             :key="entity.id"
             :to="`/${entity.id}/tests`"
             :title="entity.title"
+            :active="currentEntity === entity.id"
           />
         </v-list-group>
 
@@ -79,6 +81,7 @@
             :key="entity.id"
             :to="`/${entity.id}/tests`"
             :title="entity.title"
+            :active="currentEntity === entity.id"
           />
         </v-list-group>
 
@@ -92,6 +95,7 @@
             :key="entity.id"
             :to="`/${entity.id}/tests`"
             :title="entity.title"
+            :active="currentEntity === entity.id"
           />
         </v-list-group>
 
@@ -105,6 +109,7 @@
             :key="entity.id"
             :to="`/${entity.id}/tests`"
             :title="entity.title"
+            :active="currentEntity === entity.id"
           />
         </v-list-group>
 
@@ -118,6 +123,7 @@
             :key="entity.id"
             :to="`/${entity.id}/tests`"
             :title="entity.title"
+            :active="currentEntity === entity.id"
           />
         </v-list-group>
       </v-list>
@@ -208,6 +214,21 @@ const currentEntity = computed(() => {
 const currentEntityTitle = computed(() => {
   if (!currentEntity.value) return '';
   return currentEntity.value.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+});
+
+// Determine which groups should be opened based on current entity
+const openedGroups = computed(() => {
+  if (!currentEntity.value) return [];
+  
+  // Check which group contains the current entity
+  if (coreEntities.value.some(e => e.id === currentEntity.value)) return ['core'];
+  if (aboutnessEntities.value.some(e => e.id === currentEntity.value)) return ['aboutness'];
+  if (geoEntities.value.some(e => e.id === currentEntity.value)) return ['geo'];
+  if (typesEntities.value.some(e => e.id === currentEntity.value)) return ['types'];
+  if (fundingEntities.value.some(e => e.id === currentEntity.value)) return ['funding'];
+  if (contentEntities.value.some(e => e.id === currentEntity.value)) return ['content'];
+  
+  return [];
 });
 
 // Entity icons mapping (matching the home page table)

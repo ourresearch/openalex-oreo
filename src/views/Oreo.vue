@@ -235,29 +235,6 @@
             </div>
           </div>
 
-          <!-- Plots above Card: Sample Page -->
-          <div v-if="mode === 'plots' && dataLoaded && coverage[entityType]?.both?.sampleSize > 1000" class="text-right mt-n4">
-            <v-menu>
-              <template v-slot:activator="{ props }">
-                <v-btn v-bind="props" color="blue-darken-1" variant="text">
-                  Sample page:
-                  {{ page }}
-                  <v-icon icon="mdi-menu-down"></v-icon>
-                </v-btn>
-              </template>
-              <v-list>
-                <v-list-item 
-                  v-for="pageNum in Math.ceil(coverage[entityType]?.both?.sampleSize / 1000)" 
-                  :key="pageNum"
-                  @click="page = pageNum"
-                >
-                  <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', page === pageNum ? '' : 'opacity-0']"></v-icon>
-                  {{ pageNum }}
-                </v-list-item>
-              </v-list>
-            </v-menu>
-          </div>
-
           <!-- Entity -->
           <v-card v-if="mode === 'entity'" variant="outlined" class="px-6 py-10">
             <v-row>
@@ -320,21 +297,18 @@
           <!-- Plots -->
           <div v-else-if="mode === 'plots'">
             <div v-if="resultsMeta">
-              <v-card variant="outlined" class="py-4">
+              <div class="py-4">
                 <scatter-plot
                   :title="currentPlot.title"
                   @click-point="handlePlotPointClick"
                   :data="currentPlot.data"
                 />
-                <div v-if="plotTests && plotTests.length">
-                  <div class="related-tests-title text-grey-darken-2 mb-2">Related Tests</div>
-                  <tests-table :items="plotTests"></tests-table>
-                </div>
-              </v-card>
+              </div>
+              <div v-if="plotTests && plotTests.length" class="mt-6">
+                <div class="text-grey-darken-2 mb-3 font-weight-medium" style="font-size: 16px;">{{ plotTests.length }} Related Tests</div>
+                <tests-table :items="plotTests"></tests-table>
+              </div>
             </div>
-            <v-card v-else variant="outlined" class="text-center" style="height: 700px; overflow: hidden !important;">
-              <div style="font-size: 14px; color: #777; margin-top: 280px; font-style: italic;">Loading...</div>
-            </v-card>
           </div>
 
 
@@ -660,7 +634,7 @@ const titles = computed(() => {
       "subtitle": currentTest.value ? `<span class='test-description ${testItem(currentTest.value.key)?.colorClass}'>${currentTest.value.description}</span>` : ""
     },
     "plots": {
-      "title": filters.titleCase(entityType.value.replace("-", " ")) + " Plots: " + plotTypes.find(p => p.field === plotKey.value)?.title,
+      "title": filters.titleCase(entityType.value.replace("-", " ")) + " " + plotTypes.find(p => p.field === plotKey.value)?.title,
       "subtitle": `Scatter plots of <code>${plotTypes.find(p => p.field === plotKey.value)?.field}</code> between production and Walden`
     }
   };

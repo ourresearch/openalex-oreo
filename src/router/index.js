@@ -11,10 +11,9 @@ const routes = [
     {path: '/samples', name: 'samples-qa', component: SamplesQA},
     {path: '/changelog', name: 'changelog', component: Changelog},
 
-    {path: '/:entity', name: 'entity', component: Oreo, props: route => ({
-        entityType: route.params.entity,
-        mode: 'entity',
-      })},
+    {path: '/:entity', redirect: to => {
+        return `/${to.params.entity}/tests`;
+      }},
     {path: '/:entity/tests', name: 'tests', component: Oreo, props: route => ({
         entityType: route.params.entity,
         mode: 'tests',
