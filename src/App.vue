@@ -4,7 +4,7 @@
       flat
       :height="smAndDown ? undefined : 70"
       color="white"
-      class=""
+      class="app-bar-border"
       absolute
       extension-height="70"
     >
@@ -31,6 +31,20 @@
 
     </v-app-bar>
 
+    <v-navigation-drawer
+      permanent
+      width="200"
+    >
+      <v-list nav>
+        <v-list-item
+          v-for="entity in entities"
+          :key="entity.id"
+          :to="`/${entity.id}`"
+          :prepend-icon="entity.icon"
+          :title="entity.title"
+        />
+      </v-list>
+    </v-navigation-drawer>
 
     <v-main class="ma-0 pb-0 bg-color">
       <router-view></router-view>
@@ -42,6 +56,7 @@
 <script setup>
 defineOptions({ name: 'App' });
 
+import { ref, onMounted, computed } from 'vue';
 import { smAndDown } from 'vuetify';
 import { useHead } from '@unhead/vue';
 
@@ -50,6 +65,62 @@ useHead({
   titleTemplate: (title) => (title ? `${title} | OREO` : 'OpenAlex Rewrite Evaluation Overview'),
   link: [],
   meta: []
+});
+
+// Entity icons mapping (matching the home page table)
+const entityIcons = {
+  'authors': 'mdi-account-outline',
+  'awards': 'mdi-trophy-outline',
+  'continents': 'mdi-earth',
+  'countries': 'mdi-earth',
+  'concepts': 'mdi-lightbulb-outline',
+  'domains': 'mdi-tag-outline',
+  'fields': 'mdi-tag-outline',
+  'funders': 'mdi-cash-multiple',
+  'institution-types': 'mdi-shape-outline',
+  'institutions': 'mdi-town-hall',
+  'keywords': 'mdi-tag-outline',
+  'languages': 'mdi-translate',
+  'licenses': 'mdi-lock-open-outline',
+  'publishers': 'mdi-domain',
+  'sdgs': 'mdi-sprout-outline',
+  'source-types': 'mdi-shape-outline',
+  'sources': 'mdi-book-open-outline',
+  'subfields': 'mdi-tag-outline',
+  'topics': 'mdi-tag-outline',
+  'work-types': 'mdi-shape-outline',
+  'works': 'mdi-file-document-outline',
+};
+
+// Fetch entities from API
+const coverage = ref({});
+
+const entities = computed(() => {
+  if (!coverage.value || !coverage.value.data) return [];
+  
+  // Get entity keys from the data object
+  const entityKeys = Object.keys(coverage.value.data);
+  
+  return entityKeys.map(entityId => ({
+    id: entityId,
+    title: entityId.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
+    icon: entityIcons[entityId] || 'mdi-circle',
+  }));
+});
+
+async function fetchCoverage() {
+  try {
+    const metricsUrl = 'https://metrics-api.openalex.org';
+    const response = await fetch(`${metricsUrl}/coverage?sample=all`);
+    const data = await response.json();
+    coverage.value = data;
+  } catch (error) {
+    console.error('Error fetching coverage:', error);
+  }
+}
+
+onMounted(() => {
+  fetchCoverage();
 });
 </script>
 
@@ -212,6 +283,10 @@ body {
 
 .v-card--variant-outlined {
   border-color: #e8e8e8 !important;
+}
+
+.app-bar-border {
+  border-bottom: 1px solid #e8e8e8 !important;
 }
 
 .v-application {

@@ -832,6 +832,7 @@ const testCategoryOptions = computed(() => {
 });
 
 const testsResultsStr = computed(() => {
+  if (!sortedTestItems.value) return '0 tests';
   return `${sortedTestItems.value.length} tests`;
 });
 
