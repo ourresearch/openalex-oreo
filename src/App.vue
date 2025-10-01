@@ -106,20 +106,6 @@
           />
         </v-list-group>
 
-        <!-- Funding category -->
-        <v-list-group value="funding">
-          <template v-slot:activator="{ props }">
-            <v-list-item v-bind="props" title="Funding" prepend-icon="mdi-cash-multiple" />
-          </template>
-          <v-list-item
-            v-for="entity in fundingEntities"
-            :key="entity.id"
-            :to="`/${entity.id}/tests`"
-            :title="entity.title"
-            :active="currentEntity === entity.id"
-          />
-        </v-list-group>
-
         <!-- Content category -->
         <v-list-group value="content">
           <template v-slot:activator="{ props }">
@@ -234,7 +220,6 @@ const openedGroups = computed(() => {
   if (aboutnessEntities.value.some(e => e.id === currentEntity.value)) return ['aboutness'];
   if (geoEntities.value.some(e => e.id === currentEntity.value)) return ['geo'];
   if (typesEntities.value.some(e => e.id === currentEntity.value)) return ['types'];
-  if (fundingEntities.value.some(e => e.id === currentEntity.value)) return ['funding'];
   if (contentEntities.value.some(e => e.id === currentEntity.value)) return ['content'];
   
   return [];
@@ -272,8 +257,8 @@ const coverage = ref({});
 const aboutnessGroup = ['concepts', 'domains', 'fields', 'keywords', 'sdgs', 'subfields', 'topics'];
 const geoGroup = ['continents', 'countries'];
 const typesGroup = ['work-types', 'source-types', 'institution-types'];
-const fundingGroup = ['funders', 'awards'];
 const contentGroup = ['licenses', 'languages'];
+const hiddenEntities = ['awards'];
 
 const allEntities = computed(() => {
   if (!coverage.value || !coverage.value.data) return [];
@@ -292,8 +277,8 @@ const coreEntities = computed(() => {
     !aboutnessGroup.includes(entity.id) &&
     !geoGroup.includes(entity.id) &&
     !typesGroup.includes(entity.id) &&
-    !fundingGroup.includes(entity.id) &&
-    !contentGroup.includes(entity.id)
+    !contentGroup.includes(entity.id) &&
+    !hiddenEntities.includes(entity.id)
   );
 });
 
@@ -307,10 +292,6 @@ const geoEntities = computed(() => {
 
 const typesEntities = computed(() => {
   return allEntities.value.filter(entity => typesGroup.includes(entity.id));
-});
-
-const fundingEntities = computed(() => {
-  return allEntities.value.filter(entity => fundingGroup.includes(entity.id));
 });
 
 const contentEntities = computed(() => {

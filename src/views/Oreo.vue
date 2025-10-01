@@ -844,6 +844,9 @@ const coverageItems = computed(() => {
   if (!Object.keys(coverage).length) { return null; }
   const rows = []; 
   Object.keys(coverage).forEach(entity => {
+    // Filter out awards
+    if (entity === 'awards') return;
+    
     let worksCountChange = "-";
     let citationsCountChange = "-";
     if ("field_sums" in coverage[entity]["prod"]) {
