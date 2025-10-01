@@ -1,8 +1,8 @@
 <template>
   <v-container class="mt-8">
-    <v-row justify="center">
-      <v-col cols="12" lg="10" xl="8">
-        <h1 class="text-h1 mb-8">About</h1>
+    <v-row>
+      <v-col cols="12" md="10" lg="8" xl="6">
+        <h1 class="text-h3 mb-8">About</h1>
         
         <p>This tool helps you track data changes in OpenAlex as we <a href="https://blog.openalex.org/were-rebuilding-openalex-while-its-running-heres-whats-changing/" target="_blank">roll out our rewritten codebase</a> (codenamed <a href="https://www.reddit.com/r/minimalism/comments/3h7ot4/a_passage_from_henry_david_thoreaus_walden/" target="_blank">Walden</a>) throughout October 2025.</p>
 

@@ -553,6 +553,12 @@ a {
   .text-h6 {
     line-height: 1.3;
   }
+  .text-h3,
+  .text-h4,
+  .text-h5,
+  .text-h6 {
+    font-weight: 700 !important;
+  }
   .text-initial {
     text-transform: initial !important;
   }

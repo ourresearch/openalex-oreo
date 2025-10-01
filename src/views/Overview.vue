@@ -1,8 +1,8 @@
 <template>
   <v-container class="mt-8">
-    <v-row justify="center">
+    <v-row>
       <v-col cols="12" lg="10" xl="8">
-        <h1 class="text-h1 mb-8">Overview</h1>
+        <h1 class="text-h3 mb-8">Overview</h1>
         
         <v-skeleton-loader v-if="!coverageItems" type="list-item-three-line@12"></v-skeleton-loader>
         

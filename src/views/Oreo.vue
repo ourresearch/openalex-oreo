@@ -526,6 +526,7 @@
                 </div>
                 <v-skeleton-loader v-else type="list-item-three-line@12"></v-skeleton-loader>
               </div>
+              </div>
             </v-card>
           </template>
 

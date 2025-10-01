@@ -1,8 +1,8 @@
 <template>
   <v-container class="mt-8">
-    <v-row justify="center">
-      <v-col cols="12" lg="10" xl="8">
-        <h1 class="text-h1 mb-8">Changelog</h1>
+    <v-row>
+      <v-col cols="12" md="10" lg="8" xl="6">
+        <h1 class="text-h3 mb-8">Changelog</h1>
         
         <p>All notable changes to this project will be documented here.</p>
       </v-col>
