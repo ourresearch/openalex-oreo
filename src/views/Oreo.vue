@@ -1,5 +1,5 @@
 <template>
-  <div :class="['py-0 py-sm-12', mode]" style="min-height: calc(100vh - 70px);">
+  <div :class="['py-0 py-sm-4', mode]" style="min-height: calc(100vh - 70px);">
     <v-container :fluid="smAndDown" :class="['pa-0', 'pa-sm-4']">
       <v-row>
 
@@ -18,11 +18,8 @@
         <!-- Main Content -->
         <v-col cols="12">
           
-          <!-- Title, Subtitle, Breadcrumbs -->
+          <!-- Title, Subtitle -->
           <div>
-            <div v-if="breadcrumbs" class="d-flex align-start mt-n6">
-              <v-breadcrumbs :items="breadcrumbs" divider="›" class="px-0 pt-0 pb-2" />
-            </div>
             <div class="d-flex align-start">
               <div>
                 <!-- Title -->
@@ -689,28 +686,6 @@ const titles = computed(() => {
     }
   };
 });
-
-const breadcrumbs = computed(() => {
-  if (mode.value === "home") { return null; }
-  const items = [
-    { title: "Home", disabled: false, to: "/" },
-  ];
-  if (mode.value === "entity") {
-    items.push({ title: filters.titleCase(entityType.value), disabled: true, to: `/${entityType.value}` });
-  } else if (mode.value === "list") {
-    items.push({ title: filters.titleCase(entityType.value), disabled: false, to: `/${entityType.value}` });
-    items.push({ title: "Tests", disabled: false, to: `/${entityType.value}/tests` });
-    items.push({ title: currentTest.value ? currentTest.value.display_name : "", disabled: true, to: `/${entityType.value}/tests/${testKey.value}` });
-  } else if (mode.value === "tests") {
-    items.push({ title: filters.titleCase(entityType.value), disabled: false, to: `/${entityType.value}` });
-    items.push({ title: "Tests", disabled: true, to: `/${entityType.value}/tests` });
-  } else if (mode.value === "plots") {
-    items.push({ title: filters.titleCase(entityType.value), disabled: false, to: `/${entityType.value}` });
-    items.push({ title: "Plot: " + plotTypes.find(p => p.field === plotKey.value)?.title, disabled: true, to: `/${entityType.value}/plots` });
-  }
-  return items;
-});
-
 
 const matchedIds = computed(() => {
   return matches ? Object.keys(matches) : [];

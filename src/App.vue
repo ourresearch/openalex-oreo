@@ -116,6 +116,34 @@
       </v-list>
     </v-navigation-drawer>
 
+    <!-- Second-level drawer for entity sub-navigation -->
+    <v-navigation-drawer
+      v-if="currentEntity"
+      permanent
+      width="200"
+      :location="'left'"
+      style="left: 240px;"
+    >
+      <v-list nav>
+        <v-list-subheader>{{ currentEntityTitle }}</v-list-subheader>
+        <v-list-item
+          :to="`/${currentEntity}`"
+          title="Summary"
+          prepend-icon="mdi-view-dashboard-outline"
+        />
+        <v-list-item
+          :to="`/${currentEntity}/tests`"
+          title="Tests"
+          prepend-icon="mdi-clipboard-check-outline"
+        />
+        <v-list-item
+          :to="`/${currentEntity}/plots/works_count`"
+          title="Plots"
+          prepend-icon="mdi-chart-scatter-plot"
+        />
+      </v-list>
+    </v-navigation-drawer>
+
     <v-main class="ma-0 pb-0 bg-color">
       <router-view></router-view>
     </v-main>
@@ -127,6 +155,7 @@
 defineOptions({ name: 'App' });
 
 import { ref, onMounted, computed } from 'vue';
+import { useRoute } from 'vue-router';
 import { smAndDown } from 'vuetify';
 import { useHead } from '@unhead/vue';
 
@@ -135,6 +164,23 @@ useHead({
   titleTemplate: (title) => (title ? `${title} | OREO` : 'OpenAlex Rewrite Evaluation Overview'),
   link: [],
   meta: []
+});
+
+// Current route tracking for second-level nav
+const route = useRoute();
+
+const currentEntity = computed(() => {
+  // Extract entity from route path (e.g., /works, /works/tests, /works/plots)
+  const pathParts = route.path.split('/').filter(Boolean);
+  if (pathParts.length > 0 && pathParts[0] !== 'changelog') {
+    return pathParts[0];
+  }
+  return null;
+});
+
+const currentEntityTitle = computed(() => {
+  if (!currentEntity.value) return '';
+  return currentEntity.value.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 });
 
 // Entity icons mapping (matching the home page table)
