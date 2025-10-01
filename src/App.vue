@@ -7,6 +7,14 @@
       fixed
       density="compact"
     >
+      <v-progress-linear
+        v-if="isLoading"
+        indeterminate
+        color="white"
+        absolute
+        bottom
+        height="3"
+      />
       <router-link to="/" class="logo-link ml-2 mr-2">
         <img
           src="@/assets/tricon-white.png"
@@ -173,6 +181,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { smAndDown } from 'vuetify';
 import { useHead } from '@unhead/vue';
+import { useLoading } from '@/stores/loading';
 
 // Head
 useHead({
@@ -183,6 +192,9 @@ useHead({
 
 // Current route tracking for second-level nav
 const route = useRoute();
+
+// Global loading state
+const { isLoading } = useLoading();
 
 const currentEntity = computed(() => {
   // Extract entity from route path (e.g., /works, /works/tests, /works/plots)

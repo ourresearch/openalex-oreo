@@ -333,7 +333,6 @@
               </v-card>
             </div>
             <v-card v-else variant="outlined" class="text-center" style="height: 700px; overflow: hidden !important;">
-              <v-progress-linear color="blue" class="" indeterminate></v-progress-linear>
               <div style="font-size: 14px; color: #777; margin-top: 280px; font-style: italic;">Loading...</div>
             </v-card>
           </div>
@@ -566,8 +565,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { useDisplay } from 'vuetify';
 import { useHead } from '@unhead/vue';
 import axios from 'axios';
+import filters from '@/filters';
+import { useLoading } from '@/stores/loading';
 
-import filters from "@/filters";
 import { useParams } from '@/composables/useStorage';
 import CompareWork from '@/components/QA/CompareWork.vue';
 import GoogleScholarView from '@/components/QA/googleScholarView.vue';
@@ -601,6 +601,8 @@ const props = defineProps({
 const route = useRoute()
 const router = useRouter()
 const currentRoute = ref(route.path)
+
+const { startLoading, stopLoading } = useLoading()
 
 const metricsUrl   = `https://metrics-api.openalex.org`;
 //const metricsUrl   = `http://localhost:5006`;
@@ -1027,22 +1029,27 @@ const clearResponsesData = () => {
 }
 
 async function fetchMetricsResponses() {
-  clearResponsesData();
-  let testFilter = "";
-  if (currentTest.value) {
-    testFilter = `&filterTest=${currentTest.value.key}`;
+  startLoading();
+  try {
+    clearResponsesData();
+    let testFilter = "";
+    if (currentTest.value) {
+      testFilter = `&filterTest=${currentTest.value.key}`;
+    }
+
+    const perPage = mode.value === 'plots' ? 1000 : 20;
+    const apiUrl = `${metricsUrl}/responses/${entityType.value}?page=${page.value}${testFilter}&per_page=${perPage}&sample=${sampleFilter.value}`;
+    const response = await axios.get(apiUrl);
+
+    response.data.results.forEach((item) => {
+      prodResults[item.id] = item.prod;
+      waldenResults[item.id] = item.walden;
+      matches[item.id] = item.match;
+    });
+    resultsMeta.value = response.data.meta;
+  } finally {
+    stopLoading();
   }
-
-  const perPage = mode.value === 'plots' ? 1000 : 20;
-  const apiUrl = `${metricsUrl}/responses/${entityType.value}?page=${page.value}${testFilter}&per_page=${perPage}&sample=${sampleFilter.value}`;
-  const response = await axios.get(apiUrl);
-
-  response.data.results.forEach((item) => {
-    prodResults[item.id] = item.prod;
-    waldenResults[item.id] = item.walden;
-    matches[item.id] = item.match;
-  });
-  resultsMeta.value = response.data.meta;
 }
 
 async function fetchMatchRates() {
