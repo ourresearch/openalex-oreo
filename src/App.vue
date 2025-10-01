@@ -43,6 +43,13 @@
       width="240"
     >
       <v-list nav :opened="openedGroups">
+        <!-- Overview link -->
+        <v-list-item
+          to="/"
+          title="Overview"
+          prepend-icon="mdi-home-outline"
+        />
+        
         <!-- Core category -->
         <v-list-group value="core">
           <template v-slot:activator="{ props }">

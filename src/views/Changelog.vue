@@ -1,8 +1,8 @@
 <template>
   <v-container class="page">
     <v-row>
-      <v-col cols="12" md="10" lg="8" class="mx-auto">
-        <v-card class="pa-6">
+      <v-col cols="12">
+        <v-card variant="outlined" class="pa-6">
           <div v-if="loading" class="text-center py-8">
             <v-progress-circular indeterminate color="primary"></v-progress-circular>
           </div>
