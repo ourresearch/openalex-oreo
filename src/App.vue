@@ -33,16 +33,86 @@
 
     <v-navigation-drawer
       permanent
-      width="200"
+      width="240"
     >
       <v-list nav>
-        <v-list-item
-          v-for="entity in entities"
-          :key="entity.id"
-          :to="`/${entity.id}`"
-          :prepend-icon="entity.icon"
-          :title="entity.title"
-        />
+        <!-- Core category -->
+        <v-list-group value="core">
+          <template v-slot:activator="{ props }">
+            <v-list-item v-bind="props" title="Core" prepend-icon="mdi-bullseye" />
+          </template>
+          <v-list-item
+            v-for="entity in coreEntities"
+            :key="entity.id"
+            :to="`/${entity.id}`"
+            :title="entity.title"
+          />
+        </v-list-group>
+
+        <!-- Aboutness category -->
+        <v-list-group value="aboutness">
+          <template v-slot:activator="{ props }">
+            <v-list-item v-bind="props" title="Aboutness" prepend-icon="mdi-tag-multiple-outline" />
+          </template>
+          <v-list-item
+            v-for="entity in aboutnessEntities"
+            :key="entity.id"
+            :to="`/${entity.id}`"
+            :title="entity.title"
+          />
+        </v-list-group>
+
+        <!-- Geo category -->
+        <v-list-group value="geo">
+          <template v-slot:activator="{ props }">
+            <v-list-item v-bind="props" title="Geo" prepend-icon="mdi-earth" />
+          </template>
+          <v-list-item
+            v-for="entity in geoEntities"
+            :key="entity.id"
+            :to="`/${entity.id}`"
+            :title="entity.title"
+          />
+        </v-list-group>
+
+        <!-- Types category -->
+        <v-list-group value="types">
+          <template v-slot:activator="{ props }">
+            <v-list-item v-bind="props" title="Types" prepend-icon="mdi-shape-outline" />
+          </template>
+          <v-list-item
+            v-for="entity in typesEntities"
+            :key="entity.id"
+            :to="`/${entity.id}`"
+            :title="entity.title"
+          />
+        </v-list-group>
+
+        <!-- Funding category -->
+        <v-list-group value="funding">
+          <template v-slot:activator="{ props }">
+            <v-list-item v-bind="props" title="Funding" prepend-icon="mdi-cash-multiple" />
+          </template>
+          <v-list-item
+            v-for="entity in fundingEntities"
+            :key="entity.id"
+            :to="`/${entity.id}`"
+            :title="entity.title"
+          />
+        </v-list-group>
+
+        <!-- Content category -->
+        <v-list-group value="content">
+          <template v-slot:activator="{ props }">
+            <v-list-item v-bind="props" title="Content" prepend-icon="mdi-text" />
+          </template>
+          <v-list-item
+            v-for="entity in contentEntities"
+            :key="entity.id"
+            :to="`/${entity.id}`"
+            :title="entity.title"
+          />
+        </v-list-group>
       </v-list>
     </v-navigation-drawer>
 
@@ -95,10 +165,16 @@ const entityIcons = {
 // Fetch entities from API
 const coverage = ref({});
 
-const entities = computed(() => {
+// Define category groupings
+const aboutnessGroup = ['concepts', 'domains', 'fields', 'keywords', 'sdgs', 'subfields', 'topics'];
+const geoGroup = ['continents', 'countries'];
+const typesGroup = ['work-types', 'source-types', 'institution-types'];
+const fundingGroup = ['funders', 'awards'];
+const contentGroup = ['licenses', 'languages'];
+
+const allEntities = computed(() => {
   if (!coverage.value || !coverage.value.data) return [];
   
-  // Get entity keys from the data object
   const entityKeys = Object.keys(coverage.value.data);
   
   return entityKeys.map(entityId => ({
@@ -106,6 +182,36 @@ const entities = computed(() => {
     title: entityId.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
     icon: entityIcons[entityId] || 'mdi-circle',
   }));
+});
+
+const coreEntities = computed(() => {
+  return allEntities.value.filter(entity => 
+    !aboutnessGroup.includes(entity.id) &&
+    !geoGroup.includes(entity.id) &&
+    !typesGroup.includes(entity.id) &&
+    !fundingGroup.includes(entity.id) &&
+    !contentGroup.includes(entity.id)
+  );
+});
+
+const aboutnessEntities = computed(() => {
+  return allEntities.value.filter(entity => aboutnessGroup.includes(entity.id));
+});
+
+const geoEntities = computed(() => {
+  return allEntities.value.filter(entity => geoGroup.includes(entity.id));
+});
+
+const typesEntities = computed(() => {
+  return allEntities.value.filter(entity => typesGroup.includes(entity.id));
+});
+
+const fundingEntities = computed(() => {
+  return allEntities.value.filter(entity => fundingGroup.includes(entity.id));
+});
+
+const contentEntities = computed(() => {
+  return allEntities.value.filter(entity => contentGroup.includes(entity.id));
 });
 
 async function fetchCoverage() {
@@ -287,6 +393,10 @@ body {
 
 .app-bar-border {
   border-bottom: 1px solid #e8e8e8 !important;
+}
+
+.v-list-group__items {
+  --indent-padding: 25px !important;
 }
 
 .v-application {
