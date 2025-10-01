@@ -14,7 +14,7 @@
                 {{ id }}
                 <span v-if="mode === 'tests'">
                   <a :href="`https://api.openalex.org/${id}`" target="_blank" class="ml-2">
-                    Prod
+                    Classic
                     <v-icon size="x-small" icon="mdi-open-in-new"></v-icon>
                   </a>
                   <a :href="`https://api.openalex.org/${id}?data-version=2`" target="_blank" class="ml-2">
@@ -51,7 +51,7 @@
               <tr class="mb-2 text-grey-darken-3" style="font-size: 12px; border-bottom: 1px solid #f5f5f5;">
                 <th>Test</th>
                 <th>
-                  <span style="margin-left: 20px;">Prod Value</span>
+                  <span style="margin-left: 20px;">Classic Value</span>
                 </th>
                 <th>
                   <span style="margin-left: 20px;">Walden Value</span>
@@ -95,7 +95,7 @@
         <div v-else-if="mode === 'json'" class="d-flex">
           <div class="json-container pb-4">
             <a :href="`https://api.openalex.org/${id}`" target="_blank" class="pb-3 font-weight-medium d-block sticky-top">
-              Prod
+              Classic
               <v-icon size="x-small" icon="mdi-open-in-new"></v-icon>
             </a>
             <vue-json-pretty :data="prodResults" :deep="1"></vue-json-pretty>

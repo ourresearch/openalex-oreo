@@ -128,7 +128,7 @@ const chartOption = computed(() => ({
       return `
         <div style="max-width: 300px; text-align: left; text-wrap: wrap;">
           <div style="margin-bottom: 8px;"><b>${data.display_name}</b></div>
-          <div><b>Prod:</b> ${data.prod.toLocaleString()}</div>
+          <div><b>Classic:</b> ${data.prod.toLocaleString()}</div>
           <div><b>Walden:</b> ${data.walden.toLocaleString()}</div>
         </div>
       `;
@@ -145,7 +145,7 @@ const chartOption = computed(() => ({
   },
   xAxis: {
     type: 'log',
-    name: 'Production',
+    name: 'Classic',
     nameLocation: 'middle',
     nameGap: 50,
     nameTextStyle: {

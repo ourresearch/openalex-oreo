@@ -147,7 +147,7 @@ const idsWithData = computed(() => {
 
 const headers = computed(() => {
   const columns = [
-    {title: "Prod", key: "prod", width: mdAndDown.value ? "300px" : "450px"},
+    {title: "Classic", key: "prod", width: mdAndDown.value ? "300px" : "450px"},
     {title: "Walden", key: "walden", width: mdAndDown.value ? "300px" : "450px"},
     {title: "", key: "matches"},
   ];

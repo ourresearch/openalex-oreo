@@ -682,7 +682,7 @@ const matchedIds = computed(() => {
 
 const listHeaders = computed(() => {
   const columns = [
-    {title: "Prod", key: "prod", width: mdAndDown.value ? "250px" : "400px"},
+    {title: "Classic", key: "prod", width: mdAndDown.value ? "250px" : "400px"},
     {title: "Walden", key: "walden", width: mdAndDown.value ? "250px" : "400px"},
   ];
   return columns;

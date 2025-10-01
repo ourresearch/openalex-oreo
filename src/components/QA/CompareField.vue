@@ -14,7 +14,7 @@
         <div class="compare-value-block">
           <div class="compare-value">{{ displayValue(prodValue) }}</div>
           <div class="compare-value-label">
-            <v-icon size="small" color="grey" class="count-icon" icon="mdi-factory"></v-icon> Prod
+            <v-icon size="small" color="grey" class="count-icon" icon="mdi-factory"></v-icon> Classic
           </div>
         </div>
 

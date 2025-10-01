@@ -2,8 +2,13 @@
   <v-container class="mt-8">
     <v-row>
       <v-col cols="12" md="10" lg="8" xl="6">
-        <div class="d-flex align-center justify-space-between mb-8">
-          <h1 class="text-h3 mb-0">Known Issues</h1>
+        <div class="d-flex align-start justify-space-between mb-8">
+          <div>
+            <h1 class="text-h3 mb-1">Known Issues</h1>
+            <div class="text-grey-darken-3 text-subtitle-1">
+              Here's where we're tracking bugs that don't fit into the OREO testing framework.
+            </div>
+          </div>
           <v-btn
             variant="flat"
             color="black"
