@@ -2,18 +2,6 @@
   <div :class="['py-0 py-sm-4', mode]" style="min-height: calc(100vh - 70px);">
     <v-container :fluid="smAndDown" :class="['pa-0', 'pa-sm-4']">
       <v-row>
-
-        <!-- Plot Nav -->
-        <v-navigation-drawer v-if="mode === 'plots'" permanent absolute class="plot-nav bg-color" style="border-right: none;">
-          <v-list class="text-left mr-2" bg-color="transparent">
-            <v-list-item class="plot-nav-title">
-              <v-list-item-title>Plots</v-list-item-title>
-            </v-list-item>
-            <v-list-item v-for="plot in plotData" :key="plot.field" :to="`/${entityType}/plots/${plot.field}`" class="plot-nav-item">
-              <v-list-item-title>{{ plot.title.replace(' Count', '') }}</v-list-item-title>
-            </v-list-item>
-          </v-list>
-        </v-navigation-drawer>
         
         <!-- Main Content -->
         <v-col cols="12">
@@ -107,16 +95,6 @@
               <!-- Entity Metrics-->
               <div v-if="mode === 'entity' && dataLoaded" class="mx-0">
                 <div class="text-right" >
-                  <span class="entity-metric" v-if="coverageItem(entityType).missing !== '-'">
-                    <span class="entity-metric-value">{{ coverageItem(entityType).missing }}%</span>
-                    <span class="entity-metric-label ml-1">Missing</span>
-                  </span>
-
-                  <span class="entity-metric" v-if="coverageItem(entityType).new !== '-'">
-                    <span class="entity-metric-value">{{ coverageItem(entityType).new }}%</span>
-                    <span class="entity-metric-label ml-1">New</span>
-                  </span>
-
                   <span class="entity-metric" v-if="coverageItem(entityType).worksCountChange !== '-'">
                     <span class="entity-metric-value">
                       {{ !(coverageItem(entityType).worksCountChange < 0) ? "+" : "" }}{{ coverageItem(entityType).worksCountChange }}%
@@ -258,7 +236,7 @@
           </div>
 
           <!-- Plots above Card: Sample Page -->
-          <div v-if="mode === 'plots' && dataLoaded && coverage[entityType].both.sampleSize > 1000" class="text-right mt-n4">
+          <div v-if="mode === 'plots' && dataLoaded && coverage[entityType]?.both?.sampleSize > 1000" class="text-right mt-n4">
             <v-menu>
               <template v-slot:activator="{ props }">
                 <v-btn v-bind="props" color="blue-darken-1" variant="text">
@@ -269,7 +247,7 @@
               </template>
               <v-list>
                 <v-list-item 
-                  v-for="pageNum in Math.ceil(coverage[entityType].both.sampleSize / 1000)" 
+                  v-for="pageNum in Math.ceil(coverage[entityType]?.both?.sampleSize / 1000)" 
                   :key="pageNum"
                   @click="page = pageNum"
                 >
@@ -436,7 +414,7 @@
                     <v-pagination
                       v-model="page"
                       v-if="resultsMeta"
-                      :length="Math.ceil((resultsMeta.count * scaledCoverage[entityType].bothExact) / pageSize)"
+                      :length="Math.ceil((resultsMeta.count * scaledCoverage[entityType].bothExact) / 20)"
                       :total-visible="10"
                       rounded
                       class="py-4"
@@ -631,7 +609,6 @@ const { mode, entityType, testKey, plotKey } = toRefs(props);
 
 const schema         = ref(null);
 
-const pageSize             = useParams('pageSize', 'number', 20);
 const page                 = useParams('page', 'number', 1);
 const testsSearch          = useParams('testsSearch', 'string', '');
 const testSort             = useParams('testSort', 'string', 'size');
@@ -669,7 +646,7 @@ const titles = computed(() => {
       "subtitle": "Explore coverage and test rates between production and Walden across all endpoints"
     },
     "entity": {
-      "title": filters.titleCase(entityType.value.replace("-", " ")),
+      "title": filters.titleCase(entityType.value.replace("-", " ")) + " Summary",
       "subtitle": "Explore tests and sample data from production and Walden"
     },
     "tests": {
@@ -729,8 +706,9 @@ const resultsCountStr = computed(() => {
   } else {
     totalNum = Math.round(resultsMeta.value.count);
   } 
-  const startNum = ((page.value-1) * pageSize.value + 1).toLocaleString();
-  const endNum = (Math.min(page.value * pageSize.value, totalNum)).toLocaleString();
+  const pageSize = mode.value === 'plots' ? 1000 : 20;
+  const startNum = ((page.value-1) * pageSize + 1).toLocaleString();
+  const endNum = (Math.min(page.value * pageSize, totalNum)).toLocaleString();
 
   let resultsStr = `${totalNum.toLocaleString()} results`;
 
@@ -1055,7 +1033,8 @@ async function fetchMetricsResponses() {
     testFilter = `&filterTest=${currentTest.value.key}`;
   }
 
-  const apiUrl = `${metricsUrl}/responses/${entityType.value}?page=${page.value}${testFilter}&per_page=${pageSize.value}&sample=${sampleFilter.value}`;
+  const perPage = mode.value === 'plots' ? 1000 : 20;
+  const apiUrl = `${metricsUrl}/responses/${entityType.value}?page=${page.value}${testFilter}&per_page=${perPage}&sample=${sampleFilter.value}`;
   const response = await axios.get(apiUrl);
 
   response.data.results.forEach((item) => {
@@ -1151,9 +1130,6 @@ onMounted(async () => {
   await fetchSchema();
   fetchMatchRates();
   fetchCoverage();
-  if (mode.value === "plots") {
-    pageSize.value = 1000;
-  }
   fetchMetricsResponses();
 });
 
@@ -1167,10 +1143,7 @@ watch(testKey, async () => {
 
 watch(mode, async (to, from) => {
   if (to === "plots") {
-    pageSize.value = 1000;
     await fetchMetricsResponses();
-  } else {
-    pageSize.value = 20;
   }
   if (to === "tests" && testsSearch.value) {
     showTestsSearch.value = true;
@@ -1180,11 +1153,17 @@ watch(mode, async (to, from) => {
 });
 
 watch(plotKey, async () => {
-  if (plotKey.value) {
-    pageSize.value = 1000;
+  if (plotKey.value && mode.value === "plots") {
+    await fetchMetricsResponses();
   }
 });
 
+watch(entityType, async () => {
+  await fetchSchema();
+  await fetchMatchRates();
+  await fetchCoverage();
+  await fetchMetricsResponses();
+});
 
 watch(showTestsSearch, () => {
   if (showTestsSearch.value) {

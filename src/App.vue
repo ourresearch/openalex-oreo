@@ -124,23 +124,58 @@
       :location="'left'"
       style="left: 240px;"
     >
-      <v-list nav>
+      <v-list nav :opened="['plots']">
         <v-list-subheader>{{ currentEntityTitle }}</v-list-subheader>
         <v-list-item
           :to="`/${currentEntity}`"
           title="Summary"
-          prepend-icon="mdi-view-dashboard-outline"
+          prepend-icon="mdi-list-box-outline"
         />
         <v-list-item
           :to="`/${currentEntity}/tests`"
           title="Tests"
           prepend-icon="mdi-clipboard-check-outline"
         />
-        <v-list-item
-          :to="`/${currentEntity}/plots/works_count`"
-          title="Plots"
-          prepend-icon="mdi-chart-scatter-plot"
-        />
+        
+        <!-- Plots group -->
+        <v-list-group value="plots">
+          <template v-slot:activator="{ props }">
+            <v-list-item v-bind="props" title="Plots" prepend-icon="mdi-chart-scatter-plot" />
+          </template>
+          <v-list-item
+            :to="`/${currentEntity}/plots/works_count`"
+            title="Works"
+          />
+          <v-list-item
+            :to="`/${currentEntity}/plots/cited_by_count`"
+            title="Citations"
+          />
+          <v-list-item
+            v-if="currentEntity === 'works'"
+            :to="`/${currentEntity}/plots/referenced_works_count`"
+            title="Referenced Works"
+          />
+          <v-list-item
+            v-if="currentEntity === 'works'"
+            :to="`/${currentEntity}/plots/fwci`"
+            title="FWCI"
+          />
+          <v-list-item
+            v-if="currentEntity === 'works'"
+            :to="`/${currentEntity}/plots/countries_distinct_count`"
+            title="Countries"
+          />
+          <v-list-item
+            v-if="currentEntity === 'works'"
+            :to="`/${currentEntity}/plots/institutions_distinct_count`"
+            title="Institutions"
+          />
+          <v-list-item
+            v-if="currentEntity === 'works'"
+            :to="`/${currentEntity}/plots/locations_count`"
+            title="Locations"
+          />
+        </v-list-group>
       </v-list>
     </v-navigation-drawer>
 
