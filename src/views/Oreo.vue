@@ -509,7 +509,10 @@
                               </template>
 
                               <template v-else-if="column.key === 'sampleSize'">
-                                <div class="text-right"><code>{{ item.sampleSize.toLocaleString() }}</code></div>
+                                <div class="text-right">
+                                  <div v-if="item.sampleSize === '-'" class="text-grey-darken-1">-</div>
+                                  <code v-else>{{ item.sampleSize.toLocaleString() }}</code>
+                                </div>
                               </template>
 
                             </td>
