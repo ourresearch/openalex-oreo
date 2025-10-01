@@ -44,18 +44,18 @@
       width="240"
     >
       <v-list nav :opened="openedGroups">
-        <!-- Overview link -->
+        <!-- About link -->
         <v-list-item
           to="/"
-          title="Overview"
-          prepend-icon="mdi-home-outline"
+          title="About"
+          prepend-icon="mdi-information-outline"
         />
         
-        <!-- Xpac link -->
+        <!-- Overview link -->
         <v-list-item
-          to="/xpac"
-          title="Xpac"
-          prepend-icon="mdi-lightning-bolt-circle"
+          to="/overview"
+          title="Overview"
+          prepend-icon="mdi-view-dashboard-outline"
         />
         
         <!-- Changelog link -->
@@ -218,7 +218,7 @@ const { isLoading } = useLoading();
 const currentEntity = computed(() => {
   // Extract entity from route path (e.g., /works, /works/tests, /works/plots)
   // Exclude non-entity pages
-  const nonEntityPages = ['changelog', 'xpac', 'samples'];
+  const nonEntityPages = ['changelog', 'about', 'samples', 'overview'];
   const pathParts = route.path.split('/').filter(Boolean);
   if (pathParts.length > 0 && !nonEntityPages.includes(pathParts[0])) {
     return pathParts[0];
@@ -505,6 +505,18 @@ body {
 
 .v-data-table thead th {
   background-color: #fafafa !important;
+}
+
+p {
+  margin-bottom: 1rem;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+a {
+  text-decoration: none;
 }
 
 .v-application {

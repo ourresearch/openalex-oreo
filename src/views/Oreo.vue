@@ -436,25 +436,10 @@
 
           <!-- Home -->
           <v-row v-if="mode === 'home' && coverageItems">
-            <!-- Introduction Card (left column on lg+, above table on md-) -->
-            <v-col cols="12" lg="4" class="order-first order-lg-first">
-              <v-card variant="outlined" class="pa-6">
-                <div class="text-h5 font-weight-bold mb-4">Introduction</div>
-                <p class="mb-4">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-                </p>
-                <p class="mb-4">
-                  Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-                </p>
-                <p class="mb-0">
-                  Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.
-                </p>
-              </v-card>
-            </v-col>
-            
-            <!-- Table Card (right column on lg+, below intro on md-) -->
-            <v-col cols="12" lg="8">
+            <!-- Entity Comparisons Table (left column on lg+, first on md-) -->
+            <v-col cols="12" lg="8" class="order-first order-lg-first">
               <v-card variant="outlined" class="pa-0">
+                <div class="text-h5 font-weight-bold px-6 pt-6 pb-6">Entity Comparisons</div>
                   <v-data-table
                     :headers="coverageHeaders"
                     :items="coverageItems"
@@ -528,7 +513,7 @@
                                   <div v-else-if="item[column.key] === '∞'">+∞</div>
                                   <div v-else>
                                     <code>
-                                      {{ item[column.key] !== "-" && item[column.key] > 0 ? "+" : "" }}{{ item[column.key] }}
+                                      {{ item[column.key] !== "-" && item[column.key] > 0 ? "+" : "" }}{{ item[column.key] }}%
                                     </code>
                                   </div>
                                 </div>
@@ -544,6 +529,22 @@
                       </v-hover>
                     </template>
                   </v-data-table>
+              </v-card>
+            </v-col>
+            
+            <!-- Xpac Known Issues Card (right column on lg+, second on md-) -->
+            <v-col cols="12" lg="4">
+              <v-card variant="outlined" class="pa-6">
+                <div class="text-h5 font-weight-bold mb-4">Xpac Known Issues</div>
+                <p class="mb-4">
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                </p>
+                <p class="mb-4">
+                  Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+                </p>
+                <p class="mb-0">
+                  Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.
+                </p>
               </v-card>
             </v-col>
           </v-row>
@@ -662,8 +663,8 @@ const { smAndDown, mdAndDown } = useDisplay();
 const titles = computed(() => {
   return {
     "home": {
-      "title": "OREO",
-      "subtitle": "OpenAlex rewrite evaluation overview"
+      "title": "Overview",
+      "subtitle": ""
     },
     "entity": {
       "title": filters.titleCase(entityType.value.replace("-", " ")) + " Summary",
@@ -832,7 +833,7 @@ const coverageHeaders = computed(() => {
       sortable: true,
     },
     { 
-      title: 'Works %', 
+      title: 'Works', 
       key: 'worksCountChange',
       align: 'end',
       sortable: true,
@@ -844,7 +845,7 @@ const coverageHeaders = computed(() => {
       sortable: true,
     },
     { 
-      title: 'Citations %', 
+      title: 'Citations', 
       key: 'citationsCountChange',
       align: 'end',
       sortable: true,
