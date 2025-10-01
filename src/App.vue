@@ -504,6 +504,8 @@ body {
 .v-application code,
 .v-application pre {
   font-family: 'Inconsolata', monospace !important;
+  font-weight: 500;
+  font-size: 1.1em;
 }
 
 .v-card--variant-outlined {
