@@ -4,6 +4,7 @@ import Oreo from "@/views/Oreo.vue";
 import SamplesQA from "@/views/SamplesQA.vue";
 import Changelog from "@/views/Changelog.vue";
 import About from "@/views/About.vue";
+import KnownIssues from "@/views/KnownIssues.vue";
 
 import PageNotFound from "@/views/PageNotFound.vue";
 
@@ -12,6 +13,7 @@ const routes = [
     {path: '/overview', name: 'overview', component: Oreo, props: {mode: 'home'}},
     {path: '/samples', name: 'samples-qa', component: SamplesQA},
     {path: '/changelog', name: 'changelog', component: Changelog},
+    {path: '/known-issues', name: 'known-issues', component: KnownIssues},
 
     {path: '/:entity', redirect: to => {
         return `/${to.params.entity}/tests`;

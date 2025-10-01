@@ -51,11 +51,11 @@
           prepend-icon="mdi-information-outline"
         />
         
-        <!-- Overview link -->
+        <!-- Known Issues link -->
         <v-list-item
-          to="/overview"
-          title="Overview"
-          prepend-icon="mdi-view-dashboard-outline"
+          to="/known-issues"
+          title="Known Issues"
+          prepend-icon="mdi-bug-outline"
         />
         
         <!-- Changelog link -->
@@ -67,6 +67,13 @@
         
         <v-list-subheader class="font-weight-bold text-black">Entities</v-list-subheader>
         <v-divider class="mb-2"></v-divider>
+        
+        <!-- Overview link -->
+        <v-list-item
+          to="/overview"
+          title="Overview"
+          prepend-icon="mdi-list-box-outline"
+        />
         
         <!-- Core category -->
         <v-list-group value="core">
@@ -201,6 +208,7 @@ import { useRoute } from 'vue-router';
 import { smAndDown } from 'vuetify';
 import { useHead } from '@unhead/vue';
 import { useLoading } from '@/stores/loading';
+import { isEntityEnabled } from '@/config/featureFlags';
 
 // Head
 useHead({
@@ -218,7 +226,7 @@ const { isLoading } = useLoading();
 const currentEntity = computed(() => {
   // Extract entity from route path (e.g., /works, /works/tests, /works/plots)
   // Exclude non-entity pages
-  const nonEntityPages = ['changelog', 'about', 'samples', 'overview'];
+  const nonEntityPages = ['changelog', 'about', 'samples', 'overview', 'known-issues'];
   const pathParts = route.path.split('/').filter(Boolean);
   if (pathParts.length > 0 && !nonEntityPages.includes(pathParts[0])) {
     return pathParts[0];
@@ -285,11 +293,13 @@ const allEntities = computed(() => {
   
   const entityKeys = Object.keys(coverage.value.data);
   
-  return entityKeys.map(entityId => ({
-    id: entityId,
-    title: entityId.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
-    icon: entityIcons[entityId] || 'mdi-circle',
-  }));
+  return entityKeys
+    .filter(entityId => isEntityEnabled(entityId))
+    .map(entityId => ({
+      id: entityId,
+      title: entityId.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
+      icon: entityIcons[entityId] || 'mdi-circle',
+    }));
 });
 
 const coreEntities = computed(() => {

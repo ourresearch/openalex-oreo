@@ -435,11 +435,9 @@
           </template>
 
           <!-- Home -->
-          <v-row v-if="mode === 'home' && coverageItems">
-            <!-- Entity Comparisons Table (left column on lg+, first on md-) -->
-            <v-col cols="12" lg="8" class="order-first order-lg-first">
-              <v-card variant="outlined" class="pa-0">
-                <div class="text-h5 font-weight-bold px-6 pt-6 pb-6">Entity Comparisons</div>
+          <v-row v-if="mode === 'home' && coverageItems" justify="center">
+            <!-- Entity Table -->
+            <v-col cols="12" lg="10" xl="8">
                   <v-data-table
                     :headers="coverageHeaders"
                     :items="coverageItems"
@@ -529,22 +527,6 @@
                       </v-hover>
                     </template>
                   </v-data-table>
-              </v-card>
-            </v-col>
-            
-            <!-- Xpac Known Issues Card (right column on lg+, second on md-) -->
-            <v-col cols="12" lg="4">
-              <v-card variant="outlined" class="pa-6">
-                <div class="text-h5 font-weight-bold mb-4">Known Issues</div>
-                <ul>
-                  <li>
-                    Institution lineages aren't done in Walden, so grouping by institution lineages will return very low numbers.
-                  </li>
-                  <li>
-                    Fulltext indexes aren't fully ported to Walden yet, so fulltext searches will return way fewer resutls.
-                  </li>
-                </ul>
-              </v-card>
             </v-col>
           </v-row>
           <v-skeleton-loader v-if="mode === 'home' && !coverageItems" type="list-item-three-line@12"></v-skeleton-loader>
@@ -585,6 +567,7 @@ import { useHead } from '@unhead/vue';
 import axios from 'axios';
 import filters from '@/filters';
 import { useLoading } from '@/stores/loading';
+import { isEntityEnabled } from '@/config/featureFlags';
 
 import { useParams } from '@/composables/useStorage';
 import CompareWork from '@/components/QA/CompareWork.vue';
@@ -868,8 +851,8 @@ const coverageItems = computed(() => {
   if (!Object.keys(coverage).length) { return null; }
   const rows = []; 
   Object.keys(coverage).forEach(entity => {
-    // Filter out awards
-    if (entity === 'awards') return;
+    // Filter out awards and disabled entities
+    if (entity === 'awards' || !isEntityEnabled(entity)) return;
     
     let worksCountChange = "-";
     let citationsCountChange = "-";

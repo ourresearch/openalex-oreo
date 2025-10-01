@@ -1,7 +1,7 @@
 <template>
   <v-container class="page">
-    <v-row>
-      <v-col cols="12">
+    <v-row justify="center">
+      <v-col cols="12" lg="10" xl="8">
         <v-card variant="outlined" class="pa-6">
           <div v-if="loading" class="text-center py-8">
             <v-progress-circular indeterminate color="primary"></v-progress-circular>
