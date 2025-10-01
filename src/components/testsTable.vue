@@ -50,8 +50,8 @@
               </template>
 
               <template v-else-if="column.key === 'display_name'">
-                <span class="font-weight-medium">{{ item.display_name }}</span>
-                <v-chip label color="grey" variant="outlined" size="x-small" class="ml-2" @click.stop="testCategoryFilter = item.category">{{ item.category }}</v-chip>
+                <span class="font-weight-medium mr-2">{{ item.display_name }}</span>
+                <v-chip label color="grey" variant="outlined" size="x-small" style="margin-left: 0;" class="mr-2" @click.stop="testCategoryFilter = item.category">{{ item.category }}</v-chip>
               </template>
 
               <template v-else-if="column.key === 'category'">

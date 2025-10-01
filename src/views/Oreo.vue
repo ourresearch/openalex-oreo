@@ -8,7 +8,8 @@
           
           <!-- Title, Subtitle -->
           <div>
-            <div class="d-flex align-start justify-space-between mb-8">
+            <!-- List mode with two-column layout -->
+            <div v-if="mode === 'list' && currentTest" class="d-flex align-start justify-space-between mb-8">
               <!-- Left column: Title, Subtitle, Tags -->
               <div style="flex: 1;">
                 <div class="text-h3 mb-1">
@@ -17,7 +18,7 @@
                 <div class="mb-2">
                   <span class="text-grey-darken-3 text-subtitle-1" v-html="titles[mode].subtitle"></span>
                 </div>
-                <div v-if="mode === 'list' && currentTest">
+                <div>
                   <v-chip 
                     label
                     :color="currentTest.test_type === 'bug' ? 'red' : 'green'"
@@ -43,7 +44,7 @@
               </div>
 
               <!-- Right column: Test Rate -->
-              <div v-if="mode === 'list' && currentTest" class="d-flex flex-column align-end ml-4">
+              <div class="d-flex flex-column align-end ml-4">
                 <div class="d-flex align-center">
                   <v-progress-circular 
                     size="40" 
@@ -60,10 +61,42 @@
                 </div>
               </div>
             </div>
+            
+            <!-- Plot mode with correlation on right -->
+            <div v-else-if="mode === 'plots'" class="d-flex align-start justify-space-between mb-8">
+              <div style="flex: 1;">
+                <div class="text-h3 mb-1">
+                  {{ titles[mode].title }}
+                </div>
+                <div class="mb-2">
+                  <span class="text-grey-darken-3 text-subtitle-1" v-html="titles[mode].subtitle"></span>
+                </div>
+              </div>
+              
+              <!-- Right column: Correlation -->
+              <div v-if="dataLoaded" class="d-flex flex-column align-end ml-4">
+                <span class="font-weight-bold text-h3">
+                  {{ coverage[entityType]["correlations"][plotKey] ? coverage[entityType]["correlations"][plotKey].toFixed(2) : '-' }}
+                </span>
+                <div class="text-grey-darken-1" style="font-size: 14px; text-align: left; width: 100%;">
+                  Correlation
+                </div>
+              </div>
+            </div>
+            
+            <!-- Other modes with simple layout -->
+            <div v-else class="mb-8">
+              <div class="text-h3 mb-1">
+                {{ titles[mode].title }}
+              </div>
+              <div class="mb-2">
+                <span class="text-grey-darken-3 text-subtitle-1" v-html="titles[mode].subtitle"></span>
+              </div>
+            </div>
           </div>
 
           <!-- Tests Search -->
-          <div v-if="mode === 'tests'" class="d-flex align-start mb-4">
+          <!-- <div v-if="mode === 'tests'" class="d-flex align-start mb-4">
                 <v-btn
                   v-if="!showTestsSearch"
                   @click="showTestsSearch = true"
@@ -90,7 +123,7 @@
                     placeholder="Search tests"
                   ></v-text-field>
                 </v-slide-x-reverse-transition>
-              </div>
+              </div> -->
 
               <!-- Entity Metrics-->
               <div v-if="mode === 'entity' && dataLoaded" class="mx-0">
@@ -107,16 +140,6 @@
                       {{ !(coverageItem(entityType).citationsCountChange <= 0) ? "+" : "" }}{{ coverageItem(entityType).citationsCountChange }}%
                     </span>
                     <span class="entity-metric-label ml-1">Citations</span>
-                  </span>
-                </div>
-              </div>
-
-              <!-- Plot Correlation-->
-              <div v-if="mode === 'plots' && dataLoaded" class="mx-4">
-                <div class="text-right" >
-                  <span class="entity-metric big">
-                    <span class="entity-metric-value">{{ coverage[entityType]["correlations"][plotKey] ? coverage[entityType]["correlations"][plotKey].toFixed(2) : '-' }}</span>
-                    <span class="entity-metric-label ml-1">Correlation</span>
                   </span>
                 </div>
               </div>
