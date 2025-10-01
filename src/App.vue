@@ -13,9 +13,9 @@
           src="@/assets/tricon.png"
           class="logo-icon mr-0 colorizable"
         />
-        <span class="logo-text font-weight-bold">OREO:</span>
+        <span class="logo-text font-weight-bold">OREO</span>
       </router-link>
-      <span class="logo-subtext">
+      <span class="logo-subtext d-none">
          OpenAlex rewrite evaluation overview
       </span>
 

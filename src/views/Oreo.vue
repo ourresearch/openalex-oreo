@@ -120,11 +120,6 @@
                     <span class="entity-metric-label ml-1">New</span>
                   </span>
 
-                  <span class="entity-metric" v-if="coverageItem(entityType).failingTests !== '-'">
-                    <span class="entity-metric-value">{{ coverageItem(entityType).failingTests }}</span>
-                    <span class="entity-metric-label ml-1">Failing Tests</span>
-                  </span>
-
                   <span class="entity-metric" v-if="coverageItem(entityType).worksCountChange !== '-'">
                     <span class="entity-metric-value">
                       {{ !(coverageItem(entityType).worksCountChange < 0) ? "+" : "" }}{{ coverageItem(entityType).worksCountChange }}%
@@ -536,13 +531,12 @@
                               <template v-else-if="['worksCountChange', 'citationsCountChange'].includes(column.key)">
                                 <div class="text-right">
                                   <div v-if="item[column.key] === '-'" class="text-grey-darken-1">-</div>
-                                  <div v-else-if="item[column.key] === '∞'" class="text-green">+∞</div>
-
-                                  <div v-else :class="{'text-red': item[column.key] < 0, 'text-green': item[column.key] > 0}">
+                                  <div v-else-if="item[column.key] === '∞'">+∞</div>
+                                  <div v-else>
                                     <code>
                                       {{ item[column.key] !== "-" && item[column.key] > 0 ? "+" : "" }}{{ item[column.key] }}
                                     </code>
-                                </div>
+                                  </div>
                                 </div>
                               </template>
 
@@ -674,7 +668,7 @@ const { smAndDown, mdAndDown } = useDisplay();
 const titles = computed(() => {
   return {
     "home": {
-      "title": "Home",
+      "title": "OREO: OpenAlex rewrite evaluation overview",
       "subtitle": "Explore coverage and test rates between production and Walden across all endpoints"
     },
     "entity": {
@@ -843,18 +837,6 @@ const coverageHeaders = computed(() => {
       key: 'type',
       align: 'right',
       width: '200px',
-      sortable: true,
-    },
-    { 
-      title: 'Missing %', 
-      key: 'missing',
-      align: 'end',
-      sortable: true,
-    },
-    { 
-      title: 'New %', 
-      key: 'new',
-      align: 'end',
       sortable: true,
     },
     { 
@@ -1363,5 +1345,8 @@ watch(() => compareId.value, (newVal, oldVal) => {
 }
 .v-card, .v-overlay {
   overflow: visible !important;
+}
+code {
+  font-family: monospace !important;
 }
 </style>
