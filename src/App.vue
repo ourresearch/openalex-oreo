@@ -10,13 +10,13 @@
     >
       <router-link to="/" class="logo-link ml-2 mr-2">
         <img
-          src="@/assets/openalex-logo-icon-black-and-white.png"
+          src="@/assets/tricon.png"
           class="logo-icon mr-0 colorizable"
         />
-        <span class="logo-text" style="color: #000">OREO</span>
+        <span class="logo-text font-weight-bold">OREO:</span>
       </router-link>
-      <span class="logo-subtext text-grey">
-        OpenAlex rewrite evaluation overview
+      <span class="logo-subtext">
+         OpenAlex rewrite evaluation overview
       </span>
 
       <v-spacer></v-spacer>
@@ -156,7 +156,8 @@ $bg-color: #EEF3FA;
   //opacity: 0.00005 !important;
   font-size: 1rem;
 }
-.monospace {
+.monospace,
+.monospace * {
   font-family: monospace !important;
   &.body-1 {
     font-family: monospace !important;
@@ -176,9 +177,11 @@ $bg-color: #EEF3FA;
 .white-space-normal {
   white-space: normal !important;
 }
-$logo-link-height: 35px;
+$logo-link-height: 30px;
 .logo-link {
+  font-weight: bold;
   text-decoration: none;
+  letter-spacing: -.05em;
   display: flex;
   align-items: center;
   //padding-left: 30px;
@@ -190,41 +193,47 @@ $logo-link-height: 35px;
     padding-left: .3em;
     line-height: 1.2;
     color: #000;
-    font-family: Dosis;
-    font-size: $logo-link-height * 0.75;
+    font-family: Inter, sans-serif;
+    font-size: $logo-link-height * 0.9;
     font-weight: 500;
   }
 }
 .logo-subtext {
-    font-family: Dosis;
-    font-size: $logo-link-height * 0.65;
+    font-family: Inter, sans-serif;
+    font-size: $logo-link-height * 0.9;
+    font-weight: 300;
   }
 body {
-  font-family: Roboto, sans-serif;
+  font-family: Inter, sans-serif;
   line-height: 1.5;
+}
 
-  .v-application {
-    //background: #F7F9FC !important;
-    //background: #fff !important;
-    //background: pink !important;
-    .body-1, .body-2 {
-      letter-spacing: normal !important;
-    }
-    .body-1 {
-      font-size: 16px !important;
-    }
-    .body-2 {
-      font-size: 14px !important;
-    }
-    .subtitle-1 {
-      font-size: 17px !important;
-    }
-    .text-h6 {
-      line-height: 1.3;
-    }
-    .text-initial {
-      text-transform: initial !important;
-    }
+.v-application,
+.v-application * {
+  font-family: Inter, sans-serif !important;
+}
+
+.v-application {
+  //background: #F7F9FC !important;
+  //background: #fff !important;
+  //background: pink !important;
+  .body-1, .body-2 {
+    letter-spacing: normal !important;
+  }
+  .body-1 {
+    font-size: 16px !important;
+  }
+  .body-2 {
+    font-size: 14px !important;
+  }
+  .subtitle-1 {
+    font-size: 17px !important;
+  }
+  .text-h6 {
+    line-height: 1.3;
+  }
+  .text-initial {
+    text-transform: initial !important;
   }
 }
 .low-key-button {
