@@ -332,12 +332,14 @@
           </div>
 
 
-          <v-card v-else variant="outlined" class="pb-0" style="overflow: hidden !important;">
+          <!-- Home uses separate cards, other modes use single card -->
+          <template v-if="mode !== 'home'">
+            <v-card variant="outlined" class="pb-0" style="overflow: hidden !important;">
 
-            <!-- Results -->
-            <div class="results-section">
+              <!-- Results -->
+              <div class="results-section">
 
-              <!-- List -->
+                <!-- List -->
               <div v-if="mode == 'list'">
                 <div v-if="dataLoaded">
                   <div v-if="currentTest.sample_source">
@@ -524,9 +526,9 @@
                 </div>
                 <v-skeleton-loader v-else type="list-item-three-line@12"></v-skeleton-loader>
               </div>
+            </v-card>
+          </template>
 
-            </div>
-          </v-card>
 
         </v-col>
       </v-row>
@@ -564,6 +566,7 @@ import { useHead } from '@unhead/vue';
 import axios from 'axios';
 import filters from '@/filters';
 import { useLoading } from '@/stores/loading';
+import { isEntityEnabled } from '@/config/featureFlags';
 
 import { useParams } from '@/composables/useStorage';
 import CompareWork from '@/components/QA/CompareWork.vue';
@@ -640,10 +643,6 @@ const { smAndDown, mdAndDown } = useDisplay();
 
 const titles = computed(() => {
   return {
-    "home": {
-      "title": "OREO: OpenAlex rewrite evaluation overview",
-      "subtitle": "Explore coverage and test rates between production and Walden across all endpoints"
-    },
     "entity": {
       "title": filters.titleCase(entityType.value.replace("-", " ")) + " Summary",
       "subtitle": "Explore tests and sample data from production and Walden"
@@ -801,119 +800,6 @@ const testsResultsStr = computed(() => {
   return `${sortedTestItems.value.length} tests`;
 });
 
-const coverageHeaders = computed(() => {
-  return [
-    { 
-      title: 'Entity',
-      key: 'type',
-      align: 'right',
-      width: '200px',
-      sortable: true,
-    },
-    { 
-      title: 'Works %', 
-      key: 'worksCountChange',
-      align: 'end',
-      sortable: true,
-    },
-    { 
-      title: 'Works Correlation', 
-      key: 'worksCorrelation',
-      align: 'end',
-      sortable: true,
-    },
-    { 
-      title: 'Citations %', 
-      key: 'citationsCountChange',
-      align: 'end',
-      sortable: true,
-    },
-    { 
-      title: 'Citations Correlation', 
-      key: 'citationsCorrelation',
-      align: 'end',
-      sortable: true,
-    },
-    { 
-      title: 'Sample Size', 
-      key: 'sampleSize',
-      align: 'end',
-      sortable: true,
-    },
-  ];
-});
-
-const coverageItems = computed(() => {
-  if (!Object.keys(coverage).length) { return null; }
-  const rows = []; 
-  Object.keys(coverage).forEach(entity => {
-    // Filter out awards
-    if (entity === 'awards') return;
-    
-    let worksCountChange = "-";
-    let citationsCountChange = "-";
-    if ("field_sums" in coverage[entity]["prod"]) {
-      worksCountChange = calcFieldSumChange(entity, "works_count");
-      citationsCountChange = calcFieldSumChange(entity, "cited_by_count");
-    }
-    rows.push({
-      type: entity,
-      missing: coverage[entity]["prod"]["coverage"] == "-" ? "-" : 100 - coverage[entity]["prod"]["coverage"],
-      new: coverage[entity]["walden"]["coverage"] == "-" ? "-" : 100 - coverage[entity]["walden"]["coverage"],
-      failingTests: nFailingTests(entity),
-      worksCountChange: worksCountChange,
-      citationsCountChange: citationsCountChange,
-      worksCorrelation: coverage[entity]["correlations"]["works_count"] || "-",
-      citationsCorrelation: coverage[entity]["correlations"]["cited_by_count"] || "-",
-      testFailRate: entity in matchRates ? matchRates[entity]["_average_bug"] : "-",
-      sampleSize: "both" in coverage[entity] ? coverage[entity]["both"]["sampleSize"] : "-",
-    });
-  });
-  return defaultCoverageSort(rows);
-});
-
-const coverageItem = (entity) => {
-  return coverageItems.value.find(item => item.type === entity);
-} 
-
-const nFailingTests = (entity) => {
-  if (!matchRates[entity]) { return "-"; }
-  const bugKeys = schema.value[entity].filter(test => test.test_type === "bug").map(test => test.key);
-  return bugKeys.filter(key => matchRates[entity][key] > 0).length;
-}
-
-const calcFieldSumChange = (entity, field) => {
-  const prodValue = coverage[entity]["prod"]["field_sums"][field];
-  const waldenValue = coverage[entity]["walden"]["field_sums"][field];
-  
-  if (prodValue === 0 && typeof waldenValue === "number" && waldenValue > 0) {
-    return "∞";
-  }
-
-  if (!prodValue || !waldenValue) {
-    return "-";
-  }
-  return Math.round(((waldenValue - prodValue) / prodValue) * 100);
-}
-
-const defaultCoverageSort = (rows) => {
-  const top = ["works",  "sources", "institutions", "publishers", "funders", "topics", "keywords", "concepts", "countries", "languages", "licenses", "domains", "fields", "subfields", "sdgs", "institution-types", "source-types", "work-types", "continents", "authors", "awards"];
-
-  return rows.sort((a, b) => {
-    const aIndex = top.indexOf(a.type);
-    const bIndex = top.indexOf(b.type);
-    if (aIndex !== -1 && bIndex !== -1) {
-      return aIndex - bIndex;
-    }
-    if (aIndex !== -1) {
-      return -1;
-    }
-    if (bIndex !== -1) {
-      return 1;
-    }
-    return a.type.localeCompare(b.type);
-  });
-};
 
 const scaledCoverage = computed(() => {
   const scaled = {};

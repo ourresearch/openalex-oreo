@@ -29,11 +29,12 @@
       <v-spacer></v-spacer>
 
       <v-btn
-        to="/changelog"
+        href="https://openalex.org"
+        target="_blank"
         variant="text"
         class="text-none"
       >
-        Changelog
+        OpenAlex Home
       </v-btn>
 
     </v-app-bar>
@@ -43,11 +44,35 @@
       width="240"
     >
       <v-list nav :opened="openedGroups">
-        <!-- Overview link -->
+        <!-- About link -->
         <v-list-item
           to="/"
+          title="About"
+          prepend-icon="mdi-information-outline"
+        />
+        
+        <!-- Known Issues link -->
+        <v-list-item
+          to="/known-issues"
+          title="Known Issues"
+          prepend-icon="mdi-bug-outline"
+        />
+        
+        <!-- Changelog link -->
+        <v-list-item
+          to="/changelog"
+          title="Changelog"
+          prepend-icon="mdi-timeline-clock-outline"
+        />
+        
+        <v-list-subheader class="font-weight-bold text-black">Entities</v-list-subheader>
+        <v-divider class="mb-2"></v-divider>
+        
+        <!-- Overview link -->
+        <v-list-item
+          to="/overview"
           title="Overview"
-          prepend-icon="mdi-home-outline"
+          prepend-icon="mdi-list-box-outline"
         />
         
         <!-- Core category -->
@@ -183,6 +208,7 @@ import { useRoute } from 'vue-router';
 import { smAndDown } from 'vuetify';
 import { useHead } from '@unhead/vue';
 import { useLoading } from '@/stores/loading';
+import { isEntityEnabled } from '@/config/featureFlags';
 
 // Head
 useHead({
@@ -199,8 +225,10 @@ const { isLoading } = useLoading();
 
 const currentEntity = computed(() => {
   // Extract entity from route path (e.g., /works, /works/tests, /works/plots)
+  // Exclude non-entity pages
+  const nonEntityPages = ['changelog', 'about', 'samples', 'overview', 'known-issues'];
   const pathParts = route.path.split('/').filter(Boolean);
-  if (pathParts.length > 0 && pathParts[0] !== 'changelog') {
+  if (pathParts.length > 0 && !nonEntityPages.includes(pathParts[0])) {
     return pathParts[0];
   }
   return null;
@@ -265,11 +293,13 @@ const allEntities = computed(() => {
   
   const entityKeys = Object.keys(coverage.value.data);
   
-  return entityKeys.map(entityId => ({
-    id: entityId,
-    title: entityId.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
-    icon: entityIcons[entityId] || 'mdi-circle',
-  }));
+  return entityKeys
+    .filter(entityId => isEntityEnabled(entityId))
+    .map(entityId => ({
+      id: entityId,
+      title: entityId.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
+      icon: entityIcons[entityId] || 'mdi-circle',
+    }));
 });
 
 const coreEntities = computed(() => {
@@ -471,6 +501,11 @@ body {
   font-family: Inter, sans-serif !important;
 }
 
+.v-application code,
+.v-application pre {
+  font-family: 'Inconsolata', monospace !important;
+}
+
 .v-card--variant-outlined {
   border-color: #e8e8e8 !important;
 }
@@ -481,6 +516,22 @@ body {
 
 .v-list-group__items {
   --indent-padding: 25px !important;
+}
+
+.v-data-table thead th {
+  background-color: #fafafa !important;
+}
+
+p {
+  margin-bottom: 1rem;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+a {
+  text-decoration: none;
 }
 
 .v-application {
