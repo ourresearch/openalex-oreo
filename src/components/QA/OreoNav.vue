@@ -8,7 +8,7 @@
         :class="['nav-item', 'text-center', 'px-0', 'py-0', {'active': isActive(section)}]"
       >
         <RouterLink :to="section.to" class="d-flex flex-column align-center text-decoration-none w-100 h-100 py-0">
-          <div :class="['icon-box', 'rounded-pill', 'py-1', 'px-4', 'mb-1', {'bg-blue-lighten-4': isActive(section)}]">
+          <div :class="['icon-box', 'py-1', 'px-4', 'mb-1', {'bg-blue-lighten-4': isActive(section)}]">
             <v-icon size="small" class="mb-0" :color="isActive(section) ? 'grey-darken-5' : 'grey-darken-3'" :icon="section.icon" />
           </div>
           <div class="nav-item-label text-grey-darken-3 font-weight-medium" style="font-size: 12px !important;">{{ section.title }}</div>

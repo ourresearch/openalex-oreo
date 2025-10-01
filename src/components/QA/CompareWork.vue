@@ -1,6 +1,6 @@
 <template>
   <div>
-    <v-card class="rounded-o">
+    <v-card>
       <v-skeleton-loader v-if="isLoading" type="list-item-three-line@8" />
       
       <div v-else style="width: 100%;">

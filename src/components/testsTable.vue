@@ -12,7 +12,13 @@
         <template v-slot:default="{ isHovering, props }">
           <tr 
             v-bind="props" 
-            :class="[isHovering ? 'bg-grey-lighten-3' : '', 'cursor-pointer', 'row-is-link']" 
+            :class="[
+              item.test_type === 'bug' 
+                ? (isHovering ? 'row-red-hover' : 'row-red') 
+                : (isHovering ? 'row-green-hover' : 'row-green'),
+              'cursor-pointer', 
+              'row-is-link'
+            ]" 
             v-ripple 
             @click="router.push(item.filterUrl)"
           >
@@ -35,23 +41,23 @@
 
               <template v-if="column.key === 'rate'">
                 <div class="text-right">
-                  <code>{{ item.rate }}%</code>
+                  <code :class="`text-${item.color} font-weight-bold`">{{ item.rate }}%</code>
                 </div>
               </template>
 
               <template v-if="column.key === 'type'">
-                <v-icon :icon="item.test_type === 'bug' ? 'mdi-bug' : 'mdi-rocket-launch'" :color="item.color" />
+                <v-icon :icon="item.test_type === 'bug' ? 'mdi-emoticon-sad-outline' : 'mdi-emoticon-happy-outline'" :color="item.color" />
               </template>
 
               <template v-else-if="column.key === 'display_name'">
                 <span class="font-weight-medium">{{ item.display_name }}</span>
+                <v-chip label color="grey" variant="outlined" size="x-small" class="ml-2" @click.stop="testCategoryFilter = item.category">{{ item.category }}</v-chip>
               </template>
 
               <template v-else-if="column.key === 'category'">
               </template>
 
               <template v-else-if="column.key === 'description'">
-                <v-chip color="grey-darken-2" variant="tonal" size="small" rounded="sm" class="mr-2" @click.stop="testCategoryFilter = item.category">{{ item.category }}</v-chip>
                 <span :class="item.colorClass" class="test-description" v-html="item.description"></span>
               </template>
 
@@ -87,6 +93,21 @@ const testHeaders =  [
 </script>
 
 <style scoped>
+.v-data-table {
+  border: 1px solid #e0e0e0;
+}
+.row-green {
+  background-color: rgba(76, 175, 80, 0.12) !important;
+}
+.row-green-hover {
+  background-color: rgba(76, 175, 80, 0.20) !important;
+}
+.row-red {
+  background-color: rgba(244, 67, 54, 0.12) !important;
+}
+.row-red-hover {
+  background-color: rgba(244, 67, 54, 0.20) !important;
+}
 .v-data-table tbody tr.row-is-link {
   position: relative;
 }
@@ -104,20 +125,15 @@ const testHeaders =  [
 .v-data-table tbody tr.row-is-link:hover .row-link-overlay {
   cursor: pointer;
 }
+code {
+  font-family: monospace !important;
+}
 :deep(.test-description code) {
-  background-color: #f5f5f5;
-  color: #555;
-  font-family: monospace;
+  background-color: rgba(128, 128, 128, 0.15);
+  color: #333;
+  font-family: monospace !important;
   font-size: 0.95em;
   padding: 0.2em 0.4em;
   border-radius: 5px;
-}
-:deep(.test-description.feature code) {
-  background-color: #f5f5f5;
-  color: #22863a;
-}
-:deep(.test-description.bug code) {
-  background-color: #f5f5f5;
-  color: #d73a49;
 }
 </style>

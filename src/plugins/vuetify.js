@@ -17,7 +17,7 @@ export default createVuetify({
     themes: {
       light: {
         colors: {
-          primary: colors.blue.darken2,
+          primary: '#000000',
           secondary: colors.blueGrey.darken4,
           accent: colors.indigo.base,
 

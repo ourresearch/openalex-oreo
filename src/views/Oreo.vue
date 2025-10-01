@@ -29,7 +29,7 @@
                 <div class="d-flex align-center mb-2">
                   <v-icon 
                     v-if="currentTest" 
-                    :icon="currentTest.test_type === 'bug' ? 'mdi-bug' : 'mdi-rocket'" 
+                    :icon="currentTest.test_type === 'bug' ? 'mdi-emoticon-sad-outline' : 'mdi-emoticon-happy-outline'" 
                     size="46" 
                     :color="testItem(currentTest.key)?.color"
                   ></v-icon>
@@ -39,17 +39,20 @@
                 </div>
                 <!-- Subtitle -->
                 <div class="mb-8">
-                  <span class="text-grey-darken-3 text-subtitle-1" v-html="titles[mode].subtitle"></span>
-                  <v-chip 
-                    v-if="mode === 'list' && currentTest"
-                    color="grey-darken-2"
-                    variant="tonal"
-                    size="small"
-                    class="ml-1"
-                    @click="router.push(`/${entityType}/tests?testCategory=${currentTest.category}`)"
-                  >
-                    {{ currentTest.category }}
-                  </v-chip>
+                  <div>
+                    <span class="text-grey-darken-3 text-subtitle-1" v-html="titles[mode].subtitle"></span>
+                  </div>
+                  <div v-if="mode === 'list' && currentTest" class="mt-2">
+                    <v-chip 
+                      label
+                      color="grey"
+                      variant="outlined"
+                      size="small"
+                      @click="router.push(`/${entityType}/tests?testCategory=${currentTest.category}`)"
+                    >
+                      {{ currentTest.category }}
+                    </v-chip>
+                  </div>
                 </div>
               </div>
 
@@ -77,7 +80,6 @@
                     clearable
                     clear-icon="mdi-close"
                     hide-details
-                    rounded="pill"
                     density="comfortable"
                     class="mb-2"
                     style="width: 250px;"
@@ -96,12 +98,12 @@
                     :color="testItem(currentTest.key)?.color"
                     :model-value="testItem(currentTest.key)?.rate">
                   </v-progress-circular>
-                  <span class="ml-2 font-weight-bold" style="font-size: 46px;">
+                  <span class="ml-2 font-weight-bold" :class="`text-${testItem(currentTest.key)?.color}`" style="font-size: 46px;">
                     {{ testItem(currentTest.key)?.rate }}%
                   </span>
                 </div>
                 <div class="text-grey-darken-1" style="font-size: 14px;">
-                  of {{ entityType }} got {{ currentTest.test_type === 'bug' ? 'worse' : 'better' }}
+                  of {{ entityType }} got more {{ currentTest.test_type === 'bug' ? 'bad' : 'good' }}
                 </div>
               </div>
 
@@ -168,33 +170,31 @@
             <div class="mb-1 d-flex">
               <v-menu width="200">
                 <template v-slot:activator="{ props }">
-                  <v-chip v-if="testDirectionFilter === 'all'" v-bind="props" rounded="pill" color="grey-darken-2" variant="outlined" style="border: 1px solid #BDBDBD;" class="mr-1">
-                    Direction
+                  <v-chip v-if="!testDirectionFilter" v-bind="props" label color="grey-darken-2" variant="outlined" style="border: 1px solid #BDBDBD;" class="mr-1">
+                    Goodness
                     <v-icon icon="mdi-menu-down"></v-icon>
                   </v-chip>
-                  <v-chip v-else v-bind="props" rounded="pill" color="blue-darken-1" variant="tonal" class="mr-1">
-                    Direction: <b class="ml-1">{{ filters.titleCase(testDirectionFilter) }}</b>
-                    <v-icon icon="mdi-close" @click.stop="testDirectionFilter = 'all'"></v-icon>
+                  <v-chip v-else v-bind="props" label :color="testDirectionFilter === 'good' ? 'green' : 'red'" class="mr-1">
+                    <v-icon :icon="testDirectionFilter === 'good' ? 'mdi-emoticon-happy-outline' : 'mdi-emoticon-sad-outline'" class="mr-1"></v-icon>
+                    <b>{{ filters.titleCase(testDirectionFilter) }}</b>
+                    <v-icon icon="mdi-close" @click.stop="testDirectionFilter = null"></v-icon>
                   </v-chip>
                 </template>
                 <v-list>
-                  <v-list-item @click="testDirectionFilter = 'all'">
-                    <div class="d-flex align-center">
-                      <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testDirectionFilter === 'all' ? '' : 'opacity-0']"></v-icon>
-                      All
-                    </div>
-                  </v-list-item>
-                  <v-list-item @click="testDirectionFilter = 'better'">
-                    <div class="d-flex align-center">
-                      <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testDirectionFilter === 'better' ? '' : 'opacity-0']"></v-icon>
-                      Better
-                    </div>
-                  </v-list-item>
-                  <v-list-item @click="testDirectionFilter = 'worse'">
-                    <div class="d-flex align-center">
-                      <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testDirectionFilter === 'worse' ? '' : 'opacity-0']"></v-icon>
-                      Worse
+                  <v-list-item @click="testDirectionFilter = 'good'">
+                    <div class="d-flex align-center text-green">
+                      <v-icon icon="mdi-emoticon-happy-outline" class="mr-2" color="green"></v-icon>
+                      Good
                       <v-spacer></v-spacer>
+                      <v-icon icon="mdi-check" color="green" :class="testDirectionFilter === 'good' ? '' : 'opacity-0'"></v-icon>
+                    </div>
+                  </v-list-item>
+                  <v-list-item @click="testDirectionFilter = 'bad'">
+                    <div class="d-flex align-center text-red">
+                      <v-icon icon="mdi-emoticon-sad-outline" class="mr-2" color="red"></v-icon>
+                      Bad
+                      <v-spacer></v-spacer>
+                      <v-icon icon="mdi-check" color="red" :class="testDirectionFilter === 'bad' ? '' : 'opacity-0'"></v-icon>
                     </div>
                   </v-list-item>
                 </v-list>
@@ -202,54 +202,21 @@
 
               <v-menu width="200">
                 <template v-slot:activator="{ props }">
-                  <v-chip v-if="testSizeFilter === 'all'" v-bind="props" rounded="pill" color="grey-darken-2" variant="outlined" style="border: 1px solid #BDBDBD;" class="mr-1">
-                    Size
-                    <v-icon icon="mdi-menu-down"></v-icon>
-                  </v-chip>
-                  <v-chip v-else v-bind="props" rounded="pill" color="blue-darken-1" variant="tonal" class="mr-1">
-                    Size: <b class="ml-1">{{ filters.titleCase(testSizeFilter) }}</b>
-                    <v-icon icon="mdi-close" @click.stop="testSizeFilter = 'all'"></v-icon>
-                  </v-chip>
-                </template>
-                <v-list>
-                  <v-list-item @click="testSizeFilter = 'all'">
-                    <div class="d-flex align-center">
-                      <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testSizeFilter === 'all' ? '' : 'opacity-0']"></v-icon>
-                      All
-                    </div>
-                  </v-list-item>
-                  <v-list-item @click="testSizeFilter = 'small'">
-                    <div class="d-flex align-center">
-                      <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testSizeFilter === 'small' ? '' : 'opacity-0']"></v-icon>
-                      Small
-                    </div>
-                  </v-list-item>
-                  <v-list-item @click="testSizeFilter = 'big'">
-                    <div class="d-flex align-center">
-                      <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testSizeFilter === 'big' ? '' : 'opacity-0']"></v-icon>
-                      Big
-                      <v-spacer></v-spacer>
-                    </div>
-                  </v-list-item>
-                </v-list>
-              </v-menu>
-
-              <v-menu width="200">
-                <template v-slot:activator="{ props }">
-                  <v-chip v-if="testCategoryFilter === 'all'" v-bind="props" rounded="pill" color="grey-darken-2" variant="outlined" style="border: 1px solid #BDBDBD;" class="mr-1">
+                  <v-chip v-if="!testCategoryFilter" v-bind="props" label color="grey-darken-2" variant="outlined" style="border: 1px solid #BDBDBD;" class="mr-1">
                     Category
                     <v-icon icon="mdi-menu-down"></v-icon>
                   </v-chip>
-                  <v-chip v-else v-bind="props" rounded="pill" color="blue-darken-1" variant="tonal" class="mr-1">
-                    Category: <b class="ml-1">{{ filters.titleCase(testCategoryFilter) }}</b>
-                    <v-icon icon="mdi-close" @click.stop="testCategoryFilter = 'all'"></v-icon>
+                  <v-chip v-else v-bind="props" label color="blue-darken-1" variant="tonal" class="mr-1">
+                    <b>{{ filters.titleCase(testCategoryFilter) }}</b>
+                    <v-icon icon="mdi-close" @click.stop="testCategoryFilter = null"></v-icon>
                   </v-chip>
                 </template>
                 <v-list>
                   <v-list-item v-for="category in testCategoryOptions" :key="category" @click="testCategoryFilter = category">
                     <div class="d-flex align-center">
-                      <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testCategoryFilter === category ? '' : 'opacity-0']"></v-icon>
                       {{ filters.titleCase(category) }}
+                      <v-spacer></v-spacer>
+                      <v-icon icon="mdi-check" color="grey-darken-2" :class="testCategoryFilter === category ? '' : 'opacity-0'"></v-icon>
                     </div>
                   </v-list-item>
                 </v-list>
@@ -265,7 +232,7 @@
               <v-spacer></v-spacer>
               <v-menu>
                 <template v-slot:activator="{ props }">
-                  <v-btn v-bind="props" rounded="pill" color="blue-darken-1" variant="text">
+                  <v-btn v-bind="props" color="primary" variant="text">
                     Sort:
                     {{ filters.titleCase(testSort) }}
                     <v-icon icon="mdi-menu-down"></v-icon>
@@ -273,16 +240,25 @@
                 </template>
                 <v-list>
                   <v-list-item @click="testSort = 'size'">
-                    <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testSort === 'size' ? '' : 'opacity-0']"></v-icon>
-                    Size
+                    <div class="d-flex align-center">
+                      Size
+                      <v-spacer></v-spacer>
+                      <v-icon icon="mdi-check" color="grey-darken-2" :class="testSort === 'size' ? '' : 'opacity-0'"></v-icon>
+                    </div>
                   </v-list-item>
                   <v-list-item @click="testSort = 'category'">
-                    <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testSort === 'category' ? '' : 'opacity-0']"></v-icon>
-                    Category
+                    <div class="d-flex align-center">
+                      Category
+                      <v-spacer></v-spacer>
+                      <v-icon icon="mdi-check" color="grey-darken-2" :class="testSort === 'category' ? '' : 'opacity-0'"></v-icon>
+                    </div>
                   </v-list-item>
                   <v-list-item @click="testSort = 'alphabetical'">
-                    <v-icon icon="mdi-check" color="grey-darken-2" :class="['mr-2', testSort === 'alphabetical' ? '' : 'opacity-0']"></v-icon>
-                    Alphabetical
+                    <div class="d-flex align-center">
+                      Alphabetical
+                      <v-spacer></v-spacer>
+                      <v-icon icon="mdi-check" color="grey-darken-2" :class="testSort === 'alphabetical' ? '' : 'opacity-0'"></v-icon>
+                    </div>
                   </v-list-item>
                 </v-list>
               </v-menu>
@@ -293,7 +269,7 @@
           <div v-if="mode === 'plots' && dataLoaded && coverage[entityType].both.sampleSize > 1000" class="text-right mt-n4">
             <v-menu>
               <template v-slot:activator="{ props }">
-                <v-btn v-bind="props" rounded="pill" color="blue-darken-1" variant="text">
+                <v-btn v-bind="props" color="blue-darken-1" variant="text">
                   Sample page:
                   {{ page }}
                   <v-icon icon="mdi-menu-down"></v-icon>
@@ -313,14 +289,13 @@
           </div>
 
           <!-- Entity -->
-          <v-card v-if="mode === 'entity'" flat rounded="xl" class="px-6 py-10">
+          <v-card v-if="mode === 'entity'" flat class="px-6 py-10">
             <v-row>
               <v-col cols="12" md="6">
                 <v-hover>
                   <template v-slot:default="{ isHovering, props }">
                     <v-card 
                       flat 
-                      rounded="xl" 
                       fill-height 
                       v-bind="props" 
                       :class="isHovering ? 'bg-blue-lighten-5' : 'bg-grey-lighten-3'" 
@@ -351,7 +326,6 @@
                   <template v-slot:default="{ isHovering, props }">
                     <v-card 
                       flat 
-                      rounded="xl" 
                       v-bind="props" 
                       :class="isHovering ? 'bg-blue-lighten-5' : 'bg-grey-lighten-3'"
                       class="pa-4 mx-1 fill-height"
@@ -376,7 +350,7 @@
           <!-- Plots -->
           <div v-else-if="mode === 'plots'">
             <div v-if="resultsMeta">
-              <v-card flat rounded="xl" class="py-4">
+              <v-card flat class="py-4">
                 <scatter-plot
                   :title="currentPlot.title"
                   @click-point="handlePlotPointClick"
@@ -388,14 +362,14 @@
                 </div>
               </v-card>
             </div>
-            <v-card v-else flat rounded="xl" class="text-center" style="height: 700px; overflow: hidden !important;">
+            <v-card v-else flat class="text-center" style="height: 700px; overflow: hidden !important;">
               <v-progress-linear color="blue" class="" indeterminate></v-progress-linear>
               <div style="font-size: 14px; color: #777; margin-top: 280px; font-style: italic;">Loading...</div>
             </v-card>
           </div>
 
 
-          <v-card v-else flat class="pb-0 px-4 rounded-o" style="overflow: hidden !important;">
+          <v-card v-else flat class="pb-0 px-4" style="overflow: hidden !important;">
 
             <!-- Results -->
             <div class="mx-n4 results-section">
@@ -599,7 +573,6 @@
       max-width="80vw" 
       max-height="80vh"
       :model-value="!!compareId"
-      class="rounded-o"
       @update:model-value="(val) => { if (!val) compareId = null }"
     >
       <compare-work
@@ -671,9 +644,9 @@ const pageSize             = useParams('pageSize', 'number', 20);
 const page                 = useParams('page', 'number', 1);
 const testsSearch          = useParams('testsSearch', 'string', '');
 const testSort             = useParams('testSort', 'string', 'size');
-const testDirectionFilter  = useParams('testDirection', 'string', 'all');
+const testDirectionFilter  = useParams('testDirection', 'string', null);
 const testSizeFilter       = useParams('testSize', 'string', 'all');
-const testCategoryFilter   = useParams('testCategory', 'string', 'all');
+const testCategoryFilter   = useParams('testCategory', 'string', null);
 const showTestsSearch      = ref(false);
 const sampleFilter         = ref('all');
 const compareId            = useParams('compareId', 'string', null);
@@ -713,7 +686,7 @@ const titles = computed(() => {
       "subtitle": "Total pass rates of key tests across the full sample set"
     },
     "list": {
-      "title": currentTest.value ? filters.titleCase(entityType.value.replace("-", " ")) + ": " + currentTest.value.display_name : "",
+      "title": currentTest.value ? currentTest.value.display_name : "",
       "subtitle": currentTest.value ? `<span class='test-description ${testItem(currentTest.value.key)?.colorClass}'>${currentTest.value.description}</span>` : ""
     },
     "plots": {
@@ -806,7 +779,7 @@ const testItems = computed(() => {
     rows.push({
       ...test,
       rate: rate,
-      color: "black",
+      color: test.test_type === 'bug' ? 'red' : 'green',
       colorClass: "",
       filterUrl: `/${entityType.value}/tests/${test.key}`,
     });
@@ -823,19 +796,14 @@ const sortedTestItems = computed(() => {
   if (!testItems.value) { return null; }
   let items = [...testItems.value];
   
-  if (testDirectionFilter.value === 'worse') {
+  if (testDirectionFilter.value === 'bad') {
     items = items.filter(item => item.test_type === 'bug');
-  } else if (testDirectionFilter.value === 'better') {
+  } else if (testDirectionFilter.value === 'good') {
     items =  items.filter(item => item.test_type === 'feature');
   }
 
-  if (testSizeFilter.value === 'big') {
-    items = items.filter(item => item.rate > 5);
-  } else if (testSizeFilter.value === 'small') {
-    items = items.filter(item => item.rate < 5);
-  }
 
-  if (testCategoryFilter.value !== 'all') {
+  if (testCategoryFilter.value) {
     items = items.filter(item => item.category === testCategoryFilter.value);
   }
 
@@ -849,16 +817,8 @@ const sortedTestItems = computed(() => {
     } else if (testSort.value === 'category') {
       return a.category.localeCompare(b.category);
     } else if (testSort.value === 'size') {
-      
-      if (testDirectionFilter.value === 'better') {
-        return b.rate - a.rate;        
-      }
-
-      // Bugs first (descending rate), then features (ascending rate)
-      if (a.test_type !== b.test_type) {
-        return a.test_type === 'bug' ? -1 : 1;
-      }
-      return a.test_type === 'bug' ? b.rate - a.rate : a.rate - b.rate;
+      // Sort by size (rate) descending, regardless of test type
+      return b.rate - a.rate;
     }
   });
 });
@@ -868,7 +828,7 @@ const testCategoryOptions = computed(() => {
   testItems.value.forEach(test => {
     categories.add(test.category);
   });
-  return ["all", ...Array.from(categories).sort((a, b) => a.localeCompare(b))];
+  return Array.from(categories).sort((a, b) => a.localeCompare(b));
 });
 
 const testsResultsStr = computed(() => {

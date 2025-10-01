@@ -101,9 +101,6 @@ $bg-color: #EEF3FA;
   background-color: $color-0 !important;
   transition: background-color 500ms;
 }
-.rounded-o {
-  border-radius: 15px !important;
-}
 .v-card.factoid-card {
   //background-color: #EEF5FC;
   background-color: $color-3;
