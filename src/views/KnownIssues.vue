@@ -14,7 +14,12 @@
           </v-btn>
         </div>
         
-        <div v-for="(issue, index) in issues" :key="index" class="mb-6">
+        <v-card
+          v-for="(issue, index) in issues"
+          :key="index"
+          variant="outlined"
+          class="mb-4 pa-4"
+        >
           <div class="mb-2">
             <span class="font-weight-bold">{{ issue.name }}</span>
           </div>
@@ -27,12 +32,12 @@
             label
             color="grey"
             variant="outlined"
-            size="small"
+            size="x-small"
             class="mr-2"
           >
             {{ tag }}
           </v-chip>
-        </div>
+        </v-card>
       </v-col>
     </v-row>
   </v-container>
@@ -75,6 +80,20 @@ const issues = ref([
     name: 'Authors missing from OREO',
     description: "You can't analyze authors in OREO yet.",
     tags: ["oreo"],
+    priority: null,
+  },
+
+  {
+    name: 'New works have no author IDs',
+    description: "We've got the author string, but not matched to an Author in the OpenAlex graph yet.",
+    tags: ["new works"],
+    priority: null,
+  },
+
+  {
+    name: 'New works have no related works',
+    description: "We haven't run the related works algorithm yet.",
+    tags: ["new works"],
     priority: null,
   },
 ]);
