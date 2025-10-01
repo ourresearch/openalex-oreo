@@ -501,6 +501,11 @@ body {
   font-family: Inter, sans-serif !important;
 }
 
+.v-application code,
+.v-application pre {
+  font-family: 'Inconsolata', monospace !important;
+}
+
 .v-card--variant-outlined {
   border-color: #e8e8e8 !important;
 }
