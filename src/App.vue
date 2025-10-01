@@ -61,7 +61,7 @@ $color-2: hsl(213, 69%, 95%);
 $color-1: hsl(213, 72%, 88%);
 $color-0: hsl(212, 77%, 82%);
 
-$bg-color: #EEF3FA;
+$bg-color: #ffffff;
 
 .v-main {
   background-color: #fff
@@ -208,6 +208,10 @@ body {
 .v-application,
 .v-application * {
   font-family: Inter, sans-serif !important;
+}
+
+.v-card--variant-outlined {
+  border-color: #e8e8e8 !important;
 }
 
 .v-application {

@@ -111,29 +111,29 @@
               <div v-if="mode === 'entity' && dataLoaded" class="mx-0">
                 <div class="text-right" >
                   <span class="entity-metric" v-if="coverageItem(entityType).missing !== '-'">
-                    <span class="entity-metric-value" :class="{'text-red': coverageItem(entityType).missing > 0}">{{ coverageItem(entityType).missing }}%</span>
+                    <span class="entity-metric-value">{{ coverageItem(entityType).missing }}%</span>
                     <span class="entity-metric-label ml-1">Missing</span>
                   </span>
 
                   <span class="entity-metric" v-if="coverageItem(entityType).new !== '-'">
-                    <span class="entity-metric-value" :class="{'text-green': coverageItem(entityType).new > 0}">{{ coverageItem(entityType).new }}%</span>
+                    <span class="entity-metric-value">{{ coverageItem(entityType).new }}%</span>
                     <span class="entity-metric-label ml-1">New</span>
                   </span>
 
                   <span class="entity-metric" v-if="coverageItem(entityType).failingTests !== '-'">
-                    <span class="entity-metric-value" :class="{'text-red': coverageItem(entityType).failingTests > 0}">{{ coverageItem(entityType).failingTests }}</span>
+                    <span class="entity-metric-value">{{ coverageItem(entityType).failingTests }}</span>
                     <span class="entity-metric-label ml-1">Failing Tests</span>
                   </span>
 
                   <span class="entity-metric" v-if="coverageItem(entityType).worksCountChange !== '-'">
-                    <span class="entity-metric-value" :class="{'text-red': coverageItem(entityType).worksCountChange < 0, 'text-green': coverageItem(entityType).worksCountChange > 0}">
+                    <span class="entity-metric-value">
                       {{ !(coverageItem(entityType).worksCountChange < 0) ? "+" : "" }}{{ coverageItem(entityType).worksCountChange }}%
                     </span>
                     <span class="entity-metric-label ml-1">Works</span>
                   </span>
 
                   <span class="entity-metric" v-if="coverageItem(entityType).citationsCountChange !== '-'">
-                    <span class="entity-metric-value" :class="{'text-red': coverageItem(entityType).citationsCountChange < 0, 'text-green': coverageItem(entityType).citationsCountChange > 0}">
+                    <span class="entity-metric-value">
                       {{ !(coverageItem(entityType).citationsCountChange <= 0) ? "+" : "" }}{{ coverageItem(entityType).citationsCountChange }}%
                     </span>
                     <span class="entity-metric-label ml-1">Citations</span>
@@ -289,7 +289,7 @@
           </div>
 
           <!-- Entity -->
-          <v-card v-if="mode === 'entity'" flat class="px-6 py-10">
+          <v-card v-if="mode === 'entity'" variant="outlined" class="px-6 py-10">
             <v-row>
               <v-col cols="12" md="6">
                 <v-hover>
@@ -298,7 +298,7 @@
                       flat 
                       fill-height 
                       v-bind="props" 
-                      :class="isHovering ? 'bg-blue-lighten-5' : 'bg-grey-lighten-3'" 
+                      :class="isHovering ? 'bg-grey-lighten-2' : 'bg-grey-lighten-3'" 
                       class="pa-4 mx-1"
                       @click="router.push(`/${entityType}/tests`)">
                       <v-card-title style="font-size: 28px;">Tests</v-card-title>
@@ -327,7 +327,7 @@
                     <v-card 
                       flat 
                       v-bind="props" 
-                      :class="isHovering ? 'bg-blue-lighten-5' : 'bg-grey-lighten-3'"
+                      :class="isHovering ? 'bg-grey-lighten-2' : 'bg-grey-lighten-3'"
                       class="pa-4 mx-1 fill-height"
                       @click="router.push(resultsMeta ? `/${entityType}/plots/${plotData[0].field}` : '#')"
                     >
@@ -350,7 +350,7 @@
           <!-- Plots -->
           <div v-else-if="mode === 'plots'">
             <div v-if="resultsMeta">
-              <v-card flat class="py-4">
+              <v-card variant="outlined" class="py-4">
                 <scatter-plot
                   :title="currentPlot.title"
                   @click-point="handlePlotPointClick"
@@ -362,21 +362,21 @@
                 </div>
               </v-card>
             </div>
-            <v-card v-else flat class="text-center" style="height: 700px; overflow: hidden !important;">
+            <v-card v-else variant="outlined" class="text-center" style="height: 700px; overflow: hidden !important;">
               <v-progress-linear color="blue" class="" indeterminate></v-progress-linear>
               <div style="font-size: 14px; color: #777; margin-top: 280px; font-style: italic;">Loading...</div>
             </v-card>
           </div>
 
 
-          <v-card v-else flat class="pb-0 px-4" style="overflow: hidden !important;">
+          <v-card v-else variant="outlined" class="pb-0" style="overflow: hidden !important;">
 
             <!-- Results -->
-            <div class="mx-n4 results-section">
+            <div class="results-section">
 
               <!-- List -->
               <div v-if="mode == 'list'">
-                <v-col cols="12" v-if="dataLoaded">
+                <div v-if="dataLoaded">
                   <div v-if="currentTest.sample_source">
                     <sample-explorer 
                       :source="currentTest.sample_source"
@@ -451,7 +451,7 @@
                     ></v-pagination>
                   
                   </div>
-                </v-col>
+                </div>
                 <v-skeleton-loader v-else type="list-item-three-line@12"></v-skeleton-loader>
               </div>
 
@@ -465,7 +465,7 @@
               
               <!-- Home -->
               <div v-if="mode === 'home'">
-                <v-col v-if="coverageItems" cols="12" lg="11" xl="7">
+                <div v-if="coverageItems" class="home-table-wrapper">
                   <v-data-table
                     :headers="coverageHeaders"
                     :items="coverageItems"
@@ -556,7 +556,7 @@
                       </v-hover>
                     </template>
                   </v-data-table>
-                </v-col>
+                </div>
                 <v-skeleton-loader v-else type="list-item-three-line@12"></v-skeleton-loader>
               </div>
 
