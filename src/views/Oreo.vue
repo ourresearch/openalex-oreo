@@ -806,8 +806,8 @@ const testItems = computed(() => {
     rows.push({
       ...test,
       rate: rate,
-      color: rate > 5 ? (test.test_type === 'bug' ? 'red' : 'green') : "grey",
-      colorClass: rate > 5 ? (test.test_type === 'bug' ? 'bug' : 'feature') : "",
+      color: "black",
+      colorClass: "",
       filterUrl: `/${entityType.value}/tests/${test.key}`,
     });
   });
