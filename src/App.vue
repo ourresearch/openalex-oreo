@@ -2,18 +2,17 @@
   <v-app>
     <v-app-bar
       flat
-      :height="smAndDown ? undefined : 70"
-      color="white"
+      color="#000"
       class="app-bar-border"
-      absolute
-      extension-height="70"
+      fixed
+      density="compact"
     >
       <router-link to="/" class="logo-link ml-2 mr-2">
         <img
-          src="@/assets/tricon.png"
+          src="@/assets/tricon-white.png"
           class="logo-icon mr-0 colorizable"
         />
-        <span class="logo-text font-weight-bold">OREO</span>
+        <span class="logo-text font-weight-bold text-white">OREO</span>
       </router-link>
       <span class="logo-subtext d-none">
          OpenAlex rewrite evaluation overview
@@ -44,7 +43,7 @@
           <v-list-item
             v-for="entity in coreEntities"
             :key="entity.id"
-            :to="`/${entity.id}`"
+            :to="`/${entity.id}/tests`"
             :title="entity.title"
           />
         </v-list-group>
@@ -57,7 +56,7 @@
           <v-list-item
             v-for="entity in aboutnessEntities"
             :key="entity.id"
-            :to="`/${entity.id}`"
+            :to="`/${entity.id}/tests`"
             :title="entity.title"
           />
         </v-list-group>
@@ -70,7 +69,7 @@
           <v-list-item
             v-for="entity in geoEntities"
             :key="entity.id"
-            :to="`/${entity.id}`"
+            :to="`/${entity.id}/tests`"
             :title="entity.title"
           />
         </v-list-group>
@@ -83,7 +82,7 @@
           <v-list-item
             v-for="entity in typesEntities"
             :key="entity.id"
-            :to="`/${entity.id}`"
+            :to="`/${entity.id}/tests`"
             :title="entity.title"
           />
         </v-list-group>
@@ -96,7 +95,7 @@
           <v-list-item
             v-for="entity in fundingEntities"
             :key="entity.id"
-            :to="`/${entity.id}`"
+            :to="`/${entity.id}/tests`"
             :title="entity.title"
           />
         </v-list-group>
@@ -109,7 +108,7 @@
           <v-list-item
             v-for="entity in contentEntities"
             :key="entity.id"
-            :to="`/${entity.id}`"
+            :to="`/${entity.id}/tests`"
             :title="entity.title"
           />
         </v-list-group>
@@ -127,11 +126,6 @@
       <v-list nav :opened="['plots']">
         <v-list-subheader>{{ currentEntityTitle }}</v-list-subheader>
         <v-list-item
-          :to="`/${currentEntity}`"
-          title="Summary"
-          prepend-icon="mdi-list-box-outline"
-        />
-        <v-list-item
           :to="`/${currentEntity}/tests`"
           title="Tests"
           prepend-icon="mdi-clipboard-check-outline"
@@ -143,6 +137,7 @@
             <v-list-item v-bind="props" title="Plots" prepend-icon="mdi-chart-scatter-plot" />
           </template>
           <v-list-item
+            v-if="currentEntity !== 'works'"
             :to="`/${currentEntity}/plots/works_count`"
             title="Works"
           />
@@ -159,21 +154,6 @@
             v-if="currentEntity === 'works'"
             :to="`/${currentEntity}/plots/fwci`"
             title="FWCI"
-          />
-          <v-list-item
-            v-if="currentEntity === 'works'"
-            :to="`/${currentEntity}/plots/countries_distinct_count`"
-            title="Countries"
-          />
-          <v-list-item
-            v-if="currentEntity === 'works'"
-            :to="`/${currentEntity}/plots/institutions_distinct_count`"
-            title="Institutions"
-          />
-          <v-list-item
-            v-if="currentEntity === 'works'"
-            :to="`/${currentEntity}/plots/locations_count`"
-            title="Locations"
           />
         </v-list-group>
       </v-list>
@@ -432,7 +412,7 @@ $bg-color: #ffffff;
 .white-space-normal {
   white-space: normal !important;
 }
-$logo-link-height: 30px;
+$logo-link-height: 25px;
 .logo-link {
   font-weight: bold;
   text-decoration: none;
@@ -449,7 +429,7 @@ $logo-link-height: 30px;
     line-height: 1.2;
     color: #000;
     font-family: Inter, sans-serif;
-    font-size: $logo-link-height * 0.9;
+    font-size: $logo-link-height * 0.95;
     font-weight: 500;
   }
 }
