@@ -2,7 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router';
 
 import Oreo from "@/views/Oreo.vue";
 import SamplesQA from "@/views/SamplesQA.vue";
-import Changelog from "@/views/Changelog.vue";
 import About from "@/views/About.vue";
 import KnownIssues from "@/views/KnownIssues.vue";
 import Overview from "@/views/Overview.vue";
@@ -13,7 +12,6 @@ const routes = [
     {path: '/', name: 'about', component: About},
     {path: '/overview', name: 'overview', component: Overview},
     {path: '/samples', name: 'samples-qa', component: SamplesQA},
-    {path: '/changelog', name: 'changelog', component: Changelog},
     {path: '/known-issues', name: 'known-issues', component: KnownIssues},
 
     {path: '/:entity', redirect: to => {

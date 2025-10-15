@@ -60,10 +60,15 @@
         
         <!-- Changelog link -->
         <v-list-item
-          to="/changelog"
-          title="Changelog"
+          href="https://github.com/ourresearch/openalex-walden/blob/main/CHANGELOG.md"
+          target="_blank"
           prepend-icon="mdi-timeline-clock-outline"
-        />
+        >
+          <v-list-item-title>
+            Changelog
+            <v-icon size="small" class="ml-1">mdi-open-in-new</v-icon>
+          </v-list-item-title>
+        </v-list-item>
         
         <v-list-subheader class="font-weight-bold text-black">Entities</v-list-subheader>
         <v-divider class="mb-2"></v-divider>
@@ -226,7 +231,7 @@ const { isLoading } = useLoading();
 const currentEntity = computed(() => {
   // Extract entity from route path (e.g., /works, /works/tests, /works/plots)
   // Exclude non-entity pages
-  const nonEntityPages = ['changelog', 'about', 'samples', 'overview', 'known-issues'];
+  const nonEntityPages = ['about', 'samples', 'overview', 'known-issues'];
   const pathParts = route.path.split('/').filter(Boolean);
   if (pathParts.length > 0 && !nonEntityPages.includes(pathParts[0])) {
     return pathParts[0];
